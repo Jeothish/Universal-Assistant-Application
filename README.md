@@ -1,6 +1,6 @@
 # 3rd-Year-Project
 
-Whisper:
+## Whisper:
     pip install openai-whisper
     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
   
