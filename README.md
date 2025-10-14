@@ -8,12 +8,12 @@
   
   download FFMPEG (through chocolatey) by running these commands in powershell as admin:
   
-  Chocolatey download:
+ ## Chocolatey download:
     Set-ExecutionPolicy Bypass -Scope Process -Force; `
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
     
-  FFMPEG download (powershell as admin):
+ ## FFMPEG download (powershell as admin):
     choco install ffmpeg
     
   OR
