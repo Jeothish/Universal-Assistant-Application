@@ -68,7 +68,8 @@ def get_coordinates(city_name):
         #[0] gets most relevant city name
         latitude = data["results"][0]['latitude']
         longitude = data["results"][0]['longitude']
-        return latitude,longitude
+        
+        return latitude,longitude,
     else:
         return None
     
@@ -83,7 +84,7 @@ def get_current_weather(latitude,longitude):
     Returns:
         dict: Formatted dictionary containing current weather data for the given city, otherwise None
     """
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true&timezone=auto"
 
     response = requests.get(url)
     data = response.json()
