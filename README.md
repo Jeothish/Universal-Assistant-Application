@@ -24,4 +24,4 @@
     C:\ProgramData\chocolatey\lib\ffmpeg\tools\ffmpeg\bin
 
 ## Google Gemini API
-pip install google-genai
+    pip install google-genai
