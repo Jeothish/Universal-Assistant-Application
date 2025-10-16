@@ -109,7 +109,7 @@ def get_current_weather(latitude,longitude):
     else:
         return None
 
-def get_forecast_weather(latitude,longitude,target_datetime):
+def get_forecast_weather_specific_time(latitude,longitude,target_datetime):
     """
     Gets the forecasted weather for a future date and hour
 
@@ -140,7 +140,65 @@ def get_forecast_weather(latitude,longitude,target_datetime):
     else:
         return{"error": "Forecast for this hour not available"}
 
+#TO DO
+def get_forecast_weather_day(latitude,longitude,target_day):
+    """
+    Gets the hourly forecasted weather for a full day
 
+    Args:
+       latitude (float): Latitude of given city
+       longitude (float): Longitude of given city
+       target_day (datetime): The future day to forecast
+
+    Returns:
+        dict: Formatted dictionary containing hourly forecasted weather data for the given city for a the full day , otherwise an error message
+    """
+
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&hourly=temperature_2m,weathercode,windspeed_10m,winddirection_10m&timezone=auto"
+    response = requests.get(url)
+    data = response.json()
+    
+    target_day = target_day.strftime("%Y-%m-%d")
+    
+    forecast_data = []
+    times = data["hourly"]["time"]
+    temps = data["hourly"]["temperature_2m"]
+    wind_speeds = data["hourly"]["windspeed_10m"]
+    wind_directions = data["hourly"]["winddirection_10m"]
+    weather_codes = data["hourly"]["weathercode"]
+    
+    for index,t in enumerate(times):
+        if t.startswith(target_day):
+            forecast_data.append({
+                "Temperature (°C)" : temps[index],
+                "Wind Speed (km/h)": wind_speeds[index],
+                "Wind Direction (°)":  wind_directions[index],
+                "Weather Condition" : WEATHER_CODES.get(weather_codes[index]),
+                "Local Time": t
+            })
+    if not forecast_data:
+        return {"error": "Forecast for this dat not availble"}
+            
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 ##Used for testing within the current file 
 
 #if __name__ == "__main__":
