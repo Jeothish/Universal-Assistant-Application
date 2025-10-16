@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime,timezone,timedelta
 
+
 API_KEY = "REMOVED"
 
 def get_news(city,topic=None,date=datetime.now(),language="en",sort_by = "publishedAt"):
