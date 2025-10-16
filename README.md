@@ -22,3 +22,6 @@
   
   Set FFMPEG path if not already set by choco:
     C:\ProgramData\chocolatey\lib\ffmpeg\tools\ffmpeg\bin
+
+## Google Gemini API
+    pip install google-genai
