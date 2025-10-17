@@ -159,6 +159,7 @@ def get_forecast_weather_day(latitude,longitude,target_day):
     data = response.json()
     
     target_day = target_day.strftime("%Y-%m-%d")
+   
     
     forecast_data = []
     times = data["hourly"]["time"]
@@ -168,7 +169,7 @@ def get_forecast_weather_day(latitude,longitude,target_day):
     weather_codes = data["hourly"]["weathercode"]
     
     for index,t in enumerate(times):
-        if t.startswith(target_day):
+        if target_day in t:
             forecast_data.append({
                 "Temperature (°C)" : temps[index],
                 "Wind Speed (km/h)": wind_speeds[index],
@@ -176,8 +177,11 @@ def get_forecast_weather_day(latitude,longitude,target_day):
                 "Weather Condition" : WEATHER_CODES.get(weather_codes[index]),
                 "Local Time": t
             })
+            
     if not forecast_data:
-        return {"error": "Forecast for this dat not availble"}
+        return {"error": "Forecast for this data not availble"}
+    
+    return forecast_data
             
     
     
@@ -202,21 +206,19 @@ def get_forecast_weather_day(latitude,longitude,target_day):
 ##Used for testing within the current file 
 
 #if __name__ == "__main__":
-    #current_city_name = input("What city would you like to get the current weather for? ")
-    #latitude,longitude = (get_coordinates(current_city_name))
-    #print(f"===== Current Weather IN {current_city_name} =====")
-    #print(get_current_weather(latitude,longitude))
-
-    #forecast_city_name = input("What city would you like forecast data with?")
-    #lat,lon = (get_coordinates(forecast_city_name))
-    #days_ahead = int(input("How many days from today? "))
-    #hour = int(input("Hour of the day (0-23)? "))
-    #target_datetime = datetime.now() + timedelta(days=days_ahead)
-    #target_datetime = target_datetime.replace(hour=hour, minute=0,second=0,microsecond=0)
+    #city_name = input("What city would you like to forecast weather for? ")
+    #latitude,longitude = get_coordinates(city_name)
+    #target_day = int(input("How many days ahead do you want to forecast? "))
+    #target_day = datetime.now() + timedelta(days=target_day)
+    #target_day = target_day.strftime("%Y-%m-%d")
     
-    #print(f"\n ==== Forcast for {forecast_city_name} on {target_datetime.strftime("%d %B %Y %H:%M")} ====")
-
-    #print(get_forecast_weather(lat,lon,target_datetime))
+    #print(get_forecast_weather_day(latitude,longitude,target_day))
+    
+    
+    
+    
+    
+    
 
 
     
