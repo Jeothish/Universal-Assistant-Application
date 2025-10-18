@@ -13,6 +13,7 @@ Author:
 
 import requests
 from datetime import datetime,timezone,timedelta
+from database.db import get_cities_db , get_connection , add_city_db
 
 #API_KEY = "f57e4e15a233f51887069167cb3b8bd4"
 #UNITS = "metric"
@@ -59,7 +60,11 @@ def get_coordinates(city_name):
     Returns:
         tuple: (latitude, longitude) if the city is found, otherwise None
     """
-
+    
+    database_coords = get_cities_db(city_name)
+    if database_coords:
+        return database_coords
+    
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={city_name}"
     response = requests.get(url)
     data = response.json()
@@ -68,7 +73,7 @@ def get_coordinates(city_name):
         #[0] gets most relevant city name
         latitude = data["results"][0]['latitude']
         longitude = data["results"][0]['longitude']
-        
+        add_city_db(city_name,latitude,longitude)
         return latitude,longitude,
     else:
         return None
@@ -140,7 +145,7 @@ def get_forecast_weather_specific_time(latitude,longitude,target_datetime):
     else:
         return{"error": "Forecast for this hour not available"}
 
-#TO DO
+
 def get_forecast_weather_day(latitude,longitude,target_day):
     """
     Gets the hourly forecasted weather for a full day
