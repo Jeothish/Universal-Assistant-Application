@@ -72,10 +72,10 @@ def get_intent_kw():
     else:
         return "chat"
 
-
+intent_kw = get_intent_kw()
 
 #get weather forecast
-if get_intent_kw() == "weather" and intent_llm == "weather":
+if intent_kw == "weather" and intent_llm == "weather":
 
     #library for city names
     gc = geonamescache.GeonamesCache()
@@ -154,7 +154,7 @@ if get_intent_kw() == "weather" and intent_llm == "weather":
 
         print(get_forecast_weather(lat, lon, target_datetime))
 
-elif get_intent_kw() == "news" and intent_llm == "news":
+elif intent_kw == "news" and intent_llm == "news":
     headlines = get_news("Dublin")
     for i in headlines:
         print(i)
