@@ -39,7 +39,24 @@ def add_city_db(city,latitude,longitude):
     cursor.close()
     connection.close()
     
+def add_reminders_db(title,description,date):
+     connection = get_connection()
+     cursor = connection.cursor()
+     
+     QUERY = """
+     INSERT INTO reminders (title,reminder_description,reminder_date)
+     VALUES (%s,%s,%s)
+     """
+     cursor.execute(QUERY,(title,description,date))
+     connection.commit()
+     cursor.close()
+     connection.close()
+     
     
+     
+     
+    
+       
     
     
         
