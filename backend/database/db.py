@@ -1,12 +1,13 @@
 import psycopg2
+import os
 
 def get_connection():
     db_connection = psycopg2.connect(
-    dbname="elderly_assistant_app",
-    user="",
-    password="",
-    host="localhost",
-    port="5432",
+        dbname=os.environ.get("DB_NAME", "elderly_assistant_app"),
+        user=os.environ.get("DB_USER", ""),
+        password=os.environ.get("DB_PASS", ""),
+        host=os.environ.get("DB_HOST", "localhost"),
+        port=os.environ.get("DB_PORT", "5432"),
     )
     return db_connection
 
