@@ -14,8 +14,8 @@ Author:
 
 from flask import Flask,request,jsonify
 from datetime import datetime,timedelta
-from backend.services.weather_api import get_current_weather,get_forecast_weather_specific_time,get_coordinates,get_forecast_weather_day
-from backend.services.news_api import get_news
+from services.weather_api import get_current_weather,get_forecast_weather_specific_time,get_coordinates,get_forecast_weather_day
+from services.news_api import get_news
 
 app = Flask(__name__)
 
