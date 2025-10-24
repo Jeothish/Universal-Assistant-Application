@@ -2,14 +2,20 @@ import psycopg2
 import os
 
 def get_connection():
-    db_connection = psycopg2.connect(
+    
+    db_url = os.environ.get("DATABASE_URL")
+    if db_url:
+        return psycopg2.connect(db_url)
+                                
+                                
+    return psycopg2.connect(
     dbname=os.environ.get("DB_NAME", "elderly_assistant_app"),
     user=os.environ.get("DB_USER", ""),
     password=os.environ.get("DB_PASS", ""),
     host=os.environ.get("DB_HOST", "localhost"),
     port=os.environ.get("DB_PORT", "5432"),
     )
-    return db_connection
+   
 
 def get_cities_db(city):
     connection = get_connection()
@@ -84,7 +90,23 @@ def add_reminders_db(rem_title,rem_date,rem_description=None,is_complete=False,r
      connection.commit()
      cursor.close()
      connection.close()
-     
+
+def edit_reminders_db(rem_title=None,rem_date=None,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
+    connection = get_connection()
+    cursor = connection.cursor()
+    parameters=[]
+    
+    QUERY = """
+    UPDATE reminders WHERE TRUE
+    """
+    
+    if rem_title != None:
+        pass
+        
+            
+
+
+
 def delete_reminders_db(reminder_id):
     
     connection = get_connection()
