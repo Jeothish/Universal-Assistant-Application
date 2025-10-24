@@ -13,7 +13,7 @@ Author:
 
 import requests
 from datetime import datetime,timezone,timedelta
-from database.db import get_cities_db , get_connection , add_city_db
+from backend.database.db import get_cities_db , get_connection , add_city_db
 
 #API_KEY = "f57e4e15a233f51887069167cb3b8bd4"
 #UNITS = "metric"
