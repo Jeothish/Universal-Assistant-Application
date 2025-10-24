@@ -13,7 +13,7 @@ client = genai.Client(api_key = 'AIzaSyCe-x74VuKCWJ0iPd9t0BVW3LHtoF69T_k')
 # Load model (tiny, base, small, medium, large)
 model = whisper.load_model("base")
 
-result = model.transcribe("news sample.m4a")
+result = model.transcribe("news2.m4a")
 
 raw_prompt = str(result["text"]).lower()#prompt string
 
@@ -33,14 +33,36 @@ news_keywords = ["news","events","headlines","breaking","stories","trending"]
 
 def get_intent_llm():
 
+    #pydantic classes to ensure data returned from llm is in right format and of right type
     class IntentType(enum.Enum):
         news = "news"
         weather = "weather"
         chat_with_llm = "chat"
 
+    class CatType(enum.Enum):
+        business = "business"
+        crime = "crime"
+        domestic = "domestic"
+        education = "education"
+        entertainment = "entertainment"
+        environment = "environment"
+        food = "food"
+        health = "health"
+        lifestyle = "lifestyle"
+        politics = "politics"
+        science = "science"
+        sports = "sports"
+        technology = "technology"
+        top = "top"
+        tourism = "tourism"
+        world = "world"
+        other = "other"
+
     class NewsSchema(BaseModel):
-        topic: str
-        city: str
+        category: CatType
+        country: str
+        source: str
+
 
     class Forecast(BaseModel):  # for LLM response schema
         city: str
@@ -57,7 +79,7 @@ def get_intent_llm():
     #use LLM to detect intent
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=raw_prompt+"get the intent for this prompt, if no hour specified for weather, set hour24 as 25",
+        contents=raw_prompt+"get the intent for this prompt, if no hour specified for weather, set hour24 as 25, for news source, keep it lowercase and avoid spaces, no domains either e.g. nyctimes, for country e.g. ie = ireland, us = us",
         config = {"response_mime_type": "application/json","response_schema":IntentSchema,},
     )
 
@@ -174,16 +196,20 @@ elif intent_kw == "news" and intent_llm == "news":
 
     #get relevent params for news
     news_llm = response_llm["news_info"]
-    news_city = news_llm["city"]
-    news_topic = news_llm["topic"]
+    news_country = news_llm["country"]
+    news_topic = news_llm["category"]
+    news_source = news_llm["source"]
 
-    #if no region specified get news for Dublin
-    if news_city == "":
-        news_city = "Dublin"
-    if news_topic == "":
-        headlines = get_news(news_city)
+
+
+    #if no region specified get news for worldwide
+    if news_country == "":
+        news_country = "wo"
+
+    if news_source == "":
+        headlines = get_news(news_country, news_topic)
     else:
-        headlines = get_news(news_city,news_topic)
+        headlines = get_news(news_country, news_topic, news_source)
 
     for i in headlines:
         print(i)
@@ -199,5 +225,6 @@ else:
 
 #TODO
 # db for cities
-# fix news + weather api results
-# recode flask code
+# fix news + weather api results (need db)
+# change to whole day forecast if hour = 25 (need db)
+# recode flask code (need db)
