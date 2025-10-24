@@ -42,19 +42,35 @@ def add_city_db(city,latitude,longitude):
 
 
 def get_reminders_db(rem_title=None,rem_date=None,rem_description=None):
-     connection = get_connection()
-     cursor = connection.cursor()
+    connection = get_connection()
+    cursor = connection.cursor()
+    parameters=[]
      
-     QUERY = """
-     SELECT (%s,%s,%s)
-     FROM reminders
-     WHERE
-     VALUES (%s,%s,%s,)
-     """
-     cursor.execute(QUERY,(rem_title,rem_date,rem_description))
-     connection.commit()
-     cursor.close()
-     connection.close()
+    QUERY = """
+     
+    SELECT * 
+    FROM reminders WHERE TRUE
+    """
+    
+    if rem_date != None:
+        QUERY += " AND reminder_date = %s"
+        parameters.append(rem_date)
+        
+    if rem_title != None:
+        QUERY += " AND title = %s"  
+        parameters.append(rem_title)  
+        
+    if rem_description != None:
+        QUERY += " AND reminder_description = %s"   
+        parameters.append(rem_description) 
+         
+     
+    cursor.execute(QUERY,tuple(parameters))
+    results = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    
+    return results
         
 def add_reminders_db(rem_title,rem_date,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
      connection = get_connection()
