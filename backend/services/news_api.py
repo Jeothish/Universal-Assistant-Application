@@ -17,7 +17,7 @@ from datetime import datetime,timezone,timedelta
 
 API_KEY = "pub_a5b78b04509c4f26a27113fd9ae03147"
 
-def get_news(city,topic=None,language="en"):
+def get_news(city,topic=None,domain=None,language="en"):
     """
     Gets the top headlines of a given city and topic
 
@@ -25,23 +25,26 @@ def get_news(city,topic=None,language="en"):
         city (str): The name of the city you want news data for
         topic (str, optional): THe topic you want news data for. Defaults to None.
         language (str, optional): Language of news. Defaults to "en".
+        domain (str, optional): news source url. Defaults to None.
 
     Returns:
         dict: Formatted dictionary containing top news articles
+
     """
     
     if not city:
         return{"error" :"City is required"}
-    
-    query= f"{city} {topic}"
-    
+
     
     url = f"https://newsdata.io/api/1/news"
-    
+
     params = {
-        "q": query,
         "language" : language,
         "apikey" : API_KEY,
+        "domain" : domain,
+        "country" : city,
+        "category" : topic
+
     }
     
     response = requests.get(url,params=params)
@@ -62,5 +65,6 @@ def get_news(city,topic=None,language="en"):
         
         
     
-#if __name__ == "__main__":
-    #print(get_news("London"))
+if __name__ == "__main__":
+    for i in get_news("ie","sports","irishtimes"):
+        print(i)
