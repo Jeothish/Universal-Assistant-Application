@@ -136,18 +136,19 @@ def news():
         city (str): The name of the city you want news data for
         topic (str, optional): The topic you want news data for. Defaults to None.
         language (str, optional): Language of news. Defaults to "en".
+        source(str, optional): Source of news. 
 
     Returns:
         JSON : A dictionary containing news articles  for the given city and topic   
     """
-    city = request.args.get("city")
+    country = request.args.get("country")
     topic = request.args.get("topic")
     language = request.args.get("language")
+    source = request.args.get("source")
     
-    if not city:
-        return jsonify({"error": "No city selected"})
     
-    news_data = get_news(city,topic,language)
+    
+    news_data = get_news(country,topic,source,language)
     return jsonify(news_data)
     
         
