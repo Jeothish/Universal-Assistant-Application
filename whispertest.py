@@ -1,21 +1,43 @@
 import whisper
-from weather_api import *
+from torch.fx.experimental import recording
+from backend.services.weather_api import *
 import geonamescache
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
 import enum
 import json
-from news_api import *
+from backend.services.news_api import *
+from backend.app import *
+import sounddevice as sd
+import numpy as np
+import tempfile
+import scipy.io.wavfile as wav
 
 client = genai.Client(api_key = 'AIzaSyCe-x74VuKCWJ0iPd9t0BVW3LHtoF69T_k')
 
-# Load model (tiny, base, small, medium, large)
-model = whisper.load_model("base")
+def record(samplerate=16000):
+    print('recording for 5 seconds...')
+    audio = sd.rec(int(5 * samplerate), samplerate=samplerate, channels=1, dtype='float32')
+    sd.wait()
 
-result = model.transcribe("news2.m4a")
+    return np.squeeze(audio)
 
-raw_prompt = str(result["text"]).lower()#prompt string
+def audiofile(recording, samplerate=16000):
+    temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    wav.write(temp_file.name, samplerate, (recording * 32767).astype(np.int16))
+    return temp_file.name
+
+
+
+model = whisper.load_model("small")
+#live recording
+result = model.transcribe(audiofile(record()))
+
+#Pre-recorded samples
+# result = model.transcribe("weathersf.m4a")
+
+raw_prompt = str(result["text"]).lower()
 
 prompt_to_split=""
 #remove spaces, question marks, full stops etc from prompt for easier keyword detection
@@ -172,24 +194,19 @@ if intent_kw == "weather" and intent_llm == "weather":
 
     #if user specifies what day, get forecast for that day, if no time is specified, it will default to 12:00
     else:
-        forecast_city_name = forecast_llm['city']
-        lat, lon = (get_coordinates(forecast_city_name))
-        days_ahead = forecast_llm['days_ahead']
+        if forecast_llm["hour24"] == 25:
+            latitude,longitude = get_coordinates(found_city)
+            target_day = datetime.now() + timedelta(days=forecast_llm["days_ahead"])
 
-        hour = forecast_llm['hour24']
+            print(get_forecast_weather_day(latitude,longitude,target_day))
 
-        #TODO
-        # change to whole day forecast if hour = 25
+        else:
+            latitude, longitude = get_coordinates(found_city)
+            target_datetime = datetime.now() + timedelta(days=forecast_llm["days_ahead"])
+            target_datetime = target_datetime.replace(hour=forecast_llm["hour24"], minute=0, second=0, microsecond=0)
 
-        if hour >25:
-            hour = 12
+            print(get_forecast_weather_specific_time(latitude, longitude, target_datetime))
 
-        target_datetime = datetime.now() + timedelta(days=days_ahead)
-        target_datetime = target_datetime.replace(hour=hour, minute=0, second=0, microsecond=0)
-
-        print(f"\n ==== Forcast for {forecast_city_name} on {target_datetime.strftime("%d %B %Y %H:%M")} ====")
-
-        print(get_forecast_weather(lat, lon, target_datetime))
 
 #news api
 elif intent_kw == "news" and intent_llm == "news":
@@ -224,7 +241,7 @@ else:
     print("Your request could not be processed.")
 
 #TODO
-# db for cities
-# fix news + weather api results (need db)
-# change to whole day forecast if hour = 25 (need db)
-# recode flask code (need db)
+# db for cities?
+# recode flask code
+
+
