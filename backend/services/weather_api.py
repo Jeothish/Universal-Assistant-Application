@@ -52,7 +52,7 @@ WEATHER_CODES = {
 
 def get_coordinates(city_name):
     """
-    Used to get the coordinates of any given city name
+    Used to get the coordinates of any given city name using Geocoding API
 
     Args:
         city_name (str): The name of the city you wish to get the coordinates of
