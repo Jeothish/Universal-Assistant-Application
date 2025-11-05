@@ -47,7 +47,7 @@ def add_city_db(city,latitude,longitude):
     connection.close()
 
 
-def get_reminders_db(rem_title=None,rem_date=None,rem_description=None):
+def get_reminders_db(rem_title=None,rem_date=None,rem_description=None,is_complete=None,recur_type='none',recur_day_of_week=None,recur_time=None):
     connection = get_connection()
     cursor = connection.cursor()
     parameters=[]
@@ -58,17 +58,33 @@ def get_reminders_db(rem_title=None,rem_date=None,rem_description=None):
     FROM reminders WHERE TRUE
     """
     
+    if rem_title != None:
+        QUERY += "AND title = %s"
+        parameters.append(rem_title)
+        
     if rem_date != None:
-        QUERY += " AND reminder_date = %s"
+        QUERY += "AND date = %s"
         parameters.append(rem_date)
         
-    if rem_title != None:
-        QUERY += " AND title = %s"  
-        parameters.append(rem_title)  
-        
     if rem_description != None:
-        QUERY += " AND reminder_description = %s"   
-        parameters.append(rem_description) 
+        QUERY += "AND reminder_des = %s"
+        parameters.append(rem_description)
+        
+    if is_complete != None:
+        QUERY += "AND title = %s"
+        parameters.append(is_complete)
+        
+    if recur_type != None:
+        QUERY += "AND title = %s"
+        parameters.append(recur_type)
+        
+    if recur_day_of_week != None:
+        QUERY += "AND title = %s"
+        parameters.append(recur_day_of_week)
+        
+    if recur_time != None:
+        QUERY += "AND title = %s"
+        parameters.append(recur_time) 
          
      
     cursor.execute(QUERY,tuple(parameters))
@@ -101,12 +117,38 @@ def edit_reminders_db(rem_title=None,rem_date=None,rem_description=None,is_compl
     """
     
     if rem_title != None:
-        pass
+        QUERY += "AND title = %s"
+        parameters.append(rem_title)
+        
+    if rem_date != None:
+        QUERY += "AND date = %s"
+        parameters.append(rem_date)
+        
+    if rem_description != None:
+        QUERY += "AND reminder_des = %s"
+        parameters.append(rem_description)
+        
+    if is_complete != None:
+        QUERY += "AND title = %s"
+        parameters.append(is_complete)
+        
+    if recur_type != None:
+        QUERY += "AND title = %s"
+        parameters.append(recur_type)
+        
+    if recur_day_of_week != None:
+        QUERY += "AND title = %s"
+        parameters.append(recur_day_of_week)
+        
+    if recur_time != None:
+        QUERY += "AND title = %s"
+        parameters.append(recur_time)  
+        
+    cursor.execute(QUERY,tuple(parameters))                          
+        
+     
         
             
-
-
-
 def delete_reminders_db(reminder_id):
     
     connection = get_connection()
