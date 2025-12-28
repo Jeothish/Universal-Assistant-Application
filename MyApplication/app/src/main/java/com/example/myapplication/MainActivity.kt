@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.BackHand
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -43,24 +44,67 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
+import android.content.Context
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.runtime.*
+
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
+import java.util.concurrent.Executors
+
+
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+
 
 class MainActivity : ComponentActivity() {
+
+    private val cameraPermission = Manifest.permission.CAMERA
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            setContent {
+                MyApplicationTheme {
+                    MyApplicationApp()
+                }
+            }
+        } else {
+            // Permission denied: show message or handle gracefully
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            MyApplicationTheme {
-                MyApplicationApp()
+
+        if (ContextCompat.checkSelfPermission(this, cameraPermission) == PackageManager.PERMISSION_GRANTED) {
+            // Permission granted — show app content
+            setContent {
+                MyApplicationTheme {
+                    MyApplicationApp()
+                }
             }
+        } else {
+            // Request permission
+            requestPermissionLauncher.launch(cameraPermission)
         }
     }
 }
+
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @PreviewScreenSizes
@@ -90,20 +134,133 @@ fun MyApplicationApp() {
 
 
     {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Greeting(
-                time = "Evening",
-                modifier = Modifier.padding(innerPadding)
+        Scaffold(modifier = Modifier.fillMaxSize())
 
-            )
-            Button("Voice Chat", Alignment.BottomStart)
-            Button("Reminders", Alignment.BottomEnd)
+        { innerPadding ->
+            when (currentDestination){
+                AppDestinations.CHAT ->{
+                    Chat(modifier = Modifier.padding(innerPadding))
+                }
+                AppDestinations.SETTINGS -> {
+                    SettingsScreen(
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+
+                AppDestinations.PROFILE -> {
+                    ProfileScreen(
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
+
+
+            }
 
         }
     }
 
 
+
+
 }
+
+
+
+
+@Composable
+fun SettingsScreen(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("Settings")
+    }
+}
+
+@Composable
+fun ProfileScreen(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("Profile")
+    }
+}
+
+
+@Composable
+fun Chat(modifier: Modifier){
+    Box(modifier = Modifier.fillMaxSize())
+    {
+        CameraDet()
+        Box(modifier=Modifier.fillMaxSize().padding(16.dp)) {
+            Greeting(
+                time = "Evening",
+                modifier = Modifier.align(Alignment.Center)
+
+            )
+            Button("Voice Chat", Alignment.BottomStart)
+            Button("Reminders", Alignment.BottomEnd)
+        }
+    }
+
+}
+
+@Composable
+fun CameraDet() {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var previewView: PreviewView? by remember { mutableStateOf(null) }
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { ctx ->
+            PreviewView(ctx).also {
+                previewView = it
+            }
+        }
+    )
+
+    LaunchedEffect(previewView) {
+        previewView?.let {
+            startCamera(
+                context = context,
+                lifecycleOwner = lifecycleOwner,
+                previewView = it
+            )
+        }
+    }
+}
+
+fun startCamera(
+    context: Context,
+    lifecycleOwner: LifecycleOwner,
+    previewView: PreviewView
+) {
+    val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+
+    cameraProviderFuture.addListener({
+        val cameraProvider = cameraProviderFuture.get()
+
+        val preview = Preview.Builder().build().apply {
+            setSurfaceProvider(previewView.surfaceProvider)
+        }
+
+        val imageAnalysis = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+
+        imageAnalysis.setAnalyzer(
+            Executors.newSingleThreadExecutor(),
+            HandAnalyzer(context)
+        )
+
+        cameraProvider.unbindAll()
+        cameraProvider.bindToLifecycle(
+            lifecycleOwner,
+            CameraSelector.DEFAULT_FRONT_CAMERA,
+            preview,
+            imageAnalysis
+        )
+
+    }, ContextCompat.getMainExecutor(context))
+}
+
 
 enum class AppDestinations(
     val label: String,
@@ -142,12 +299,13 @@ fun Button(text : String,  contentAlignment: Alignment) {
             modifier = Modifier
                 .padding(16.dp) // distance from screen edges
                 .height(100.dp)
-                .width(175.dp)
+                .width(160.dp)
         ) {
             Text(text)
         }
     }
 }
+
 
 
 
