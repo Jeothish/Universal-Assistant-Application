@@ -9,8 +9,14 @@ import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import java.io.ByteArrayOutputStream
 import android.util.Log
+import com.google.mediapipe.tasks.vision.core.RunningMode
+
+
+
+
 class HandAnalyzer(
-    context: Context
+    context: Context,
+    private val overlayView: OverlayView
 ) : ImageAnalysis.Analyzer {
 
     private val handLandmarker: HandLandmarker
@@ -33,26 +39,43 @@ class HandAnalyzer(
     }
 
     override fun analyze(imageProxy: ImageProxy) {
+
         val bitmap = imageProxy.toBitmap()
         val rotationDegrees = imageProxy.imageInfo.rotationDegrees
         val rotatedBitmap = rotateBitmap(bitmap, rotationDegrees)
 
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
-
         val result = handLandmarker.detect(mpImage)
 
         if (result.landmarks().isNotEmpty()) {
-            Log.d(TAG, "Hand detected with ${result.landmarks().size} landmark sets")
-            val hand = result.landmarks()[0]
-            val indexTip = hand[8]
 
-            // You can add more info/logs here if you want
+            // UI-thread safe update
+            overlayView.post {
+                overlayView.setResults(
+                    result,
+                    rotatedBitmap.height,
+                    rotatedBitmap.width,
+                    RunningMode.LIVE_STREAM
+                )
+            }
+
+            val hand = result.landmarks().first()
+            hand.forEachIndexed { index, lm ->
+                Log.d(
+                    "HAND_LANDMARK",
+                    "ID=$index x=${lm.x()} y=${lm.y()} z=${lm.z()}"
+                )
+            }
+
         } else {
-            Log.d(TAG, "No hands detected")
+            overlayView.post {
+                overlayView.clear()
+            }
         }
 
         imageProxy.close()
     }
+
 
     private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
         if (rotationDegrees == 0) return bitmap
@@ -83,3 +106,9 @@ private fun ImageProxy.toBitmap(): Bitmap {
 
     return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 }
+data class HandPoint(
+    val id: Int,
+    val x: Float,
+    val y: Float,
+    val z: Float
+)
