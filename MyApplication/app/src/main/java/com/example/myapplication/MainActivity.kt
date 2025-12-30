@@ -6,11 +6,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -19,18 +16,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.BackHand
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,11 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.CombinedModifier
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
@@ -205,32 +193,40 @@ fun CameraDet() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var previewView: PreviewView? by remember { mutableStateOf(null) }
+    val previewView = remember { PreviewView(context).apply {
+        scaleType = PreviewView.ScaleType.FILL_CENTER
+    } }
+    val overlayView = remember { OverlayView(context, null) }
 
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { ctx ->
-            PreviewView(ctx).also {
-                previewView = it
-            }
-        }
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
 
-    LaunchedEffect(previewView) {
-        previewView?.let {
-            startCamera(
-                context = context,
-                lifecycleOwner = lifecycleOwner,
-                previewView = it
-            )
-        }
+        AndroidView(
+            factory = { previewView },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        AndroidView(
+            factory = { overlayView },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        startCamera(
+            context = context,
+            lifecycleOwner = lifecycleOwner,
+            previewView = previewView,
+            overlayView = overlayView
+        )
     }
 }
+
 
 fun startCamera(
     context: Context,
     lifecycleOwner: LifecycleOwner,
-    previewView: PreviewView
+    previewView: PreviewView,
+    overlayView: OverlayView
 ) {
     val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
@@ -247,7 +243,7 @@ fun startCamera(
 
         imageAnalysis.setAnalyzer(
             Executors.newSingleThreadExecutor(),
-            HandAnalyzer(context)
+            HandAnalyzer(context, overlayView)
         )
 
         cameraProvider.unbindAll()
@@ -260,6 +256,7 @@ fun startCamera(
 
     }, ContextCompat.getMainExecutor(context))
 }
+
 
 
 enum class AppDestinations(
