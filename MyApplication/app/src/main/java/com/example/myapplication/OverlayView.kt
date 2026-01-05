@@ -23,7 +23,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
-import androidx.core.content.ContextCompat
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
@@ -105,9 +104,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 min(width * 1f / imageWidth, height * 1f / imageHeight)
             }
             RunningMode.LIVE_STREAM -> {
-                // PreviewView is in FILL_START mode. So we need to scale up the
-                // landmarks to match with the size that the captured images will be
-                // displayed.
+
                 max(width * 1f / imageWidth, height * 1f / imageHeight)
             }
         }

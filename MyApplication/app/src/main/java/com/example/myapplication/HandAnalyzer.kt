@@ -10,7 +10,9 @@ import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import java.io.ByteArrayOutputStream
 import android.util.Log
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.google.gson.Gson
 
+import com.google.gson.JsonObject
 
 
 
@@ -22,6 +24,9 @@ class HandAnalyzer(
     private val handLandmarker: HandLandmarker
 
     private val TAG = "HandAnalyzer"
+    private val sequenceBuffer: MutableList<FloatArray> = mutableListOf()
+    private val SEQUENCE_LENGTH = 30
+
 
     init {
         val options = HandLandmarker.HandLandmarkerOptions.builder()
@@ -30,7 +35,7 @@ class HandAnalyzer(
                     .setModelAssetPath("hand_landmarker.task")
                     .build()
             )
-            .setNumHands(1)
+            .setNumHands(2)
             .setMinHandDetectionConfidence(0.7f)
             .setMinTrackingConfidence(0.7f)
             .build()
@@ -49,7 +54,6 @@ class HandAnalyzer(
 
         if (result.landmarks().isNotEmpty()) {
 
-            // UI-thread safe update
             overlayView.post {
                 overlayView.setResults(
                     result,
@@ -59,19 +63,21 @@ class HandAnalyzer(
                 )
             }
 
-            val hand = result.landmarks().first()
-            hand.forEachIndexed { index, lm ->
-                Log.d(
-                    "HAND_LANDMARK",
-                    "ID=$index x=${lm.x()} y=${lm.y()} z=${lm.z()}"
-                )
+            val frameData = landmarksToFloatArray(result.landmarks()) // pass full list for both hands
+
+            sequenceBuffer.add(frameData)
+            if (sequenceBuffer.size > SEQUENCE_LENGTH) {
+                sequenceBuffer.removeAt(0)
+            }
+
+            if (sequenceBuffer.size == SEQUENCE_LENGTH) {
+                sendSequenceToBackend(sequenceBuffer.toList())
             }
 
         } else {
-            overlayView.post {
-                overlayView.clear()
-            }
+            overlayView.post { overlayView.clear() }
         }
+
 
         imageProxy.close()
     }
@@ -82,6 +88,72 @@ class HandAnalyzer(
         val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
+
+    private fun landmarksToFloatArray(
+        hands: List<List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>>?
+    ): FloatArray {
+        val data = FloatArray(126)  // 42 landmarks * 3 coords
+        var index = 0
+
+        // left hand landmarks (first hand if available)
+        if (hands != null && hands.size > 0) {
+            for (lm in hands[0]) {
+                data[index++] = lm.x()
+                data[index++] = lm.y()
+                data[index++] = lm.z()
+            }
+        } else {
+            repeat(63) { data[index++] = 0f }
+        }
+
+        // right hand landmarks (second hand if available)
+        if (hands != null && hands.size > 1) {
+            for (lm in hands[1]) {
+                data[index++] = lm.x()
+                data[index++] = lm.y()
+                data[index++] = lm.z()
+            }
+        } else {
+            repeat(63) { data[index++] = 0f }
+        }
+
+        return data
+    }
+
+    private fun sendSequenceToBackend(sequence: List<FloatArray>) {
+
+        val frames = sequence.map { it.toList() }
+
+        val json = mapOf("frames" to frames)
+
+        Thread {
+            try {
+                val url = java.net.URL("http://192.168.1.18:8000/sign")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+
+                val body = Gson().toJson(json)
+
+                conn.outputStream.use {
+                    it.write(body.toByteArray())
+                }
+
+                val response = conn.inputStream.bufferedReader().readText()
+                Log.d("SIGN_RESPONSE", response)
+                val jsonObject = Gson().fromJson(response, JsonObject::class.java)
+                val letter = jsonObject.get("letter")?.asString ?: ""
+                GlobalState.letter.value = letter
+
+            } catch (e: Exception) {
+                Log.e("SIGN_ERROR", e.toString())
+            }
+        }.start()
+    }
+
+
 }
 
 private fun ImageProxy.toBitmap(): Bitmap {

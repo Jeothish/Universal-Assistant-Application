@@ -71,6 +71,7 @@ dependencies {
 
     // Networking
     implementation("org.java-websocket:Java-WebSocket:1.5.4")
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // Testing
     testImplementation(libs.junit)

@@ -56,10 +56,19 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
 
+import androidx.lifecycle.ViewModel
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.*
+
+import com.example.myapplication.GlobalState
+
 
 class MainActivity : ComponentActivity() {
 
     private val cameraPermission = Manifest.permission.CAMERA
+
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -172,17 +181,25 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun Chat(modifier: Modifier){
+    val asl by GlobalState.asl
+    val letter by GlobalState.letter
     Box(modifier = Modifier.fillMaxSize())
     {
-        CameraDet()
+        if (asl) {
+            CameraDet()
+        }
         Box(modifier=Modifier.fillMaxSize().padding(16.dp)) {
-            Greeting(
-                time = "Evening",
-                modifier = Modifier.align(Alignment.Center)
+            if (!asl){
+                Greeting(time = "Evening",modifier = Modifier.align(Alignment.Center))
+            }
+            else {
+                Text(text="Detected Sign: $letter",color= Color.Magenta, fontSize = 24.sp,modifier=Modifier.align(
+                    Alignment.TopCenter))
+            }
 
-            )
+
             Button("Voice Chat", Alignment.BottomStart)
-            Button("Reminders", Alignment.BottomEnd)
+            Button("Sign Language", Alignment.BottomEnd)
         }
     }
 
@@ -192,6 +209,7 @@ fun Chat(modifier: Modifier){
 fun CameraDet() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
 
     val previewView = remember { PreviewView(context).apply {
         scaleType = PreviewView.ScaleType.FILL_CENTER
@@ -281,13 +299,15 @@ fun Greeting(time: String, modifier: Modifier) {
 
 @Composable
 fun Button(text : String,  contentAlignment: Alignment) {
+    var asl by GlobalState.asl
     Box(
         modifier = Modifier
             .fillMaxSize(),
         contentAlignment = contentAlignment
     ) {
         Button(
-            onClick = { /* handle click here */ },
+
+            onClick = {asl= !asl},
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(222,172,255),
                 contentColor = Color.Black
