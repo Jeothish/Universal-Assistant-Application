@@ -14,12 +14,12 @@ Author:
 
 from flask import Flask,request,jsonify
 from datetime import datetime,timedelta
-from backend.services.weather_api import get_current_weather,get_forecast_weather_specific_time,get_coordinates,get_forecast_weather_day
-from backend.services.news_api import get_news
-from dotenv import load_dotenv
-
-
-load_dotenv()
+from weather_api import get_current_weather,get_forecast_weather_specific_time,get_coordinates,get_forecast_weather_day
+from news_api import get_news
+# from dotenv import load_dotenv
+#
+#
+# load_dotenv()
 app = Flask(__name__)
 
 @app.route("/weather/current",methods=["GET"])
@@ -151,7 +151,9 @@ def news():
     news_data = get_news(country,topic,source,language)
     return jsonify(news_data)
     
-        
+
+
+
 
 if __name__ == "__main__":
     """
