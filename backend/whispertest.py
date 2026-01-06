@@ -9,38 +9,7 @@ from app import *
 
 client = genai.Client(api_key = 'AIzaSyDpd_Fp-rwAZ6sVfjAyup8IVlDl3wVC_9Q')
 
-# def record(samplerate=16000):
-#     print('recording for 5 seconds...')
-#     audio = sd.rec(int(5 * samplerate), samplerate=samplerate, channels=1, dtype='float32')
-#     sd.wait()
-#
-#     return np.squeeze(audio)
-#
-# def audiofile(recording, samplerate=16000):
-#     temp_file = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-#     wav.write(temp_file.name, samplerate, (recording * 32767).astype(np.int16))
-#     return temp_file.name
-#
-#
-#
-# model = whisper.load_model("small")
-# #live recording
-# result = model.transcribe(audiofile(record()))
-#
-# #Pre-recorded samples
-# # result = model.transcribe("recording (7).m4a")
-#
-# raw_prompt = str(result["text"]).lower()
-#
-# prompt_to_split=""
-# #remove spaces, question marks, full stops etc from prompt for easier keyword detection
-# for i in raw_prompt:
-#     if i.isalpha() or i==" " or i.isdigit():
-#         prompt_to_split+=i
-# prompt = prompt_to_split.split()
-# #break prompt down into words in a list
-#
-# print(prompt)
+llm = "gemini-2.5-flash-lite"
 
 weather_keywords = ["weather", "temperature", "rain", "forecast", "sunny", "wind", "humidity", "snow", "climate"]
 news_keywords = ["news","events","headlines","breaking","stories","trending"]
@@ -93,7 +62,7 @@ def get_intent_llm(raw_prompt: str ) -> dict:
 
     #use LLM to detect intent
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=llm,
         contents=raw_prompt+"get the intent for this prompt, if no hour specified for weather, set hour24 as 25, for news source, keep it lowercase and avoid spaces, if no source specified keep it null , no domains either e.g. nyctimes, for country e.g. ie = ireland, us = us",
         config = {"response_mime_type": "application/json","response_schema":IntentSchema,},
     )
@@ -191,7 +160,8 @@ def handle_prompt(raw_prompt: str) -> dict:
 
         #to prevent hallucination/LLM error, use keyword detecttion to authenticate llm response
         if found_city != forecast_llm["city"]:
-            raise Exception("City detected by LLM and keyword matching algorithm doesn't match")
+            #raise Exception("City detected by LLM and keyword matching algorithm doesn't match")
+            found_city = forecast_llm["city"]
 
 
         #if user doesnt specify what day they want forecast for, get current forecast
@@ -216,7 +186,8 @@ def handle_prompt(raw_prompt: str) -> dict:
                 target_datetime = target_datetime.replace(hour=forecast_llm["hour24"], minute=0, second=0, microsecond=0)
 
                 weather = (get_forecast_weather_specific_time(latitude, longitude, target_datetime))
-
+        if isinstance(weather, list):
+            weather = weather[0]
         return {"intent": "weather","city": found_city,"result": weather}
 
     #news api
@@ -231,40 +202,37 @@ def handle_prompt(raw_prompt: str) -> dict:
 
 
         #if no region specified get news for worldwide
-        if news_country == "":
+        if news_country == "" or news_country == "null":
             news_country = "wo"
 
-        if news_source == "":
+        if news_source == "" or news_source == "null":
             headlines = get_news(news_country, news_topic)
         else:
             headlines = get_news(news_country, news_topic, news_source)
 
         return {
             "intent": "news",
-            "headlines": headlines
+            "result": headlines
         }
-
-
-
 
     #chat bot
     elif intent_llm == "chat":
         response = client.models.generate_content(
-            model="gemini-2.5-flash",contents=raw_prompt + " keep it short and simple.")
+            model=llm,contents=raw_prompt + " keep it short and simple.")
         return {
             "intent": "chat",
-            "reply": response.text
+            "result": response.text
         }
 
     else:
-        raise Exception("unknown intent!!! kw: "+intent_kw+" llm: "+intent_llm)
-
-
-
+        raise Exception("unknown intent. kw: "+intent_kw+" llm: "+intent_llm)
 
 
 
 #TODO
-# recode flask code
+# gemini limits / alt/ lmstudio
+# news front end
+# reminders
+# double pressing vc crash
 
 
