@@ -61,7 +61,7 @@ def load_model():
     model.add(Dense(64, activation='relu'))
     model.add(Dense(32, activation='relu'))
     model.add(Dense(actions.shape[0], activation='softmax'))
-    model.load_weights(r"C:\Users\sjeot\Desktop\ThirdYearProjectApp\3rd-Year-Project\backend\action.h5")
+    model.load_weights(r"C:\Users\HP\PycharmProjects\3rd-Year-Project\backend\action.h5")
 
     return model
 
@@ -118,3 +118,10 @@ async def echo_asl(req: TextRequest):
     
     return {"tokens":tokens}        
 #uvicorn main:app --host 0.0.0.0 --port 8000
+
+
+#TODO
+# news front end (json obj in list)
+# reminders
+# double pressing vc crash
+
