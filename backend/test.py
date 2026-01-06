@@ -18,3 +18,43 @@ try:
 except Exception:
     print("Raw Response:")
     print(response.text)
+# from openai import OpenAI
+#
+# client = OpenAI(
+#     base_url="http://localhost:1234/v1",
+#     api_key="lm-studio"  # required but ignored
+# )
+#
+# response = client.chat.completions.create(
+#     model="local-model",
+#     messages=[
+#         {
+#             "role": "system",
+#             "content": "You are a weather JSON API. Output only valid JSON. make up the weather forecast, it does not have to be true"
+#         },
+#         {
+#             "role": "user",
+#             "content": "What's the weather in Dublin tomorrow?"
+#         }
+#     ],
+#     response_format={
+#         "type": "json_schema",
+#         "json_schema": {
+#             "name": "intent_schema",
+#             "schema": {
+#                 "type": "object",
+#                 "properties": {
+#                     "intent": {"type": "string"},
+#                     "city": {"type": ["string", "null"]},
+#                     "date": {"type": ["string", "null"]},
+#                     "forecast": {"type": ["string", "null"]}
+#                 },
+#                 "required": ["intent", "city"]
+#             }
+#         }
+#     },
+#     temperature=0.2
+# )
+#
+# print(response.choices[0].message.content)
+#

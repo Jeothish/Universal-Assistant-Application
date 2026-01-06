@@ -6,10 +6,15 @@ import enum
 import json
 
 from app import *
+from openai import OpenAI
 
-client = genai.Client(api_key = 'AIzaSyDpd_Fp-rwAZ6sVfjAyup8IVlDl3wVC_9Q')
-
-llm = "gemini-2.5-flash-lite"
+client = OpenAI(
+    base_url="http://localhost:1234/v1",
+    api_key="lm-studio"
+)
+# client = genai.Client(api_key = '')
+#
+# llm = "gemini-2.5-flash-lite"
 
 weather_keywords = ["weather", "temperature", "rain", "forecast", "sunny", "wind", "humidity", "snow", "climate"]
 news_keywords = ["news","events","headlines","breaking","stories","trending"]
@@ -61,16 +66,43 @@ def get_intent_llm(raw_prompt: str ) -> dict:
 
 
     #use LLM to detect intent
-    response = client.models.generate_content(
-        model=llm,
-        contents=raw_prompt+"get the intent for this prompt, if no hour specified for weather, set hour24 as 25, for news source, keep it lowercase and avoid spaces, if no source specified keep it null , no domains either e.g. nyctimes, for country e.g. ie = ireland, us = us",
-        config = {"response_mime_type": "application/json","response_schema":IntentSchema,},
+    response = client.chat.completions.create(
+        model="local-model",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are an intent extraction API. "
+                    "Respond only with valid JSON matching the schema."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                        raw_prompt +
+                        " Get the intent for this prompt. "
+                        "If no hour is specified for weather, set hour24 to 25. "
+                        "For news source, keep it lowercase and avoid spaces. "
+                        "If no source is specified, keep it null. "
+                        "No domains (e.g., nytimes). "
+                        "For country codes: ie = ireland, us = us."
+                )
+            }
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "intent_schema",
+                "schema": IntentSchema.schema()
+            }
+        },
+        temperature=0.2
     )
 
+    result = response.choices[0].message.content
+    print(result)
 
-    print(response.text)
-
-    return json.loads(response.text)
+    return json.loads(result)
 
 
 
@@ -210,29 +242,38 @@ def handle_prompt(raw_prompt: str) -> dict:
         else:
             headlines = get_news(news_country, news_topic, news_source)
 
+
         return {
             "intent": "news",
-            "result": headlines
+            "result": headlines["result"]
         }
 
     #chat bot
     elif intent_llm == "chat":
-        response = client.models.generate_content(
-            model=llm,contents=raw_prompt + " keep it short and simple.")
+        response = client.chat.completions.create(
+            model="local-model",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant. Keep responses short and simple."
+                },
+                {
+                    "role": "user",
+                    "content": raw_prompt
+                }
+            ],
+            temperature=0.4
+        )
+
         return {
             "intent": "chat",
-            "result": response.text
+            "result": response.choices[0].message.content
         }
+
 
     else:
         raise Exception("unknown intent. kw: "+intent_kw+" llm: "+intent_llm)
 
 
-
-#TODO
-# gemini limits / alt/ lmstudio
-# news front end
-# reminders
-# double pressing vc crash
 
 
