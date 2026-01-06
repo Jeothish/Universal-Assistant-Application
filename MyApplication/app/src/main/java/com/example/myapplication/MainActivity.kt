@@ -61,6 +61,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.*
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import java.io.File
 import java.net.URL
 import java.net.HttpURLConnection
@@ -214,6 +219,7 @@ fun Chat(modifier: Modifier){
     val context = LocalContext.current
     val recorder = remember { audio(context) }
     var recording by remember { mutableStateOf(false) }
+    var showTestInput by remember {mutableStateOf(false)}
 
     Box(modifier = Modifier.fillMaxSize())
     {
@@ -268,9 +274,13 @@ fun Chat(modifier: Modifier){
                     Alignment.CenterStart))
             }
 
+            if(showTestInput){
+                ASLTestInput()
+            }
 
-           // Button("Voice Chat", Alignment.BottomStart)
+            // Button("Voice Chat", Alignment.BottomStart)
             Button("Sign Language", Alignment.BottomEnd)
+            FutureButton(text = "Text -> ASL Testing", contentAlignment = Alignment.BottomCenter, onClick = {showTestInput = !showTestInput},modifier = Modifier.padding(bottom = 110.dp,end = 185.dp))
         }
     }
 
@@ -393,6 +403,64 @@ fun Button(text : String,  contentAlignment: Alignment) {
         }
     }
 }
+
+@Composable
+fun FutureButton(text:String,contentAlignment: Alignment,onClick: () -> Unit,modifier: Modifier = Modifier){
+    Box(modifier = Modifier.fillMaxSize().then(modifier),contentAlignment = contentAlignment)
+    {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(222,172,255),
+                contentColor = Color.Black
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .padding(16.dp) // distance from screen edges
+                .height(100.dp)
+                .width(150.dp)
+        )
+        {
+            Text(text)
+        }
+    }
+}
+
+@Composable
+fun ASLTestInput(){
+    var testSentence by remember {mutableStateOf(TextFieldValue(""))}
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .padding(top = 20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ){
+        OutlinedTextField(
+            value = testSentence,
+            onValueChange = {testSentence = it},
+            label = {Text("Enter sentence")},
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                Log.d("ASL_TEST", "User typed: ${testSentence.text}")
+            },
+            modifier = Modifier
+                .fillMaxWidth(0.5f)
+                .height(50.dp)
+        ){
+            Text("Test ASL")
+        }
+
+    }
+}
+
 
 
 

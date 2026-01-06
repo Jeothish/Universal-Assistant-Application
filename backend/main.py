@@ -20,6 +20,8 @@ app = FastAPI(title="App",description="Assistant app")
 class SignRequest(BaseModel):
     frames: List[List[float]]  # 30 x 126
 
+class TextRequest(BaseModel):
+    text: str
 
 model = whisper.load_model("small")
 
@@ -59,7 +61,7 @@ def load_model():
     model.add(Dense(64, activation='relu'))
     model.add(Dense(32, activation='relu'))
     model.add(Dense(actions.shape[0], activation='softmax'))
-    model.load_weights(r"C:\Users\HP\PycharmProjects\3rd-Year-Project\backend\action.h5")
+    model.load_weights(r"C:\Users\sjeot\Desktop\ThirdYearProjectApp\3rd-Year-Project\backend\action.h5")
 
     return model
 
@@ -103,5 +105,16 @@ async def recognize_sign(data: SignRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-
+@app.post("/echo_asl")
+async def echo_asl(req: TextRequest):
+    text = req.text.lower()
+    tokens = ["REST"]
+    
+    for char in text:
+        if char.isalpha():
+            tokens.append(char.upper())
+    
+    tokens.append("REST")
+    
+    return {"tokens":tokens}        
 #uvicorn main:app --host 0.0.0.0 --port 8000
