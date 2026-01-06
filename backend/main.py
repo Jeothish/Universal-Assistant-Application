@@ -25,9 +25,16 @@ model = whisper.load_model("small")
 
 @app.post("/voice")
 async def voice (audio: UploadFile = File(...)):
-    if audio.content_type not in[ "audio/wav","audio/x-wave"]:
+    if audio.content_type not in [
+        "audio/wav",
+        "audio/x-wave",
+        "audio/mp4",
+        "audio/aac",
+        "audio/m4a",
+        "application/octet-stream",
+    ]:
         raise HTTPException(status_code=400, detail="Invalid audio file")
-    with tempfile.NamedTemporaryFile(delete = False, suffix = ".wav") as tmp:
+    with tempfile.NamedTemporaryFile(delete = False, suffix = "..m4a") as tmp:
         tmp.write(await audio.read())
         path = tmp.name
 
@@ -35,6 +42,7 @@ async def voice (audio: UploadFile = File(...)):
         result = model.transcribe(path)
         raw_prompt = str(result["text"]).lower()
         response = handle_prompt(raw_prompt)
+        print(response)
         return JSONResponse(content=response)
     finally:
         os.remove(path)
@@ -56,19 +64,6 @@ def load_model():
     return model
 
 modelASl = load_model()
-
-# def predict(seq, model):
-#     sequence = np.array(seq)
-#     if sequence.shape != (30, 126):
-#         raise ValueError(f"Expected shape (30, 126), got {sequence.shape}")
-#     prediction = model.predict(sequence[np.newaxis, ...], verbose=0)[0]
-#     confidence = float(np.max(prediction))
-#     letter = actions[np.argmax(prediction)]
-#     print(f"Predicted letter: {letter} with confidence {confidence}")
-#     return {
-#         "letter": letter,
-#         "confidence": confidence
-#     }
 
 
 def predict(seq, model):

@@ -61,45 +61,72 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.*
+import java.io.File
+import java.net.URL
+import java.net.HttpURLConnection
+import android.util.Log
+
+import androidx.compose.ui.text.style.LineHeightStyle
+
 
 import com.example.myapplication.GlobalState
+import com.example.myapplication.audio.*
 
 
 class MainActivity : ComponentActivity() {
 
     private val cameraPermission = Manifest.permission.CAMERA
+    private val micPermission = Manifest.permission.RECORD_AUDIO
 
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            setContent {
-                MyApplicationTheme {
-                    MyApplicationApp()
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            val cameraGranted = permissions[Manifest.permission.CAMERA] == true
+            val micGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
+
+            if (cameraGranted && micGranted) {
+                setContent {
+                    MyApplicationTheme {
+                        MyApplicationApp()
+                    }
                 }
+            } else {
+                // Permission denied — handle gracefully
             }
-        } else {
-            // Permission denied: show message or handle gracefully
         }
-    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        if (ContextCompat.checkSelfPermission(this, cameraPermission) == PackageManager.PERMISSION_GRANTED) {
-            // Permission granted — show app content
+        val cameraGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val micGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (cameraGranted && micGranted) {
             setContent {
                 MyApplicationTheme {
                     MyApplicationApp()
                 }
             }
         } else {
-            // Request permission
-            requestPermissionLauncher.launch(cameraPermission)
+            requestPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.RECORD_AUDIO
+                )
+            )
         }
     }
+
 }
 
 
@@ -182,23 +209,67 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
 @Composable
 fun Chat(modifier: Modifier){
     val asl by GlobalState.asl
+    var greeting by GlobalState.greeting
     val letter by GlobalState.letter
+    val context = LocalContext.current
+    val recorder = remember { audio(context) }
+    var recording by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize())
     {
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.BottomStart
+        ){
+        Button(
+            onClick = {
+                if (!recording) {
+                    recorder.startRec()
+                    recording = true
+                } else {
+                    val file = recorder.stopRec()
+                    file?.let { recorder.sendAudioToBackend(it) }
+                    recording = false
+                }
+            },colors = ButtonDefaults.buttonColors(
+                containerColor = Color(222,172,255),
+                contentColor = Color.Black
+            ),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .padding(32.dp) // distance from screen edges
+                .height(100.dp)
+                .width(130.dp),
+
+        ) {
+            Text(if (recording) "Stop Recording" else "Voice Chat")
+        }}
+
+
         if (asl) {
             CameraDet()
         }
         Box(modifier=Modifier.fillMaxSize().padding(16.dp)) {
-            if (!asl){
+            if(asl || recording){
+                greeting = false
+            }
+            if (greeting){
                 Greeting(time = "Evening",modifier = Modifier.align(Alignment.Center))
             }
-            else {
+            else if (asl){
                 Text(text="Detected Sign: $letter",color= Color.Magenta, fontSize = 24.sp,modifier=Modifier.align(
                     Alignment.TopCenter))
             }
+            val r = GlobalState.vc_result.value
+            print(r)
+            if (r != "" && !asl){
+                Text(text= r,color= Color.White, fontSize = 12.sp,modifier=Modifier.align(
+                    Alignment.CenterStart))
+            }
 
 
-            Button("Voice Chat", Alignment.BottomStart)
+           // Button("Voice Chat", Alignment.BottomStart)
             Button("Sign Language", Alignment.BottomEnd)
         }
     }
