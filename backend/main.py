@@ -1,4 +1,5 @@
 # backend/main.py
+import sys
 
 import whisper
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -13,7 +14,7 @@ from typing import List
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
-import pkg_resources
+
 
 app = FastAPI(title="App",description="Assistant app")
 
@@ -43,6 +44,10 @@ async def voice (audio: UploadFile = File(...)):
     try:
         result = model.transcribe(path)
         raw_prompt = str(result["text"]).lower()
+
+        if not raw_prompt.strip() :
+            print("no speech detected")
+            return
         response = handle_prompt(raw_prompt)
         print(response)
         return JSONResponse(content=response)
@@ -121,7 +126,8 @@ async def echo_asl(req: TextRequest):
 
 
 #TODO
-# news front end (json obj in list)
+# text inp
+# custom news
 # reminders
 # double pressing vc crash
 

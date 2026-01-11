@@ -4,7 +4,9 @@ from google import genai
 from pydantic import BaseModel
 import enum
 import json
-
+import psycopg2
+from dotenv import load_dotenv
+import os
 from app import *
 from openai import OpenAI
 
@@ -16,9 +18,37 @@ client = OpenAI(
 #
 # llm = "gemini-2.5-flash-lite"
 
+load_dotenv()
+
+def get_connection():
+
+    USER = os.getenv("user")
+    PASSWORD = os.getenv("password")
+    HOST = os.getenv("host")
+    PORT = os.getenv("port")
+    DBNAME = os.getenv("dbname")
+    print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
+
+    # Connect to the database
+    try:
+        connection = psycopg2.connect(
+            user=USER,
+            password=PASSWORD,
+            host=HOST,
+            port=PORT,
+            dbname=DBNAME,
+            sslmode = "require"
+        )
+        print("Connection successful!")
+        return connection
+
+    except Exception as e:
+        print(f"Failed to connect: {e}")
+        return None
+connection = get_connection()
 weather_keywords = ["weather", "temperature", "rain", "forecast", "sunny", "wind", "humidity", "snow", "climate"]
 news_keywords = ["news","events","headlines","breaking","stories","trending"]
-
+cache_coords= {"dublin": (53.33306,-6.24889), "galway": (53.27245,-9.05095), "san francisco":(37.77493,-122.41942)}
 
 def get_intent_llm(raw_prompt: str ) -> dict:
 
@@ -84,7 +114,7 @@ def get_intent_llm(raw_prompt: str ) -> dict:
                         "If no hour is specified for weather, set hour24 to 25. "
                         "For news source, keep it lowercase and avoid spaces. "
                         "If no source is specified, keep it null. "
-                        "No domains (e.g., nytimes). "
+                        "No domains (e.g., .com,.ie,.co.uk are not accepted). "
                         "For country codes: ie = ireland, us = us."
                 )
             }
@@ -105,11 +135,6 @@ def get_intent_llm(raw_prompt: str ) -> dict:
     return json.loads(result)
 
 
-
-
-
-
-
 #get intent using keyword detection to authenticate llm response
 def get_intent_kw(prompt):
     if any(word in prompt for word in weather_keywords):
@@ -120,8 +145,6 @@ def get_intent_kw(prompt):
 
     else:
         return "chat"
-
-
 
 #create lists/sets for cities
 gc = geonamescache.GeonamesCache()
@@ -166,6 +189,7 @@ def get_city(string,split_string):
 def handle_prompt(raw_prompt: str) -> dict:
     response_llm = get_intent_llm(raw_prompt)
     intent_llm = response_llm["intent"]
+    print(raw_prompt)
 
 
     #get weather forecast
@@ -182,7 +206,7 @@ def handle_prompt(raw_prompt: str) -> dict:
 
     if intent_kw == "weather" and intent_llm == "weather":
 
-        found_city = get_city(raw_prompt,prompt)
+        found_city = get_city(raw_prompt,prompt) #KW detection for city
 
         forecast_llm = response_llm["forecast_info"]
 
@@ -195,32 +219,38 @@ def handle_prompt(raw_prompt: str) -> dict:
             #raise Exception("City detected by LLM and keyword matching algorithm doesn't match")
             found_city = forecast_llm["city"]
 
+        if found_city in cache_coords:
+            print("Using cached Coordinates")
+            latitude, longitude = cache_coords[found_city]
+        else:
+            latitude, longitude = (get_coordinates(found_city,connection))
+            cache_coords[found_city] = latitude, longitude #append to cache
 
         #if user doesnt specify what day they want forecast for, get current forecast
         if forecast_llm["days_ahead"] < 1:
-            current_city_name = found_city
-            latitude, longitude = (get_coordinates(current_city_name))
+
+
             #print(f"===== Current Weather IN {current_city_name} =====")
-            weather = get_current_weather(latitude, longitude)
+            weather = get_current_weather(latitude, longitude,connection)
 
 
         #if user specifies what day, get forecast for that day, if no time is specified, it will default to 12:00
         else:
             if forecast_llm["hour24"] == 25:
-                latitude,longitude = get_coordinates(found_city)
+
                 target_day = datetime.now() + timedelta(days=forecast_llm["days_ahead"])
 
                 weather = (get_forecast_weather_day(latitude,longitude,target_day))
 
             else:
-                latitude, longitude = get_coordinates(found_city)
+
                 target_datetime = datetime.now() + timedelta(days=forecast_llm["days_ahead"])
                 target_datetime = target_datetime.replace(hour=forecast_llm["hour24"], minute=0, second=0, microsecond=0)
 
                 weather = (get_forecast_weather_specific_time(latitude, longitude, target_datetime))
         if isinstance(weather, list):
             weather = weather[0]
-        return {"intent": "weather","city": found_city,"result": weather}
+        return {"intent": "weather","prompt":raw_prompt,"city": found_city,"result": weather}
 
     #news api
     elif intent_kw == "news" and intent_llm == "news":
@@ -231,7 +261,10 @@ def handle_prompt(raw_prompt: str) -> dict:
         news_topic = news_llm["category"]
         news_source = news_llm["source"]
 
-
+        #for testing (fix llm issue)
+        news_source = None
+        news_topic = None
+        news_country = "wo"
 
         #if no region specified get news for worldwide
         if news_country == "" or news_country == "null":
@@ -243,13 +276,15 @@ def handle_prompt(raw_prompt: str) -> dict:
             headlines = get_news(news_country, news_topic, news_source)
 
 
+
         return {
             "intent": "news",
-            "result": headlines["result"]
+            "prompt": raw_prompt,
+            "result": headlines
         }
 
     #chat bot
-    elif intent_llm == "chat":
+    else:
         response = client.chat.completions.create(
             model="local-model",
             messages=[
@@ -271,8 +306,8 @@ def handle_prompt(raw_prompt: str) -> dict:
         }
 
 
-    else:
-        raise Exception("unknown intent. kw: "+intent_kw+" llm: "+intent_llm)
+    # else:
+    #     raise Exception("unknown intent. kw: "+intent_kw+" llm: "+intent_llm)
 
 
 
