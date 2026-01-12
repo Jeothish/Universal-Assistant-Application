@@ -54,7 +54,9 @@ async def voice (audio: UploadFile = File(...)):
     finally:
         os.remove(path)
 
-
+# @app.post("/text")
+# async def text(text: TextRequest = File(...)):
+#     pass
 
 actions = np.array(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'w', 'y', 'z'])
 

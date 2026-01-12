@@ -51,18 +51,21 @@ def get_news(country=None,topic=None,source=None,language="en"):
         return{"error":"No articles found"}
     
     formatted_news = []
-    print(articles)
+
+
     if len(articles) > 5:
         articles = articles[:5]
+    print(articles)
+
     for article in articles:
         formatted_news.append({
             "Title": article.get("title"),
             "Link" : article.get("link"),
-            "Creator" : article.get("creator"),
+            # "Creator" : article.get("creator"),
             "Description" : article.get("description"),
             "Published" : article.get("pubDate")
         })
-        
+    print(formatted_news)
     return formatted_news    
 
 

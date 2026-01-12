@@ -245,18 +245,19 @@ fun Chat(modifier: Modifier){
             }
             if (GlobalState.thinking.value){
                 Text(text="Thinking...",color= Color.Magenta, fontSize = 32.sp,modifier=Modifier.align(
-                    Alignment.TopEnd).padding(end = 90.dp, top=250.dp, start = 50.dp, bottom = 10.dp))
+                    Alignment.TopEnd).padding(end = 90.dp, top=50.dp, start = 50.dp, bottom = 10.dp))
 
 
             }
             val r = GlobalState.vc_result.value
             val w = GlobalState.weather.value
             val city = GlobalState.city.value
+            val intent = GlobalState.vc_intent.value
 
             print(r)
 
 
-            if ((r != "" || w.forecast != "")  && !asl) {
+            if ((intent == "weather" || intent == "chat")  && !asl) {
 
 
 
@@ -299,7 +300,7 @@ fun Chat(modifier: Modifier){
 
                 }
             }
-            else if (r == "" && !asl){
+            else if (intent=="news" && !asl){
 
 
                 Column(
