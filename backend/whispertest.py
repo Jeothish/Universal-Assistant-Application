@@ -111,7 +111,7 @@ def get_intent_llm(raw_prompt: str ) -> dict:
                 "content": (
                         raw_prompt +
                         " Get the intent for this prompt. "
-                        "If no hour is specified for weather, set hour24 to 25. "
+                        "If no hour is specified for weather, set hour24 to 25, time should be just the hour (0-23). "
                         "For news source, keep it lowercase and avoid spaces. "
                         "If no source is specified, keep it null. "
                         "No domains (e.g., .com,.ie,.co.uk are not accepted). "
