@@ -1,14 +1,17 @@
 import requests
 
-API_URL = "http://127.0.0.1:8000/voice"
-AUDIO_FILE = "Recording.wav"  # path to a real wav file
+API_URL = "http://127.0.0.1:8000/text"
+# AUDIO_FILE = "Recording.wav"  # path to a real wav file
 
-with open(AUDIO_FILE, "rb") as f:
-    files = {
-        "audio": ("Recording.wav", f, "audio/wav")
-    }
+# with open(AUDIO_FILE, "rb") as f:
+#     files = {
+#         "audio": ("Recording.wav", f, "audio/wav")
+#     }
+payload = {
+    "text": "what's the weather in galway"
+}
 
-    response = requests.post(API_URL, files=files)
+response = requests.post(API_URL, json=payload)
 
 print("Status Code:", response.status_code)
 

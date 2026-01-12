@@ -19,7 +19,7 @@ from tensorflow.keras.layers import LSTM, Dense
 app = FastAPI(title="App",description="Assistant app")
 
 class SignRequest(BaseModel):
-    frames: List[List[float]]  # 30 x 126
+    frames: List[List[float]]  # 30x126 array
 
 class TextRequest(BaseModel):
     text: str
@@ -54,9 +54,14 @@ async def voice (audio: UploadFile = File(...)):
     finally:
         os.remove(path)
 
-# @app.post("/text")
-# async def text(text: TextRequest = File(...)):
-#     pass
+@app.post("/text")
+async def text(req: TextRequest):
+    inp = req.text.strip()
+    if not inp:
+        return
+    else:
+        response = handle_prompt(inp)
+        return JSONResponse(content=response)
 
 actions = np.array(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'w', 'y', 'z'])
 

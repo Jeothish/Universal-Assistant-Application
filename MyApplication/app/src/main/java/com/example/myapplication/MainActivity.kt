@@ -84,6 +84,7 @@ import com.example.myapplication.GlobalState
 import com.example.myapplication.audio.*
 
 
+
 class MainActivity : ComponentActivity() {
 
     private val cameraPermission = Manifest.permission.CAMERA
@@ -209,6 +210,22 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+fun textBar(onSend: (String) -> Unit){
+    var text by remember { mutableStateOf("") }
+
+    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 560.dp), verticalAlignment = Alignment.CenterVertically)
+    {
+        OutlinedTextField(value = text, onValueChange = {text=it},modifier=Modifier.weight(1f), placeholder = {Text("Ask Anything..")}, singleLine = true)
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(onClick = {
+                    if (text.isNotBlank()) {
+                        onSend(text)
+                        text=""
+                    }})
+        {Text("send")}
+    }
+}
 
 @Composable
 fun Chat(modifier: Modifier){
@@ -232,7 +249,7 @@ fun Chat(modifier: Modifier){
         Box(modifier=Modifier.fillMaxSize().padding(16.dp)) {
 
 
-            if(asl || recording){
+            if(asl || recording || GlobalState.vc_intent.value != ""){
                 greeting = false
 
             }
@@ -341,6 +358,18 @@ fun Chat(modifier: Modifier){
             }
 
 
+            Column(modifier = Modifier.fillMaxSize()) {
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                textBar { input ->
+                    GlobalState.thinking.value = true
+                    GlobalState.vc_prompt.value = input
+
+                    recorder.sendTextToBackend(input)
+                }
+            }
+
 
             Box(
                 modifier = Modifier
@@ -363,7 +392,7 @@ fun Chat(modifier: Modifier){
 
                         }
                     },colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(222,172,255),
+                        if (recording) Color.Red else Color(222,172,255) ,
                         contentColor = Color.Black
                     ),
                     shape = RoundedCornerShape(12.dp),

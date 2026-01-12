@@ -65,6 +65,87 @@ class audio(private val context: Context) {
         return outputFile
     }
 
+    fun sendTextToBackend(text: String){
+        GlobalState.thinking.value = true
+        Thread{
+            try{
+                val url = URL("http://192.168.1.11:8000/text")
+                val conn = url.openConnection() as HttpURLConnection
+
+                conn.requestMethod= "POST"
+                conn.setRequestProperty("Content-Type","application/json")
+                conn.doOutput = true
+
+                val payload = """
+                    {
+                        "text": "${text.replace("\"","\\\"")}"
+                        }
+                """.trimIndent()
+
+                conn.outputStream.use{it.write(payload.toByteArray())}
+
+                val response = conn.inputStream.bufferedReader().readText()
+
+                handleResponse(response)
+
+            }
+            catch (e: Exception){
+                Log.e("TEXT_ERROR",e.toString())
+                GlobalState.thinking.value= false
+            }
+        }.start()
+    }
+
+    fun handleResponse(response: String){
+        val jsonObject = Gson().fromJson(response, JsonObject::class.java)
+
+        val intent = jsonObject.get("intent")?.asString ?: ""
+        val prompt = jsonObject.get("prompt")?.asString ?: ""
+        var result = ""
+
+        var city=""
+        if (intent == "weather") {
+            city = jsonObject.get("city")?.asString ?: ""
+
+
+            val resultObj = jsonObject.getAsJsonObject("result")
+            val weather = Gson().fromJson(
+                resultObj,
+                WeatherItem::class.java
+            )
+            GlobalState.weather.value = weather
+        }
+        else if (intent == "news"){
+            val newsArray = jsonObject.getAsJsonArray("result")
+            val newsList = Gson().fromJson(
+                newsArray,
+                Array<NewsItem>::class.java
+            ).toList()
+
+            GlobalState.newsList.value = newsList
+
+
+        }
+        else{
+            result = jsonObject.get("result")?.asString ?: ""
+        }
+
+
+
+
+        android.os.Handler(android.os.Looper.getMainLooper()).post {//update main thread
+            GlobalState.vc_result.value = result
+            GlobalState.vc_intent.value = intent
+            GlobalState.vc_prompt.value = prompt
+            if(intent == "weather") {
+                GlobalState.city.value = city
+            }
+            GlobalState.thinking.value = false
+
+
+        }
+    }
+
     fun sendAudioToBackend(audioFile: File) {
         GlobalState.thinking.value = true
 
@@ -104,53 +185,7 @@ class audio(private val context: Context) {
                 val response = conn.inputStream.bufferedReader().readText()
                 Log.d("VOICE_RESPONSE", response)
 
-                val jsonObject = Gson().fromJson(response, JsonObject::class.java)
-
-                val intent = jsonObject.get("intent")?.asString ?: ""
-                val prompt = jsonObject.get("prompt")?.asString ?: ""
-                var result = ""
-
-                var city=""
-                if (intent == "weather") {
-                    city = jsonObject.get("city")?.asString ?: ""
-
-
-                    val resultObj = jsonObject.getAsJsonObject("result")
-                    val weather = Gson().fromJson(
-                        resultObj,
-                        WeatherItem::class.java
-                    )
-                    GlobalState.weather.value = weather
-                }
-                else if (intent == "news"){
-                    val newsArray = jsonObject.getAsJsonArray("result")
-                    val newsList = Gson().fromJson(
-                        newsArray,
-                        Array<NewsItem>::class.java
-                    ).toList()
-
-                    GlobalState.newsList.value = newsList
-
-
-                }
-                else{
-                    result = jsonObject.get("result")?.asString ?: ""
-                }
-
-
-
-
-                android.os.Handler(android.os.Looper.getMainLooper()).post {//update main thread
-                    GlobalState.vc_result.value = result
-                    GlobalState.vc_intent.value = intent
-                    GlobalState.vc_prompt.value = prompt
-                    if(intent == "weather") {
-                        GlobalState.city.value = city
-                    }
-                    GlobalState.thinking.value = false
-
-
-                }
+                handleResponse(response)
 
 
 
