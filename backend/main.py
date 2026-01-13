@@ -128,13 +128,13 @@ async def echo_asl(req: TextRequest):
     
     tokens.append("REST")
     
-    return {"tokens":tokens}        
+    return {"tokens":tokens}
+
 #uvicorn main:app --host 0.0.0.0 --port 8000
 
 
 #TODO
-# text inp
-# custom news
+# ASL input
 # reminders
 # double pressing vc crash
 

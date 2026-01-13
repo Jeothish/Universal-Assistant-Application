@@ -78,7 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.zIndex
-
+import java.time.LocalTime
 
 import com.example.myapplication.GlobalState
 import com.example.myapplication.audio.*
@@ -254,7 +254,19 @@ fun Chat(modifier: Modifier){
 
             }
             if (greeting){
-                Greeting(time = "Evening",modifier = Modifier.align(Alignment.Center))
+                val hour = LocalTime.now().hour
+                var time = ""
+                if (hour > 4 && hour <11){
+                    time = "morning"
+                }
+                else if (hour>11 && hour < 18){
+                    time = "afternoon"
+                }
+                else{
+                    time = "evening"
+                }
+
+                Greeting(time = time,modifier = Modifier.align(Alignment.Center))
             }
             else if (asl){
                 Text(text="Detected Sign: $letter",color= Color.Magenta, fontSize = 24.sp,modifier=Modifier.align(
@@ -323,19 +335,30 @@ fun Chat(modifier: Modifier){
                 Column(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .padding(20.dp)
+                        .padding(top=110.dp,start=20.dp,end=20.dp,bottom=220.dp)
                 ) {
+
                     Text(
                         text = prompt.uppercase(),
                         color = Color.Green,
                         fontSize = 25.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 30.dp, start = 15.dp, end=15.dp, top=20.dp)
+                        modifier = Modifier.padding(bottom = 30.dp, start = 0.dp, end=0.dp, top=20.dp)
                     )
-                    LazyColumn { items(news){item -> Text(text="Title: ${item.Title}",fontSize = 20.sp,
+
+
+
+                    LazyColumn { items(news){item ->
+
+
+
+                        Text(text="Title: ${item.Title}",fontSize = 20.sp,
                         color = Color.Magenta,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 10.dp))
+
+
+
 
 
                         Text( text = "${item.Link}",
@@ -501,7 +524,7 @@ fun Greeting(time: String, modifier: Modifier) {
 
         modifier = Modifier.fillMaxSize(),contentAlignment = Alignment.Center
     ){
-        Text(text = "Good $time,\n\nHow can I help?",color= Color(222,172,255), fontSize = 32.sp)
+        Text(text = "Good $time,\n\nhow can I help?",color= Color(222,172,255), fontSize = 32.sp)
     }
 }
 

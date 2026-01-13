@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import os
 from app import *
 from openai import OpenAI
+import pycountry
 
 client = OpenAI(
     base_url="http://localhost:1234/v1",
@@ -115,7 +116,7 @@ def get_intent_llm(raw_prompt: str ) -> dict:
                         "For news source, keep it lowercase and avoid spaces. "
                         "If no source is specified, keep it null. "
                         "No domains (e.g., .com,.ie,.co.uk are not accepted). "
-                        "For country codes: ie = ireland, us = us."
+                      #  "For country codes: ie = ireland, us = us."
                 )
             }
         ],
@@ -184,6 +185,20 @@ def get_city(string,split_string):
     print("KWD city: "+detected_city)
     return detected_city
 
+
+uk = ["uk","england","wales","scotland","northern ireland","britain"]
+def country_code(name: str):
+    try:
+        if name.lower() in uk :
+            return "gb"
+        elif name.lower() == "america":
+            return "us"
+        else:
+            code = pycountry.countries.lookup(name)
+            return code.alpha_2.lower()
+
+    except LookupError:
+        return None
 
 
 def handle_prompt(raw_prompt: str) -> dict:
@@ -262,15 +277,16 @@ def handle_prompt(raw_prompt: str) -> dict:
         news_source = news_llm["source"]
 
         #for testing (fix llm issue)
-        news_source = None
-        news_topic = None
-        news_country = "wo"
+        # news_source = None
+        # news_topic = None
+        news_country = country_code(news_country)
+        print(f"news country: {news_country}")
 
         #if no region specified get news for worldwide
-        if news_country == "" or news_country == "null":
+        if news_country == "" or news_country == "null" or news_country is None:
             news_country = "wo"
 
-        if news_source == "" or news_source == "null":
+        if news_source == "" or news_source == "null" or news_source == "unknown":
             headlines = get_news(news_country, news_topic)
         else:
             headlines = get_news(news_country, news_topic, news_source)
