@@ -1,4 +1,5 @@
 # backend/main.py
+import sys
 
 import whisper
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -13,12 +14,12 @@ from typing import List
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
-import pkg_resources
+
 
 app = FastAPI(title="App",description="Assistant app")
 
 class SignRequest(BaseModel):
-    frames: List[List[float]]  # 30 x 126
+    frames: List[List[float]]  # 30x126 array
 
 class TextRequest(BaseModel):
     text: str
@@ -43,13 +44,24 @@ async def voice (audio: UploadFile = File(...)):
     try:
         result = model.transcribe(path)
         raw_prompt = str(result["text"]).lower()
+
+        if not raw_prompt.strip() :
+            print("no speech detected")
+            return
         response = handle_prompt(raw_prompt)
         print(response)
         return JSONResponse(content=response)
     finally:
         os.remove(path)
 
-
+@app.post("/text")
+async def text(req: TextRequest):
+    inp = req.text.strip()
+    if not inp:
+        return
+    else:
+        response = handle_prompt(inp)
+        return JSONResponse(content=response)
 
 actions = np.array(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'w', 'y', 'z'])
 
@@ -61,7 +73,7 @@ def load_model():
     model.add(Dense(64, activation='relu'))
     model.add(Dense(32, activation='relu'))
     model.add(Dense(actions.shape[0], activation='softmax'))
-    model.load_weights(r"C:\Users\sjeot\Desktop\ThirdYearProjectApp\3rd-Year-Project\backend\action.h5")
+    model.load_weights(r"C:\Users\HP\PycharmProjects\3rd-Year-Project\backend\action.h5")
 
     return model
 
@@ -116,5 +128,13 @@ async def echo_asl(req: TextRequest):
     
     tokens.append("REST")
     
-    return {"tokens":tokens}        
+    return {"tokens":tokens}
+
 #uvicorn main:app --host 0.0.0.0 --port 8000
+
+
+#TODO
+# ASL input
+# reminders
+# double pressing vc crash
+

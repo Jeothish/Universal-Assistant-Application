@@ -4,16 +4,52 @@ from google import genai
 from pydantic import BaseModel
 import enum
 import json
-
+import psycopg2
+from dotenv import load_dotenv
+import os
 from app import *
+from openai import OpenAI
+import pycountry
 
-client = genai.Client(api_key = 'AIzaSyDpd_Fp-rwAZ6sVfjAyup8IVlDl3wVC_9Q')
+client = OpenAI(
+    base_url="http://localhost:1234/v1",
+    api_key="lm-studio"
+)
+# client = genai.Client(api_key = '')
+#
+# llm = "gemini-2.5-flash-lite"
 
-llm = "gemini-2.5-flash-lite"
+load_dotenv()
 
+def get_connection():
+
+    USER = os.getenv("user")
+    PASSWORD = os.getenv("password")
+    HOST = os.getenv("host")
+    PORT = os.getenv("port")
+    DBNAME = os.getenv("dbname")
+    print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
+
+    # Connect to the database
+    try:
+        connection = psycopg2.connect(
+            user=USER,
+            password=PASSWORD,
+            host=HOST,
+            port=PORT,
+            dbname=DBNAME,
+            sslmode = "require"
+        )
+        print("Connection successful!")
+        return connection
+
+    except Exception as e:
+        print(f"Failed to connect: {e}")
+        return None
+connection = get_connection()
 weather_keywords = ["weather", "temperature", "rain", "forecast", "sunny", "wind", "humidity", "snow", "climate"]
 news_keywords = ["news","events","headlines","breaking","stories","trending"]
-
+cache_coords= {"dublin": (53.33306,-6.24889), "galway": (53.27245,-9.05095), "san francisco":(37.77493,-122.41942)}
 
 def get_intent_llm(raw_prompt: str ) -> dict:
 
@@ -61,21 +97,43 @@ def get_intent_llm(raw_prompt: str ) -> dict:
 
 
     #use LLM to detect intent
-    response = client.models.generate_content(
-        model=llm,
-        contents=raw_prompt+"get the intent for this prompt, if no hour specified for weather, set hour24 as 25, for news source, keep it lowercase and avoid spaces, if no source specified keep it null , no domains either e.g. nyctimes, for country e.g. ie = ireland, us = us",
-        config = {"response_mime_type": "application/json","response_schema":IntentSchema,},
+    response = client.chat.completions.create(
+        model="local-model",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are an intent extraction API. "
+                    "Respond only with valid JSON matching the schema."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                        raw_prompt +
+                        " Get the intent for this prompt. "
+                        "If no hour is specified for weather, set hour24 to 25, time should be just the hour (0-23). "
+                        "For news source, keep it lowercase and avoid spaces. "
+                        "If no source is specified, keep it null. "
+                        "No domains (e.g., .com,.ie,.co.uk are not accepted). "
+                      #  "For country codes: ie = ireland, us = us."
+                )
+            }
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "intent_schema",
+                "schema": IntentSchema.schema()
+            }
+        },
+        temperature=0.2
     )
 
+    result = response.choices[0].message.content
+    print(result)
 
-    print(response.text)
-
-    return json.loads(response.text)
-
-
-
-
-
+    return json.loads(result)
 
 
 #get intent using keyword detection to authenticate llm response
@@ -88,8 +146,6 @@ def get_intent_kw(prompt):
 
     else:
         return "chat"
-
-
 
 #create lists/sets for cities
 gc = geonamescache.GeonamesCache()
@@ -130,10 +186,25 @@ def get_city(string,split_string):
     return detected_city
 
 
+uk = ["uk","england","wales","scotland","northern ireland","britain"]
+def country_code(name: str):
+    try:
+        if name.lower() in uk :
+            return "gb"
+        elif name.lower() == "america":
+            return "us"
+        else:
+            code = pycountry.countries.lookup(name)
+            return code.alpha_2.lower()
+
+    except LookupError:
+        return None
+
 
 def handle_prompt(raw_prompt: str) -> dict:
     response_llm = get_intent_llm(raw_prompt)
     intent_llm = response_llm["intent"]
+    print(raw_prompt)
 
 
     #get weather forecast
@@ -150,7 +221,7 @@ def handle_prompt(raw_prompt: str) -> dict:
 
     if intent_kw == "weather" and intent_llm == "weather":
 
-        found_city = get_city(raw_prompt,prompt)
+        found_city = get_city(raw_prompt,prompt) #KW detection for city
 
         forecast_llm = response_llm["forecast_info"]
 
@@ -163,32 +234,38 @@ def handle_prompt(raw_prompt: str) -> dict:
             #raise Exception("City detected by LLM and keyword matching algorithm doesn't match")
             found_city = forecast_llm["city"]
 
+        if found_city in cache_coords:
+            print("Using cached Coordinates")
+            latitude, longitude = cache_coords[found_city]
+        else:
+            latitude, longitude = (get_coordinates(found_city,connection))
+            cache_coords[found_city] = latitude, longitude #append to cache
 
         #if user doesnt specify what day they want forecast for, get current forecast
         if forecast_llm["days_ahead"] < 1:
-            current_city_name = found_city
-            latitude, longitude = (get_coordinates(current_city_name))
+
+
             #print(f"===== Current Weather IN {current_city_name} =====")
-            weather = get_current_weather(latitude, longitude)
+            weather = get_current_weather(latitude, longitude,connection)
 
 
         #if user specifies what day, get forecast for that day, if no time is specified, it will default to 12:00
         else:
             if forecast_llm["hour24"] == 25:
-                latitude,longitude = get_coordinates(found_city)
+
                 target_day = datetime.now() + timedelta(days=forecast_llm["days_ahead"])
 
                 weather = (get_forecast_weather_day(latitude,longitude,target_day))
 
             else:
-                latitude, longitude = get_coordinates(found_city)
+
                 target_datetime = datetime.now() + timedelta(days=forecast_llm["days_ahead"])
                 target_datetime = target_datetime.replace(hour=forecast_llm["hour24"], minute=0, second=0, microsecond=0)
 
                 weather = (get_forecast_weather_specific_time(latitude, longitude, target_datetime))
         if isinstance(weather, list):
             weather = weather[0]
-        return {"intent": "weather","city": found_city,"result": weather}
+        return {"intent": "weather","prompt":raw_prompt,"city": found_city,"result": weather}
 
     #news api
     elif intent_kw == "news" and intent_llm == "news":
@@ -199,40 +276,55 @@ def handle_prompt(raw_prompt: str) -> dict:
         news_topic = news_llm["category"]
         news_source = news_llm["source"]
 
-
+        #for testing (fix llm issue)
+        # news_source = None
+        # news_topic = None
+        news_country = country_code(news_country)
+        print(f"news country: {news_country}")
 
         #if no region specified get news for worldwide
-        if news_country == "" or news_country == "null":
+        if news_country == "" or news_country == "null" or news_country is None:
             news_country = "wo"
 
-        if news_source == "" or news_source == "null":
+        if news_source == "" or news_source == "null" or news_source == "unknown":
             headlines = get_news(news_country, news_topic)
         else:
             headlines = get_news(news_country, news_topic, news_source)
 
+
+
         return {
             "intent": "news",
+            "prompt": raw_prompt,
             "result": headlines
         }
 
     #chat bot
-    elif intent_llm == "chat":
-        response = client.models.generate_content(
-            model=llm,contents=raw_prompt + " keep it short and simple.")
+    else:
+        response = client.chat.completions.create(
+            model="local-model",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant. Keep responses short and simple."
+                },
+                {
+                    "role": "user",
+                    "content": raw_prompt
+                }
+            ],
+            temperature=0.4
+        )
+
         return {
             "intent": "chat",
-            "result": response.text
+            "result": response.choices[0].message.content
         }
 
-    else:
-        raise Exception("unknown intent. kw: "+intent_kw+" llm: "+intent_llm)
+
+    # else:
+    #     raise Exception("unknown intent. kw: "+intent_kw+" llm: "+intent_llm)
 
 
-
-#TODO
-# gemini limits / alt/ lmstudio
-# news front end
-# reminders
-# double pressing vc crash
 
 
