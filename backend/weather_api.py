@@ -50,7 +50,7 @@ WEATHER_CODES = {
     99: "Thunderstorm with heavy hail"
 }
 
-def get_coordinates(city_name):
+def get_coordinates(city_name,connection):
     """
     Used to get the coordinates of any given city name using Geocoding API
 
@@ -60,11 +60,11 @@ def get_coordinates(city_name):
     Returns:
         tuple: (latitude, longitude) if the city is found, otherwise None
     """
-    
-    database_coords = get_cities_db(city_name)
+
+    database_coords = get_cities_db(city_name,connection)
     if database_coords:
         return database_coords
-    
+
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={city_name}"
     response = requests.get(url)
     data = response.json()
@@ -73,12 +73,13 @@ def get_coordinates(city_name):
         #[0] gets most relevant city name
         latitude = data["results"][0]['latitude']
         longitude = data["results"][0]['longitude']
-        add_city_db(city_name,latitude,longitude)
+        add_city_db(city_name,latitude,longitude,connection)
+        # cache_coords[city_name] = (latitude,longitude)
         return latitude,longitude,
     else:
         return None
     
-def get_current_weather(latitude,longitude):
+def get_current_weather(latitude,longitude,connection):
     """
     Gets the current weather for the specified coordinates
 
@@ -210,14 +211,14 @@ def get_forecast_weather_day(latitude,longitude,target_day):
     
 ##Used for testing within the current file 
 
-if __name__ == "__main__":
-    city_name = input("What city would you like to forecast weather for? ")
-    latitude,longitude = get_coordinates(city_name)
-    target_day = int(input("How many days ahead do you want to forecast? "))
-    target_day = datetime.now() + timedelta(days=target_day)
-    # target_day = target_day.time("%Y-%m-%d")
-
-    print(get_forecast_weather_day(latitude,longitude,target_day))
+# if __name__ == "__main__":
+#     city_name = input("What city would you like to forecast weather for? ")
+#     latitude,longitude = get_coordinates(city_name)
+#     target_day = int(input("How many days ahead do you want to forecast? "))
+#     target_day = datetime.now() + timedelta(days=target_day)
+#     # target_day = target_day.time("%Y-%m-%d")
+#
+#     print(get_forecast_weather_day(latitude,longitude,target_day))
     
     
     

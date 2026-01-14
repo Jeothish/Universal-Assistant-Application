@@ -28,7 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,6 +53,7 @@ import java.util.concurrent.Executors
 
 
 import android.Manifest
+import android.R
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
 
@@ -70,12 +71,18 @@ import java.io.File
 import java.net.URL
 import java.net.HttpURLConnection
 import android.util.Log
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 
 import androidx.compose.ui.text.style.LineHeightStyle
-
+import androidx.compose.ui.zIndex
+import java.time.LocalTime
 
 import com.example.myapplication.GlobalState
 import com.example.myapplication.audio.*
+
 
 
 class MainActivity : ComponentActivity() {
@@ -188,14 +195,7 @@ fun MyApplicationApp() {
         }
     }
 
-
-
-
 }
-
-
-
-
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -210,11 +210,30 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+fun textBar(onSend: (String) -> Unit){
+    var text by remember { mutableStateOf("") }
+
+    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 560.dp), verticalAlignment = Alignment.CenterVertically)
+    {
+        OutlinedTextField(value = text, onValueChange = {text=it},modifier=Modifier.weight(1f), placeholder = {Text("Ask Anything..")}, singleLine = true)
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(onClick = {
+                    if (text.isNotBlank()) {
+                        onSend(text)
+                        text=""
+                    }})
+        {Text("send")}
+    }
+}
 
 @Composable
 fun Chat(modifier: Modifier){
     val asl by GlobalState.asl
+    val prompt by GlobalState.vc_prompt
     var greeting by GlobalState.greeting
+    val thinking by GlobalState.thinking
+    val news by GlobalState.newsList
     val letter by GlobalState.letter
     val context = LocalContext.current
     val recorder = remember { audio(context) }
@@ -224,35 +243,6 @@ fun Chat(modifier: Modifier){
 
     Box(modifier = Modifier.fillMaxSize())
     {
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.BottomStart
-        ){
-        Button(
-            onClick = {
-                if (!recording) {
-                    recorder.startRec()
-                    recording = true
-                } else {
-                    val file = recorder.stopRec()
-                    file?.let { recorder.sendAudioToBackend(it) }
-                    recording = false
-                }
-            },colors = ButtonDefaults.buttonColors(
-                containerColor = Color(222,172,255),
-                contentColor = Color.Black
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .padding(32.dp) // distance from screen edges
-                .height(100.dp)
-                .width(130.dp),
-
-        ) {
-            Text(if (recording) "Stop Recording" else "Voice Chat")
-        }}
-
 
         if (asl) {
             CameraDet()
@@ -263,26 +253,187 @@ fun Chat(modifier: Modifier){
         }
 
         Box(modifier=Modifier.fillMaxSize().padding(16.dp)) {
-            if(asl || recording){
+
+
+            if(asl || recording || GlobalState.vc_intent.value != ""){
                 greeting = false
+
             }
             if (greeting){
-                Greeting(time = "Evening",modifier = Modifier.align(Alignment.Center))
+                val hour = LocalTime.now().hour
+                var time = ""
+                if (hour > 4 && hour <11){
+                    time = "morning"
+                }
+                else if (hour>11 && hour < 18){
+                    time = "afternoon"
+                }
+                else{
+                    time = "evening"
+                }
+
+                Greeting(time = time,modifier = Modifier.align(Alignment.Center))
             }
             else if (asl){
                 Text(text="Detected Sign: $letter",color= Color.Magenta, fontSize = 24.sp,modifier=Modifier.align(
-                    Alignment.TopCenter))
+                    Alignment.TopEnd).padding(end = 80.dp, top=20.dp, start = 40.dp))
+            }
+            if (GlobalState.thinking.value){
+                Text(text="Thinking...",color= Color.Magenta, fontSize = 32.sp,modifier=Modifier.align(
+                    Alignment.TopEnd).padding(end = 90.dp, top=50.dp, start = 50.dp, bottom = 10.dp))
+
+
             }
             val r = GlobalState.vc_result.value
+            val w = GlobalState.weather.value
+            val city = GlobalState.city.value
+            val intent = GlobalState.vc_intent.value
+
             print(r)
-            if (r != "" && !asl){
-                Text(text= r,color= Color.White, fontSize = 12.sp,modifier=Modifier.align(
-                    Alignment.CenterStart))
+
+
+            if ((intent == "weather" || intent == "chat")  && !asl) {
+
+
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(end=20.dp, start =30.dp, bottom = 200.dp)
+                )
+
+                {
+                    Text(
+                        text = prompt.uppercase(),
+                        color = Color.Green,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 20.dp, start = 10.dp, end = 0.dp)
+                    )
+                    if (r!="") {
+                        Text(
+                            text = r,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(end = 50.dp,start=20.dp)
+                        )
+
+
+                    }
+                    else{
+                        Text(text=city.uppercase(),color=Color.Magenta)
+
+                        Text(text="Temperature: ${w.temperature} °C")
+                        Text("Wind Speed: ${w.windSpeed} km/h")
+                        Text("Forecast: ${w.forecast}")
+                        Text("Time: ${w.time}")
+                    }
+
+
+
+
+
+                }
+            }
+            else if (intent=="news" && !asl){
+
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(top=110.dp,start=20.dp,end=20.dp,bottom=220.dp)
+                ) {
+
+                    Text(
+                        text = prompt.uppercase(),
+                        color = Color.Green,
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 30.dp, start = 0.dp, end=0.dp, top=20.dp)
+                    )
+
+
+
+                    LazyColumn { items(news){item ->
+
+
+
+                        Text(text="Title: ${item.Title}",fontSize = 20.sp,
+                        color = Color.Magenta,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 10.dp))
+
+
+
+
+
+                        Text( text = "${item.Link}",
+                            fontSize = 14.sp,
+                            color = Color.White,
+                            modifier = Modifier.padding(bottom = 4.dp))
+
+                        Text(text = "Published: ${item.Published}\n",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(bottom = 16.dp))} }
+
+
+                }
+
             }
 
             if(showTestInput){
                 ASLTestInput()
             }
+
+
+            Column(modifier = Modifier.fillMaxSize()) {
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                textBar { input ->
+                    GlobalState.thinking.value = true
+                    GlobalState.vc_prompt.value = input
+
+                    recorder.sendTextToBackend(input)
+                }
+            }
+
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.BottomStart
+            ){
+                Button(
+                    onClick = {
+                        if (!recording) {
+                            recorder.startRec()
+                            recording = true
+                        } else {
+
+                            val file = recorder.stopRec()
+
+                            file?.let { recorder.sendAudioToBackend(it) }
+                            recording = false
+
+
+
+                        }
+                    },colors = ButtonDefaults.buttonColors(
+                        if (recording) Color.Red else Color(222,172,255) ,
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .padding(16.dp) // distance from screen edges
+                        .height(100.dp)
+                        .zIndex(1f)
+                        .width(130.dp),
+
+                    ) {
+                    Text(if (recording) "Stop Recording" else "Voice Chat")
+                }}
 
             // Button("Voice Chat", Alignment.BottomStart)
             Button("Sign Language", Alignment.BottomEnd)
@@ -379,7 +530,7 @@ fun Greeting(time: String, modifier: Modifier) {
 
         modifier = Modifier.fillMaxSize(),contentAlignment = Alignment.Center
     ){
-        Text(text = "Good $time,\n\nHow can I help?",color= Color(222,172,255), fontSize = 32.sp)
+        Text(text = "Good $time,\n\nhow can I help?",color= Color(222,172,255), fontSize = 32.sp)
     }
 }
 

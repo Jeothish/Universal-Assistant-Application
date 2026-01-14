@@ -3,38 +3,38 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables from .env
-load_dotenv()
+# load_dotenv()
+#
+# def get_connection():
+#
+#     USER = os.getenv("user")
+#     PASSWORD = os.getenv("password")
+#     HOST = os.getenv("host")
+#     PORT = os.getenv("port")
+#     DBNAME = os.getenv("dbname")
+#     print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
+#
+#     # Connect to the database
+#     try:
+#         connection = psycopg2.connect(
+#             user=USER,
+#             password=PASSWORD,
+#             host=HOST,
+#             port=PORT,
+#             dbname=DBNAME,
+#             sslmode = "require"
+#         )
+#         print("Connection successful!")
+#         return connection
+#
+#     except Exception as e:
+#         print(f"Failed to connect: {e}")
+#         return None
 
-def get_connection():
-
-    USER = os.getenv("user")
-    PASSWORD = os.getenv("password")
-    HOST = os.getenv("host")
-    PORT = os.getenv("port")
-    DBNAME = os.getenv("dbname")
-    print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
-
-    # Connect to the database
-    try:
-        connection = psycopg2.connect(
-            user=USER,
-            password=PASSWORD,
-            host=HOST,
-            port=PORT,
-            dbname=DBNAME,
-            sslmode = "require"
-        )
-        print("Connection successful!")
-        return connection
-
-    except Exception as e:
-        print(f"Failed to connect: {e}")
-        return None
-
-def get_cities_db(city):
+def get_cities_db(city,connection):
 
 
-    connection = get_connection()
+    connection = connection
     cursor = connection.cursor()
     
     QUERY = """
@@ -48,9 +48,9 @@ def get_cities_db(city):
     return result
     
      
-def add_city_db(city,latitude,longitude):
+def add_city_db(city,latitude,longitude,connection):
     
-    connection = get_connection()
+    connection = connection
     cursor = connection.cursor()
     
     QUERY = """
@@ -63,8 +63,8 @@ def add_city_db(city,latitude,longitude):
     connection.close()
 
 
-def get_reminders_db(rem_title=None,rem_date=None,rem_description=None,is_complete=None,recur_type='none',recur_day_of_week=None,recur_time=None):
-    connection = get_connection()
+def get_reminders_db(connection,rem_title=None,rem_date=None,rem_description=None,is_complete=None,recur_type='none',recur_day_of_week=None,recur_time=None):
+    connection = connection
     cursor = connection.cursor()
     parameters=[]
      
@@ -110,8 +110,8 @@ def get_reminders_db(rem_title=None,rem_date=None,rem_description=None,is_comple
     
     return results
         
-def add_reminders_db(rem_title,rem_date,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
-     connection = get_connection()
+def add_reminders_db(connection,rem_title,rem_date,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
+     connection = connection
      cursor = connection.cursor()
      
      QUERY = """
@@ -123,8 +123,8 @@ def add_reminders_db(rem_title,rem_date,rem_description=None,is_complete=False,r
      cursor.close()
      connection.close()
 
-def edit_reminders_db(rem_title=None,rem_date=None,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
-    connection = get_connection()
+def edit_reminders_db(connection,rem_title=None,rem_date=None,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
+    connection = connection
     cursor = connection.cursor()
     parameters=[]
     
@@ -165,9 +165,9 @@ def edit_reminders_db(rem_title=None,rem_date=None,rem_description=None,is_compl
      
         
             
-def delete_reminders_db(reminder_id):
+def delete_reminders_db(reminder_id,connection):
     
-    connection = get_connection()
+    connection = connection
     cursor = connection.cursor()
      
     QUERY = """

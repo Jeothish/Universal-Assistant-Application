@@ -128,7 +128,7 @@ class HandAnalyzer(
 
         Thread {
             try {
-                val url = java.net.URL("http://192.168.1.18:8000/sign")
+                val url = java.net.URL("http://192.168.1.11:8000/sign")
                 val conn = url.openConnection() as java.net.HttpURLConnection
 
                 conn.requestMethod = "POST"
