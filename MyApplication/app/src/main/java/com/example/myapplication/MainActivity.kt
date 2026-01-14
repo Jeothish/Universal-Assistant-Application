@@ -220,6 +220,7 @@ fun Chat(modifier: Modifier){
     val recorder = remember { audio(context) }
     var recording by remember { mutableStateOf(false) }
     var showTestInput by remember {mutableStateOf(false)}
+    var aslTokens by GlobalState.aslTokens
 
     Box(modifier = Modifier.fillMaxSize())
     {
@@ -256,6 +257,11 @@ fun Chat(modifier: Modifier){
         if (asl) {
             CameraDet()
         }
+
+        if (aslTokens.isNotEmpty()){
+            ASLRenderer(tokens = aslTokens)
+        }
+
         Box(modifier=Modifier.fillMaxSize().padding(16.dp)) {
             if(asl || recording){
                 greeting = false
@@ -426,40 +432,6 @@ fun FutureButton(text:String,contentAlignment: Alignment,onClick: () -> Unit,mod
     }
 }
 
-@Composable
-fun ASLTestInput(){
-    var testSentence by remember {mutableStateOf(TextFieldValue(""))}
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .padding(top = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ){
-        OutlinedTextField(
-            value = testSentence,
-            onValueChange = {testSentence = it},
-            label = {Text("Enter sentence")},
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                Log.d("ASL_TEST", "User typed: ${testSentence.text}")
-            },
-            modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .height(50.dp)
-        ){
-            Text("Test ASL")
-        }
-
-    }
-}
 
 
 

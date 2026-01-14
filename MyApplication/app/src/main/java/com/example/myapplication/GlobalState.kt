@@ -9,4 +9,5 @@ object GlobalState {
     var vc_result = mutableStateOf("")
     var vc_intent = mutableStateOf("")
     var greeting = mutableStateOf(true)
+    val aslTokens = mutableStateOf<List<String>>(emptyList())
 }
