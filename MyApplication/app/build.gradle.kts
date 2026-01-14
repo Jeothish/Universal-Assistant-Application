@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("io.github.sceneview:sceneview:2.3.0")
 
     // Compose (via BOM)
     implementation(platform(libs.androidx.compose.bom))
