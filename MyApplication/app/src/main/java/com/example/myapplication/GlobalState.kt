@@ -19,4 +19,5 @@ object GlobalState {
 
     var newsList = mutableStateOf<List<NewsItem>>(emptyList())
     var greeting = mutableStateOf(true)
+    val aslTokens = mutableStateOf<List<String>>(emptyList())
 }
