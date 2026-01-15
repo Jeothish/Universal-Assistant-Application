@@ -304,7 +304,7 @@ fun Chat(modifier: Modifier){
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 20.dp, start = 10.dp, end = 0.dp)
                     )
-                    if (r!="") {
+                    if (intent == "chat") {
                         Text(
                             text = r,
                             color = Color.White,

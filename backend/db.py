@@ -59,8 +59,8 @@ def add_city_db(city,latitude,longitude,connection):
     """
     cursor.execute(QUERY,(city,latitude,longitude))
     connection.commit()
-    cursor.close()
-    connection.close()
+    # cursor.close()
+    # connection.close()
 
 
 def get_reminders_db(connection,rem_title=None,rem_date=None,rem_description=None,is_complete=None,recur_type='none',recur_day_of_week=None,recur_time=None):
