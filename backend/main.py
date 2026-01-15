@@ -14,8 +14,34 @@ from typing import List
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
+import psycopg2
 
+def get_connection():
 
+    USER = os.getenv("user")
+    PASSWORD = os.getenv("password")
+    HOST = os.getenv("host")
+    PORT = os.getenv("port")
+    DBNAME = os.getenv("dbname")
+    print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
+
+    # Connect to the database
+    try:
+        connection = psycopg2.connect(
+            user=USER,
+            password=PASSWORD,
+            host=HOST,
+            port=PORT,
+            dbname=DBNAME,
+            sslmode = "require"
+        )
+        print("Connection successful!")
+        return connection
+
+    except Exception as e:
+        print(f"Failed to connect: {e}")
+        return None
+connection = get_connection()
 app = FastAPI(title="App",description="Assistant app")
 
 class SignRequest(BaseModel):
@@ -48,7 +74,7 @@ async def voice (audio: UploadFile = File(...)):
         if not raw_prompt.strip() :
             print("no speech detected")
             return
-        response = handle_prompt(raw_prompt)
+        response = handle_prompt(connection,raw_prompt)
         print(response)
         return JSONResponse(content=response)
     finally:
@@ -60,7 +86,7 @@ async def text(req: TextRequest):
     if not inp:
         return
     else:
-        response = handle_prompt(inp)
+        response = handle_prompt(connection,inp)
         return JSONResponse(content=response)
 
 actions = np.array(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'w', 'y', 'z'])

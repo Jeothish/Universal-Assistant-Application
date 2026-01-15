@@ -21,32 +21,7 @@ client = OpenAI(
 
 load_dotenv()
 
-def get_connection():
 
-    USER = os.getenv("user")
-    PASSWORD = os.getenv("password")
-    HOST = os.getenv("host")
-    PORT = os.getenv("port")
-    DBNAME = os.getenv("dbname")
-    print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
-
-    # Connect to the database
-    try:
-        connection = psycopg2.connect(
-            user=USER,
-            password=PASSWORD,
-            host=HOST,
-            port=PORT,
-            dbname=DBNAME,
-            sslmode = "require"
-        )
-        print("Connection successful!")
-        return connection
-
-    except Exception as e:
-        print(f"Failed to connect: {e}")
-        return None
-connection = get_connection()
 weather_keywords = ["weather", "temperature", "rain", "forecast", "sunny", "wind", "humidity", "snow", "climate"]
 news_keywords = ["news","events","headlines","breaking","stories","trending"]
 cache_coords= {"dublin": (53.33306,-6.24889), "galway": (53.27245,-9.05095), "san francisco":(37.77493,-122.41942)}
@@ -201,7 +176,7 @@ def country_code(name: str):
         return None
 
 
-def handle_prompt(raw_prompt: str) -> dict:
+def handle_prompt(connection,raw_prompt: str) -> dict:
     response_llm = get_intent_llm(raw_prompt)
     intent_llm = response_llm["intent"]
     print(raw_prompt)
