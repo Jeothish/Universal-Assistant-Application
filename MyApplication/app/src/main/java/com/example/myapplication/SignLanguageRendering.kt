@@ -55,7 +55,7 @@ fun ASLTestInput() {
 }
 
 @Composable
-fun ASLRenderer(tokens: List<String>) {
+fun ASLRenderer(tokens: List<String>, isPlaying: Boolean = true, replay: Int) {
     val context = LocalContext.current
     var currentTokenIndex by remember { mutableStateOf(0) }
 
@@ -65,6 +65,7 @@ fun ASLRenderer(tokens: List<String>) {
             setVideoURI(uri)
             setOnPreparedListener { mediaPlayer ->
                 mediaPlayer.isLooping = false
+                if(isPlaying) start() else pause()
             }
         }
     }
@@ -76,7 +77,8 @@ fun ASLRenderer(tokens: List<String>) {
         )
     }
 
-    LaunchedEffect(tokens, currentTokenIndex) {
+    LaunchedEffect(tokens, currentTokenIndex,isPlaying) {
+        if(!isPlaying) return@LaunchedEffect
         if (tokens.isEmpty() || currentTokenIndex >= tokens.size) return@LaunchedEffect
 
         val letter = tokens[currentTokenIndex]
@@ -95,13 +97,19 @@ fun ASLRenderer(tokens: List<String>) {
 
         delay(200) // Brief pause between letters
         currentTokenIndex++
+
+
     }
 
     // Reset Sequence when done playing all letters
-    LaunchedEffect(currentTokenIndex) {
+    LaunchedEffect(currentTokenIndex,tokens) {
         if (currentTokenIndex >= tokens.size && tokens.isNotEmpty()) {
             delay(500)
             currentTokenIndex = 0
         }
+    }
+
+    LaunchedEffect(replay) {
+        currentTokenIndex = 0
     }
 }
