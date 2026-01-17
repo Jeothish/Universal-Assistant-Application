@@ -61,7 +61,7 @@ fun ASLRenderer(tokens: List<String>, isPlaying: Boolean = true, replay: Int) {
 
     val videoView = remember {
         VideoView(context).apply {
-            val uri = Uri.parse("android.resource://${context.packageName}/raw/aslanimationwithtwocameras")
+            val uri = Uri.parse("android.resource://${context.packageName}/raw/aslalpbabettwocameratestingphoneres2")
             setVideoURI(uri)
             setOnPreparedListener { mediaPlayer ->
                 mediaPlayer.isLooping = false

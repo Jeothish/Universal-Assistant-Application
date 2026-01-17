@@ -445,7 +445,7 @@ fun Chat(modifier: Modifier){
 
                 } else {
                     Row(
-                        modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-200).dp),
+                        modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-10).dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
 
