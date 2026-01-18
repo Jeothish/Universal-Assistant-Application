@@ -59,16 +59,19 @@ import requests
 #     temperature=0.2
 # )
 #
-# print(response.choices[0].message.content)
+# # print(response.choices[0].message.content)
+# #
+# import pycountry
+# def country_code(name: str):
+#     try:
 #
-import pycountry
-def country_code(name: str):
-    try:
+#
+#         code = pycountry.countries.lookup(name)
+#         return code.alpha_2.lower()
+#     except LookupError:
+#         return None
+#
+# print(country_code("united kingdom"))
 
-
-        code = pycountry.countries.lookup(name)
-        return code.alpha_2.lower()
-    except LookupError:
-        return None
-
-print(country_code("united kingdom"))
+from datetime import datetime
+print()
