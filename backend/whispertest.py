@@ -1,6 +1,5 @@
 import geonamescache
 from google import genai
-
 from pydantic import BaseModel
 import enum
 import json
@@ -10,6 +9,7 @@ import os
 from app import *
 from openai import OpenAI
 import pycountry
+from datetime import datetime
 
 client = OpenAI(
     base_url="http://localhost:1234/v1",
@@ -70,7 +70,7 @@ def get_intent_llm(raw_prompt: str ) -> dict:
         forecast_info: Forecast
         news_info: NewsSchema
 
-
+    time = str(datetime.now().strftime("%A"))+", "+str(datetime.now())
     #use LLM to detect intent
     response = client.chat.completions.create(
         model="local-model",
@@ -91,6 +91,7 @@ def get_intent_llm(raw_prompt: str ) -> dict:
                         "For news source, keep it lowercase and avoid spaces. "
                         "If no source is specified, keep it null. "
                         "No domains (e.g., .com,.ie,.co.uk are not accepted). "
+                        "current day and time:"+time
                       #  "For country codes: ie = ireland, us = us."
                 )
             }
@@ -102,7 +103,7 @@ def get_intent_llm(raw_prompt: str ) -> dict:
                 "schema": IntentSchema.schema()
             }
         },
-        temperature=0.2
+        temperature=0.1 #for response randomness
     )
 
     result = response.choices[0].message.content
@@ -251,8 +252,13 @@ def handle_prompt(connection,raw_prompt: str) -> dict:
         news_topic = news_llm["category"]
         news_source = news_llm["source"]
 
+        err = ""
         #for testing (fix llm issue)
-        # news_source = None
+        if news_source == "rte":
+            news_source =  "independent"
+            news_country = "Ireland"
+            err=" (RTE is not supported. Showing results from Independent.ie instead.)"
+
         # news_topic = None
         news_country = country_code(news_country)
         print(f"news country: {news_country}")
@@ -270,7 +276,7 @@ def handle_prompt(connection,raw_prompt: str) -> dict:
 
         return {
             "intent": "news",
-            "prompt": raw_prompt,
+            "prompt": raw_prompt+err,
             "result": headlines
         }
 

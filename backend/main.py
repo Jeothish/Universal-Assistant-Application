@@ -78,11 +78,12 @@ async def voice (audio: UploadFile = File(...)):
         print(response)
         return JSONResponse(content=response)
     finally:
-        os.remove(path)
+        os.remove(path) #delete audio file
 
 @app.post("/text")
 async def text(req: TextRequest):
-    inp = req.text.strip()
+    inp = req.text.strip().lower()
+    print("text in:"+inp)
     if not inp:
         return
     else:
@@ -159,8 +160,11 @@ async def echo_asl(req: TextRequest):
 #uvicorn main:app --host 0.0.0.0 --port 8000
 
 
-#TODO
+#TODO                                highest priority
 # ASL input
 # reminders
+# pass in user time/ location in front end prompt
+# bigger chat model
 # double pressing vc crash
-
+# news unsupported domains
+#                                    lowest priority
