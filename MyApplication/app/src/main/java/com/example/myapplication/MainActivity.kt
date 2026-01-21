@@ -74,6 +74,8 @@ import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.font.FontWeight
@@ -107,7 +109,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             } else {
-                // Permission denied — handle gracefully
+                // Permission denied add handling
             }
         }
 
@@ -216,10 +218,18 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
 @Composable
 fun textBar(onSend: (String) -> Unit){
     var text by remember { mutableStateOf("") }
+    val thinking by GlobalState.thinking
+    var ask by remember { mutableStateOf("Ask Anything...") }
+    if (thinking){
+        ask = "Thinking..."
+    }
+    else{
+        ask = "Ask Anything..."
+    }
 
     Row(modifier = Modifier.fillMaxWidth().padding(bottom = 560.dp), verticalAlignment = Alignment.CenterVertically)
     {
-        OutlinedTextField(value = text, onValueChange = {text=it},modifier=Modifier.weight(1f), placeholder = {Text("Ask Anything..")}, singleLine = true)
+        OutlinedTextField(value = text, onValueChange = {text=it},modifier=Modifier.weight(1f), placeholder = {Text(text=ask,color = if (thinking) Color.Magenta else Color.Gray)}, singleLine = true)
         Spacer(modifier = Modifier.width(8.dp))
         Button(onClick = {
                     if (text.isNotBlank()) {
@@ -248,6 +258,7 @@ fun Chat(modifier: Modifier){
     val recorder = remember { audio(context) }
     var recording by remember { mutableStateOf(false) }
     var showTestInput by remember {mutableStateOf(false)}
+    val scrollState = rememberScrollState()
 
 
 
@@ -291,18 +302,7 @@ fun Chat(modifier: Modifier){
                     ).padding(end = 80.dp, top = 20.dp, start = 40.dp)
                 )
             }
-            if (GlobalState.thinking.value) {
-                Text(
-                    text = "Thinking...",
-                    color = Color.Magenta,
-                    fontSize = 32.sp,
-                    modifier = Modifier.align(
-                        Alignment.TopEnd
-                    ).padding(end = 90.dp, top = 50.dp, start = 50.dp, bottom = 10.dp)
-                )
 
-
-            }
             val r = GlobalState.vc_result.value
             val w = GlobalState.weather.value
             val city = GlobalState.city.value
@@ -314,24 +314,21 @@ fun Chat(modifier: Modifier){
             if ((intent == "weather" || intent == "chat") && !asl) {
 
 
-
                 Column(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
-                        .padding(end = 20.dp, start = 30.dp, bottom = 200.dp)
+                        .verticalScroll(scrollState)
+                        .padding(end = 0.dp, start = 0.dp, bottom = 200.dp, top=0.dp)
                 )
 
                 {
                     Text(
                         text = prompt.uppercase(),
                         color = Color.Green,
-                        fontSize = 20.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 20.dp, start = 10.dp, end = 0.dp)
+                        modifier = Modifier.padding(bottom = 20.dp, start = 10.dp, end = 0.dp, top=20.dp)
                     )
-
-
-
 
 
 
@@ -341,25 +338,36 @@ fun Chat(modifier: Modifier){
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                             ) {
+
                                 Text(
                                     text = r,
                                     color = Color.White,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.weight(1f).padding(end = 50.dp, start = 20.dp)
+                                    fontSize = 18.sp,
+                                    modifier = Modifier.weight(1f).padding(
+                                        end = 50.dp,
+                                        start = 20.dp,
+                                        top = 100.dp,
+                                        bottom = 10.dp
+                                    )
                                 )
-                                Button(
-                                    onClick = {
-                                        val tokens = mutableListOf<String>()
-                                        r.forEach { c ->
-                                            if (c.isLetter()) tokens.add(c.uppercaseChar().toString())
-                                        }
-                                        GlobalState.aslTokens.value = tokens
-                                        hideResponse = true
-                                    },
-                                    modifier = Modifier.height(40.dp)
-                                )
-                                { Text("Translate to ASL") }
-                            }
+
+
+                                }
+                            Button(
+                                onClick = {
+                                    val tokens = mutableListOf<String>()
+                                    r.forEach { c ->
+                                        if (c.isLetter()) tokens.add(
+                                            c.uppercaseChar().toString()
+                                        )
+                                    }
+                                    GlobalState.aslTokens.value = tokens
+                                    hideResponse = true
+                                },
+                                modifier = Modifier.height(40.dp).padding(end=0.dp, start=20.dp)
+                            )
+                            { Text("Translate to ASL") }
+
                         }
                     } else {
                         if(!hideResponse){
