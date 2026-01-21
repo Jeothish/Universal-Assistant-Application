@@ -232,6 +232,7 @@ fun textBar(onSend: (String) -> Unit){
 
 @Composable
 fun Chat(modifier: Modifier){
+
     var isASLPlaying by remember { mutableStateOf(true) }
     var hideResponse by remember { mutableStateOf(false) }
     var showASL by remember { mutableStateOf(false) }
@@ -249,6 +250,7 @@ fun Chat(modifier: Modifier){
     var showTestInput by remember {mutableStateOf(false)}
 
 
+
     Box(modifier = Modifier.fillMaxSize())
     {
 
@@ -257,7 +259,7 @@ fun Chat(modifier: Modifier){
         }
 
         if (aslTokens.isNotEmpty() && hideResponse) {
-            ASLRenderer(tokens = aslTokens, isPlaying = isASLPlaying,replay = replayKey)
+            ASLRenderer(tokens = aslTokens, isPlaying = isASLPlaying,replayTrigger = replayKey)
         }
 
         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -312,6 +314,7 @@ fun Chat(modifier: Modifier){
             if ((intent == "weather" || intent == "chat") && !asl) {
 
 
+
                 Column(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
@@ -333,43 +336,69 @@ fun Chat(modifier: Modifier){
 
 
                     if (intent == "chat") {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        ) {
-                            Text(
-                                text = r,
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                modifier = Modifier.weight(1f).padding(end = 50.dp, start = 20.dp)
-                            )
-                            Button(
-                                onClick = {
-                                    val tokens = mutableListOf<String>()
-                                    r.forEach { c ->
-                                        if (c.isLetter()) tokens.add(c.uppercaseChar().toString())
-                                    }
-                                    GlobalState.aslTokens.value = tokens
-                                    showASL = true
-                                },
-                                modifier = Modifier.height(40.dp)
-                            )
-                            { Text("Translate to ASL") }
+                        if (!hideResponse) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                            ) {
+                                Text(
+                                    text = r,
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.weight(1f).padding(end = 50.dp, start = 20.dp)
+                                )
+                                Button(
+                                    onClick = {
+                                        val tokens = mutableListOf<String>()
+                                        r.forEach { c ->
+                                            if (c.isLetter()) tokens.add(c.uppercaseChar().toString())
+                                        }
+                                        GlobalState.aslTokens.value = tokens
+                                        hideResponse = true
+                                    },
+                                    modifier = Modifier.height(40.dp)
+                                )
+                                { Text("Translate to ASL") }
+                            }
                         }
                     } else {
-                        Text(text = city.uppercase(), color = Color.Magenta)
+                        if(!hideResponse){
+                            Text(text = city.uppercase(), color = Color.Magenta)
 
-                        Text(text = "Temperature: ${w.temperature} °C")
-                        Text("Wind Speed: ${w.windSpeed} km/h")
-                        Text("Forecast: ${w.forecast}")
-                        Text("Time: ${w.time}")
+                            Text(text = "Temperature: ${w.temperature} °C")
+                            Text("Wind Speed: ${w.windSpeed} km/h")
+                            Text("Forecast: ${w.forecast}")
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Time: ${w.time}")
+                                Button(
+                                    onClick = {
+                                        val tokens = mutableListOf<String>()
+                                        w.forecast.forEach { c ->
+                                            if (c.isLetter()) tokens.add(
+                                                c.uppercaseChar().toString()
+                                            )
+                                        }
+                                        GlobalState.aslTokens.value = tokens
+                                        hideResponse = true
+                                    },
+                                    modifier = Modifier.height(40.dp)
+                                )
+                                { Text("Translate to ASL") }
+
+                            }
+
+                        }
+
                     }
 
 
                 }
             } else if (intent == "news" && !asl) {
-                if (!hideResponse) {
 
+                if (!hideResponse) {
 
                     Column(
                         modifier = Modifier
@@ -389,7 +418,6 @@ fun Chat(modifier: Modifier){
                                 top = 20.dp
                             )
                         )
-
 
                         LazyColumn {
                             items(news) { item ->
@@ -456,7 +484,6 @@ fun Chat(modifier: Modifier){
                                 containerColor = if(isASLPlaying) Color.Red else Color.Green,
                                 contentColor = Color.White
                             )
-                            //modifier = Modifier.align(Alignment.BottomCenter) .offset(x = 10.dp, y = (-200).dp)
                         )
                         { Text(if (isASLPlaying) "Pause" else "Resume") }
 
@@ -466,7 +493,6 @@ fun Chat(modifier: Modifier){
                                 containerColor = Color.Blue,
                                 contentColor = Color.White
                             )
-                            //modifier = Modifier.align(Alignment.BottomCenter).offset(x = 100.dp,y=(-200).dp)
                         )
                         { Text("Return") }
 
@@ -479,16 +505,91 @@ fun Chat(modifier: Modifier){
                                 containerColor = Color.Magenta,
                                 contentColor = Color.White
                             )
-                            //modifier = Modifier.align(Alignment.BottomCenter).offset(x = 100.dp,y=(-200).dp)
                         )
                         { Text("Replay") }
                     }
                 }
             }
 
-            if (showTestInput) {
-                ASLTestInput()
+            if (hideResponse && intent == "chat") {
+                Row(
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-10).dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+
+
+                    Button(
+                        onClick = { isASLPlaying = !isASLPlaying },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if(isASLPlaying) Color.Red else Color.Green,
+                            contentColor = Color.White
+                        )
+                    )
+                    { Text(if (isASLPlaying) "Pause" else "Resume") }
+
+                    Button(
+                        onClick = { hideResponse = !hideResponse },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Blue,
+                            contentColor = Color.White
+                        )
+                    )
+                    { Text("Return") }
+
+                    Button(
+                        onClick = {
+                            isASLPlaying = true
+                            replayKey++ },
+
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Magenta,
+                            contentColor = Color.White
+                        )
+                    )
+                    { Text("Replay") }
+                }
             }
+
+            if (hideResponse && intent == "weather") {
+                Row(
+                    modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-10).dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+
+
+                    Button(
+                        onClick = { isASLPlaying = !isASLPlaying },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if(isASLPlaying) Color.Red else Color.Green,
+                            contentColor = Color.White
+                        )
+                    )
+                    { Text(if (isASLPlaying) "Pause" else "Resume") }
+
+                    Button(
+                        onClick = { hideResponse = !hideResponse },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Blue,
+                            contentColor = Color.White
+                        )
+                    )
+                    { Text("Return") }
+
+                    Button(
+                        onClick = {
+                            isASLPlaying = true
+                            replayKey++ },
+
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Magenta,
+                            contentColor = Color.White
+                        )
+                    )
+                    { Text("Replay") }
+                }
+            }
+
+
 
 
             Column(modifier = Modifier.fillMaxSize()) {
@@ -530,7 +631,7 @@ fun Chat(modifier: Modifier){
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
-                            .padding(16.dp) // distance from screen edges
+                            .padding(16.dp)
                             .height(100.dp)
                             .zIndex(1f)
                             .width(130.dp),
@@ -540,20 +641,13 @@ fun Chat(modifier: Modifier){
                     }
                 }
 
-                // Button("Voice Chat", Alignment.BottomStart)
                 Button("Sign Language", Alignment.BottomEnd)
-                FutureButton(
-                    text = "Text -> ASL Testing",
-                    contentAlignment = Alignment.BottomCenter,
-                    onClick = { showTestInput = !showTestInput },
-                    modifier = Modifier.padding(bottom = 110.dp, end = 185.dp)
-                )
+
             }
         }
     }
 
 }
-
 @Composable
 fun CameraDet() {
     val context = LocalContext.current
