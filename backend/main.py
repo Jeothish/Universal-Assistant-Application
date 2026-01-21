@@ -117,9 +117,9 @@ def predict(seq, model):
     if sequence.shape != (30, 126):
         raise ValueError(f"Expected shape (30, 126), got {sequence.shape}")
     res = model.predict(tf.expand_dims(sequence, axis=0))[0]
-    # print(np.expand_dims(sequence, axis=0))
+
     predictions.append(np.argmax(res))
-    # clearConsole()
+
     if np.unique(predictions[-10:])[0] == np.argmax(res):
         if (max(res) >= threshold):
             if len(sentence) > 0:
@@ -160,11 +160,11 @@ async def echo_asl(req: TextRequest):
 #uvicorn main:app --host 0.0.0.0 --port 8000
 
 
-#TODO                                highest priority
+#TODO                                       highest priority
 # ASL input
 # reminders
 # pass in user time/ location in front end prompt
 # bigger chat model
 # double pressing vc crash
-# news unsupported domains
-#                                    lowest priority
+# news unsupported domains (done for rte)
+#                                           lowest priority
