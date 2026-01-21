@@ -1,115 +1,139 @@
 package com.example.myapplication
 
 import android.net.Uri
-import android.widget.VideoView
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.viewinterop.AndroidView
-import android.util.Log
-import androidx.compose.ui.Alignment
+import androidx.media3.common.MediaItem
+import androidx.media3.datasource.RawResourceDataSource
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
-
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 
 @Composable
-fun ASLTestInput() {
-    var testSentence by remember { mutableStateOf(TextFieldValue("")) }
+fun ASLRenderer(
+    tokens: List<String>,
+    isPlaying: Boolean,
+    replayTrigger: Int
+) {
+    val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .padding(top = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ){
-        OutlinedTextField(
-            value = testSentence,
-            onValueChange = { testSentence = it },
-            label = { Text("Enter sentence") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+    var currentTokenIndex by remember { mutableStateOf(0) }
+    var pausedPositionMs by remember { mutableLongStateOf(0L) }
+    var isLetterPlaying by remember { mutableStateOf(false) }
 
-        Button(
-            onClick = {
-                val tokens = mutableListOf<String>()
-                testSentence.text.forEach { c ->
-                    if (c.isLetter()) tokens.add(c.uppercaseChar().toString())
-                }
-                GlobalState.aslTokens.value = tokens
-                Log.d("ASL_TEST", "Tokens: $tokens")
-            },
-            modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .height(50.dp)
-        ){
-            Text("Test ASL")
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            val uri = RawResourceDataSource.buildRawResourceUri(
+                R.raw.aslalpbabettwocameratestingphoneres2
+            )
+            setMediaItem(MediaItem.fromUri(uri))
+            prepare()
+            playWhenReady = false
         }
     }
-}
 
-@Composable
-fun ASLRenderer(tokens: List<String>, isPlaying: Boolean = true, replay: Int) {
-    val context = LocalContext.current
-    var currentTokenIndex by remember { mutableStateOf(0) }
+    // Add ExoPlayer to Compose UI
+    AndroidView(
+        factory = {
+            PlayerView(it).apply {
+                player = exoPlayer
+                useController = false
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    )
 
-    val videoView = remember {
-        VideoView(context).apply {
-            val uri = Uri.parse("android.resource://${context.packageName}/raw/aslalpbabettwocameratestingphoneres2")
-            setVideoURI(uri)
-            setOnPreparedListener { mediaPlayer ->
-                mediaPlayer.isLooping = false
-                if(isPlaying) start() else pause()
+    //Pause and Play
+    LaunchedEffect(isPlaying) {
+        if (!isLetterPlaying) {
+            if (isPlaying) {
+                exoPlayer.seekTo(pausedPositionMs)
+                exoPlayer.play()
+            } else {
+                pausedPositionMs = exoPlayer.currentPosition
+                exoPlayer.pause()
             }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = { videoView },
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-
-    LaunchedEffect(tokens, currentTokenIndex,isPlaying) {
-        if(!isPlaying) return@LaunchedEffect
+    //ASL sequence playback
+    LaunchedEffect(tokens, currentTokenIndex, isPlaying) {
         if (tokens.isEmpty() || currentTokenIndex >= tokens.size) return@LaunchedEffect
 
-        val letter = tokens[currentTokenIndex]
+        while (currentTokenIndex < tokens.size) {
+            val letter = tokens[currentTokenIndex]
+            val startMs = (letter.first() - 'A') * 1000L
+            pausedPositionMs = startMs
 
-        // Calculate timestamp (A=0s, B=1s, C=2s, etc.)
-        val letterIndex = letter.first() - 'A'
-        val seekMs = letterIndex * 1000 // 1 second per letter (24 frames at 24fps)
+            var elapsed = 0L
+            val letterDuration = 1000L
+            val interval = 200L
+            isLetterPlaying = true
 
-        Log.d("ASL_RENDER", "Playing letter $letter at ${seekMs}ms (index: $letterIndex)")
+            exoPlayer.seekTo(startMs)
 
-        videoView.seekTo(seekMs)
-        videoView.start()
+            while (elapsed < letterDuration) {
+                if (isPlaying) {
+                    exoPlayer.play()
+                    delay(interval)
+                    elapsed += interval
+                } else {
+                    exoPlayer.pause()
+                    pausedPositionMs = exoPlayer.currentPosition
+                    delay(interval)
+                }
+            }
 
-        delay(1000) // Show for 1 second
-        videoView.pause()
-
-        delay(200) // Brief pause between letters
-        currentTokenIndex++
-
-
-    }
-
-    // Reset Sequence when done playing all letters
-    LaunchedEffect(currentTokenIndex,tokens) {
-        if (currentTokenIndex >= tokens.size && tokens.isNotEmpty()) {
-            delay(500)
-            currentTokenIndex = 0
+            exoPlayer.pause()
+            pausedPositionMs = exoPlayer.currentPosition
+            currentTokenIndex++
+            isLetterPlaying = false
+            delay(200)  // Pause between letters
         }
     }
 
-    LaunchedEffect(replay) {
+    //Reset Sequence when playback is over
+    LaunchedEffect(currentTokenIndex, tokens) {
+        if (currentTokenIndex >= tokens.size && tokens.isNotEmpty()) {
+            delay(500)
+            currentTokenIndex = 0
+            pausedPositionMs = 0L
+        }
+    }
+
+    if (tokens.isNotEmpty() && currentTokenIndex < tokens.size) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = "Current Letter: ${tokens[currentTokenIndex]}",
+                color = Color.White,
+                fontSize = 32.sp,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 70.dp)
+            )
+        }
+    }
+
+    //Go to start of sequence and replay
+    LaunchedEffect(replayTrigger) {
         currentTokenIndex = 0
+        pausedPositionMs = 0L
+        exoPlayer.seekTo(0)
+        exoPlayer.pause()
+    }
+
+    //Cleanup ExoPlayer
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.release()
+        }
     }
 }
