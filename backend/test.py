@@ -1,77 +1,41 @@
-import requests
-#
-# API_URL = "http://127.0.0.1:8000/text"
-# # AUDIO_FILE = "Recording.wav"  # path to a real wav file
-#
-# # with open(AUDIO_FILE, "rb") as f:
-# #     files = {
-# #         "audio": ("Recording.wav", f, "audio/wav")
-# #     }
-# payload = {
-#     "text": "what's the weather in galway"
-# }
-#
-# response = requests.post(API_URL, json=payload)
-#
-# print("Status Code:", response.status_code)
-#
-# try:
-#     print("Response JSON:")
-#     print(response.json())
-# except Exception:
-#     print("Raw Response:")
-#     print(response.text)
-# from openai import OpenAI
-#
-# client = OpenAI(
-#     base_url="http://localhost:1234/v1",
-#     api_key="lm-studio"  # required but ignored
-# )
-#
-# response = client.chat.completions.create(
-#     model="local-model",
-#     messages=[
-#         {
-#             "role": "system",
-#             "content": "You are a weather JSON API. Output only valid JSON. make up the weather forecast, it does not have to be true"
-#         },
-#         {
-#             "role": "user",
-#             "content": "What's the weather in Dublin tomorrow?"
-#         }
-#     ],
-#     response_format={
-#         "type": "json_schema",
-#         "json_schema": {
-#             "name": "intent_schema",
-#             "schema": {
-#                 "type": "object",
-#                 "properties": {
-#                     "intent": {"type": "string"},
-#                     "city": {"type": ["string", "null"]},
-#                     "date": {"type": ["string", "null"]},
-#                     "forecast": {"type": ["string", "null"]}
-#                 },
-#                 "required": ["intent", "city"]
-#             }
-#         }
-#     },
-#     temperature=0.2
-# )
-#
-# # print(response.choices[0].message.content)
-# #
-# import pycountry
-# def country_code(name: str):
-#     try:
-#
-#
-#         code = pycountry.countries.lookup(name)
-#         return code.alpha_2.lower()
-#     except LookupError:
-#         return None
-#
-# print(country_code("united kingdom"))
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
 
-from datetime import datetime
-print()
+# mediapipe landmarks dataset from
+# https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
+
+df = pd.read_csv("asl_mediapipe_keypoints_dataset.csv")
+
+X = df.drop(columns=["label"]).values# import dataset and organize
+y= df["label"].values
+# print(X.shape)
+
+encoder = LabelEncoder() # to orgnize all alphabet labels
+y_encode = encoder.fit_transform(y)
+print(encoder.classes_)
+np.save("asl_labels.npy", encoder.classes_)
+
+#split into testing and training
+X_train, X_temp, y_train, y_temp = train_test_split(X, y_encode, test_size = 0.3, random_state = 42, stratify = y_encode)
+
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size = 0.5, random_state = 42, stratify = y_temp)
+
+# train model
+model = Sequential([Dense(128, activation="relu", input_shape=(X.shape[1],)), Dropout(0.3), Dense(64, activation="relu"), Dense(len(np.unique(y_encode)), activation="softmax")])
+
+model.compile(optimizer=tf.keras.optimizers.Adam(0.001), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+
+history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=50, batch_size=32)
+
+#test model
+test_loss, test_acc = model.evaluate(X_test, y_test)
+
+
+print("Test accuracy:", test_acc)
+#save model
+model.save("asl_mediapipe_model.keras")
