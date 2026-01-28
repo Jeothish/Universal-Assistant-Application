@@ -52,7 +52,10 @@ dependencies {
     implementation("io.github.sceneview:sceneview:2.3.0")
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+    implementation("androidx.appcompat:appcompat:1.6.1")
 
+    implementation("androidx.navigation:navigation-fragment-ktx:2.5.3")
+    implementation("androidx.navigation:navigation-ui-ktx:2.5.3")
 
     // Compose (via BOM)
     implementation(platform(libs.androidx.compose.bom))
@@ -65,13 +68,23 @@ dependencies {
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.4.3")
 
+
+
+    // MediaPipe
+
+
+    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+
     // CameraX
+    implementation("androidx.camera:camera-core:1.3.1")
     implementation("androidx.camera:camera-camera2:1.3.1")
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
 
-    // MediaPipe
-    implementation("com.google.mediapipe:tasks-vision:0.10.8")
+    // Existing dependencies...
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
 
     // Networking
     implementation("org.java-websocket:Java-WebSocket:1.5.4")
@@ -85,4 +98,5 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
 }

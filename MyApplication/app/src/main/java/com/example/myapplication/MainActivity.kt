@@ -86,7 +86,7 @@ import java.time.LocalTime
 
 import com.example.myapplication.GlobalState
 import com.example.myapplication.audio.*
-
+import OverlayView
 
 
 
@@ -661,14 +661,14 @@ fun CameraDet() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-
-    val previewView = remember { PreviewView(context).apply {
-        scaleType = PreviewView.ScaleType.FILL_CENTER
-    } }
+    val previewView = remember {
+        PreviewView(context).apply {
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+        }
+    }
     val overlayView = remember { OverlayView(context, null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         AndroidView(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
@@ -690,7 +690,6 @@ fun CameraDet() {
     }
 }
 
-
 fun startCamera(
     context: Context,
     lifecycleOwner: LifecycleOwner,
@@ -708,20 +707,26 @@ fun startCamera(
 
         val imageAnalysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
             .build()
 
+        val analyzer = HandAnalyzer(context, overlayView)
         imageAnalysis.setAnalyzer(
             Executors.newSingleThreadExecutor(),
-            HandAnalyzer(context, overlayView)
+            analyzer
         )
 
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(
-            lifecycleOwner,
-            CameraSelector.DEFAULT_FRONT_CAMERA,
-            preview,
-            imageAnalysis
-        )
+        try {
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(
+                lifecycleOwner,
+                CameraSelector.DEFAULT_FRONT_CAMERA,
+                preview,
+                imageAnalysis
+            )
+        } catch (e: Exception) {
+            Log.e("Camera", "Bind failed", e)
+        }
 
     }, ContextCompat.getMainExecutor(context))
 }
