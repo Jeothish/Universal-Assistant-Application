@@ -7,13 +7,13 @@ from fastapi.responses import JSONResponse
 import tempfile
 import os
 from whispertest import handle_prompt
-
+from collections import deque
 import numpy as np
 from pydantic import BaseModel
 from typing import List
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
+
 import psycopg2
 
 def get_connection():
@@ -90,58 +90,74 @@ async def text(req: TextRequest):
         response = handle_prompt(connection,inp)
         return JSONResponse(content=response)
 
-actions = np.array(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'r', 's', 't', 'u', 'w', 'y', 'z'])
-
-def load_model():
-    model = Sequential()
-    model.add(LSTM(64, return_sequences=True, activation='relu', input_shape=(30, 126)))
-    model.add(LSTM(128, return_sequences=True, activation='relu'))
-    model.add(LSTM(64, return_sequences=False, activation='relu'))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dense(32, activation='relu'))
-    model.add(Dense(actions.shape[0], activation='softmax'))
-    model.load_weights(r"C:\Users\HP\PycharmProjects\3rd-Year-Project\backend\action.h5")
-
-    return model
-
-modelASl = load_model()
 
 
-def predict(seq, model):
-    sequence = np.array(seq)
+class SingleFrameRequest(BaseModel): features: List[float]
+
+modelASL = tf.keras.models.load_model("asl_mediapipe_model.keras")
+labels = np.load("asl_labels.npy", allow_pickle=True)
+
+pred_queue = deque(maxlen=10)
+SEQUENCE_LENGTH = 30
+FEATURES_PER_FRAME = 63
+
+def normalize_frame(frame_63): #need this as differnt hand / cameras sizes have differnet coords
+    pts = np.array(frame_63).reshape(21, 3)
+
+    # wrist normalize
+    pts -= pts[0]
+
+    # scale normalization
+    scale = np.linalg.norm(pts[9])
+    if scale > 0:
+        pts /= scale
+
+    return pts.flatten()
 
 
-    sentence = []
-    predictions = []
-    threshold = 0.2
-    if sequence.shape != (30, 126):
-        raise ValueError(f"Expected shape (30, 126), got {sequence.shape}")
-    res = model.predict(tf.expand_dims(sequence, axis=0))[0]
+@app.post("/predict")
+async def predict(data: SingleFrameRequest):
 
-    predictions.append(np.argmax(res))
-
-    if np.unique(predictions[-10:])[0] == np.argmax(res):
-        if (max(res) >= threshold):
-            if len(sentence) > 0:
-                if actions[np.argmax(res)] != sentence[-1]:
-                    sentence.append(actions[np.argmax(res)])
-            else:
-                sentence.append(actions[np.argmax(res)])
-            letter=actions[np.argmax(res)]
-    print(f"Predicted letter: {letter} ")
-    return {
-        "letter": letter
-        # "confidence": confidence
-    }
-
-
-@app.post("/sign")
-async def recognize_sign(data: SignRequest):
     try:
-        result = predict(data.frames,modelASl)
-        return JSONResponse(content=result)
+
+        if len(data.features) != FEATURES_PER_FRAME:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Expected {FEATURES_PER_FRAME} features, got {len(data.features)}"
+            )
+
+
+        normalized = normalize_frame(data.features)
+
+
+        features = normalized.reshape(1, -1)# (1,63) model inpt shape
+
+
+        pred = modelASL.predict(features, verbose=0)
+        idx = int(np.argmax(pred))
+        conf = float(np.max(pred))
+
+        letter = ""
+        if conf > 0.7:
+            pred_queue.append(idx)
+
+        # Use majority voting from queue
+        if len(pred_queue) > 0:
+            final_idx = max(set(pred_queue), key=pred_queue.count)
+            letter = str(labels[final_idx])
+
+        print(f"Pred: {letter} (confidence: {conf:.2f})")
+
+        return JSONResponse(content={
+            "letter": letter,
+            "confidence": conf
+        })
+
     except Exception as e:
+        print(f"Prediction error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+
 
 
 @app.post("/echo_asl")
@@ -161,7 +177,7 @@ async def echo_asl(req: TextRequest):
 
 
 #TODO                                       highest priority
-# ASL input
+# ASL input + M/N/Q/R/S right hand fix
 # reminders
 # pass in user time/ location in front end prompt
 # bigger chat model

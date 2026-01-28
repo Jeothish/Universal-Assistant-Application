@@ -11,22 +11,17 @@ import java.io.ByteArrayOutputStream
 import android.util.Log
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.gson.Gson
-
 import com.google.gson.JsonObject
-
-
-
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
+import kotlin.math.sqrt
+import OverlayView
 class HandAnalyzer(
     context: Context,
     private val overlayView: OverlayView
 ) : ImageAnalysis.Analyzer {
 
     private val handLandmarker: HandLandmarker
-
     private val TAG = "HandAnalyzer"
-    private val sequenceBuffer: MutableList<FloatArray> = mutableListOf()
-    private val SEQUENCE_LENGTH = 30
-
 
     init {
         val options = HandLandmarker.HandLandmarkerOptions.builder()
@@ -35,53 +30,155 @@ class HandAnalyzer(
                     .setModelAssetPath("hand_landmarker.task")
                     .build()
             )
-            .setNumHands(2)
+            .setNumHands(1)
             .setMinHandDetectionConfidence(0.7f)
+            .setMinHandPresenceConfidence(0.7f)
             .setMinTrackingConfidence(0.7f)
+            .setRunningMode(RunningMode.LIVE_STREAM)
+            .setResultListener { result, input ->
+                if (result.landmarks().isNotEmpty()) {
+                    overlayView.post {
+                        overlayView.setResults(
+                            result,
+                            input.height,
+                            input.width,
+                            RunningMode.LIVE_STREAM
+                        )
+                    }
+
+                    val landmarks = result.landmarks()[0]
+
+                    //if right hand flip landmarks (front cam flips anyways so it sees left as right)
+                    val handedness = result.handedness()[0][0]
+                    val detectedHand = handedness.categoryName()
+
+                    Log.d(TAG, "MediaPipe detected: $detectedHand hand (score: ${handedness.score()})")
+
+
+                    val shouldFlip = detectedHand == "Left"
+
+                    if (shouldFlip) {
+                        Log.d(TAG, "Flipping landmarks (user showing right hand)")
+                    }
+
+                    val normalizedFeatures = normalizeLandmarks(landmarks, flipForRightHand = shouldFlip)
+                    sendLandmarksToBackend(normalizedFeatures)
+                } else {
+                    overlayView.post { overlayView.clear() }
+                    GlobalState.letter.value = ""
+                }
+            }
+            .setErrorListener { error ->
+                Log.e(TAG, "Hand Landmarker Error: ${error.message}")
+            }
             .build()
 
         handLandmarker = HandLandmarker.createFromOptions(context, options)
     }
 
     override fun analyze(imageProxy: ImageProxy) {
-
         val bitmap = imageProxy.toBitmap()
         val rotationDegrees = imageProxy.imageInfo.rotationDegrees
         val rotatedBitmap = rotateBitmap(bitmap, rotationDegrees)
+        val flippedBitmap = flipBitmap(rotatedBitmap)
 
-        val mpImage = BitmapImageBuilder(rotatedBitmap).build()
-        val result = handLandmarker.detect(mpImage)
-
-        if (result.landmarks().isNotEmpty()) {
-
-            overlayView.post {
-                overlayView.setResults(
-                    result,
-                    rotatedBitmap.height,
-                    rotatedBitmap.width,
-                    RunningMode.LIVE_STREAM
-                )
-            }
-
-            val frameData = landmarksToFloatArray(result.landmarks()) // pass full list for both hands
-
-            sequenceBuffer.add(frameData)
-            if (sequenceBuffer.size > SEQUENCE_LENGTH) {
-                sequenceBuffer.removeAt(0)
-            }
-
-            if (sequenceBuffer.size == SEQUENCE_LENGTH) {
-                sendSequenceToBackend(sequenceBuffer.toList())
-            }
-
-        } else {
-            overlayView.post { overlayView.clear() }
-        }
-
+        val mpImage = BitmapImageBuilder(flippedBitmap).build()
+        val frameTime = System.currentTimeMillis()
+        handLandmarker.detectAsync(mpImage, frameTime)
 
         imageProxy.close()
     }
 
+    private fun normalizeLandmarks(landmarks: List<NormalizedLandmark>, flipForRightHand: Boolean): FloatArray {
+        var points = landmarks.map {
+            floatArrayOf(it.x(), it.y(), it.z())
+        }.toTypedArray()
+
+        // flip horizontaly
+        if (flipForRightHand) {
+            points = points.map { point ->
+                floatArrayOf(
+                    1.0f - point[0],  // flip x
+                    point[1],
+                    -point[2]
+                )
+            }.toTypedArray()
+        }
+
+        // normalize to wrist
+        val wrist = points[0]
+        val normalized = points.map { point ->
+            floatArrayOf(
+                point[0] - wrist[0],
+                point[1] - wrist[1],
+                point[2] - wrist[2]
+            )
+        }.toTypedArray()
+
+        val middleFingerMCP = normalized[9]
+        val scale = sqrt(
+            middleFingerMCP[0] * middleFingerMCP[0] +
+                    middleFingerMCP[1] * middleFingerMCP[1] +
+                    middleFingerMCP[2] * middleFingerMCP[2]
+        )
+
+
+        val scaled = if (scale > 0f) {
+            normalized.map { point ->
+                floatArrayOf(
+                    point[0] / scale,
+                    point[1] / scale,
+                    point[2] / scale
+                )
+            }
+        } else {
+            normalized.toList()
+        }
+
+        return scaled.flatMap { it.toList() }.toFloatArray()
+    }
+
+    private fun sendLandmarksToBackend(features: FloatArray) {
+        Thread {
+            try {
+                val url = java.net.URL("http://192.168.1.11:8000/predict")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+
+                val json = mapOf("features" to features.toList())
+                val body = Gson().toJson(json)
+
+                conn.outputStream.use {
+                    it.write(body.toByteArray())
+                }
+
+                val responseCode = conn.responseCode
+                if (responseCode == 200) {
+                    val response = conn.inputStream.bufferedReader().readText()
+
+                    val jsonObject = Gson().fromJson(response, JsonObject::class.java)
+                    val letter = jsonObject.get("letter")?.asString ?: ""
+                    val confidence = jsonObject.get("confidence")?.asFloat ?: 0f
+
+                    Log.d(TAG, "Predicted: $letter (confidence: $confidence)")
+                    GlobalState.letter.value = letter
+                } else {
+                    val errorBody = conn.errorStream?.bufferedReader()?.readText() ?: "Unknown"
+                    Log.e(TAG, "HTTP Error $responseCode: $errorBody")
+                }
+
+                conn.disconnect()
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Backend Error: ${e.message}", e)
+            }
+        }.start()
+    }
 
     private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
         if (rotationDegrees == 0) return bitmap
@@ -89,71 +186,16 @@ class HandAnalyzer(
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
-    private fun landmarksToFloatArray(
-        hands: List<List<com.google.mediapipe.tasks.components.containers.NormalizedLandmark>>?
-    ): FloatArray {
-        val data = FloatArray(126)  // 42 landmarks * 3 coords
-        var index = 0
-
-        // left hand landmarks (first hand if available)
-        if (hands != null && hands.size > 0) {
-            for (lm in hands[0]) {
-                data[index++] = lm.x()
-                data[index++] = lm.y()
-                data[index++] = lm.z()
-            }
-        } else {
-            repeat(63) { data[index++] = 0f }
+    private fun flipBitmap(bitmap: Bitmap): Bitmap {
+        val matrix = Matrix().apply {
+            postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
         }
-
-        // right hand landmarks (second hand if available)
-        if (hands != null && hands.size > 1) {
-            for (lm in hands[1]) {
-                data[index++] = lm.x()
-                data[index++] = lm.y()
-                data[index++] = lm.z()
-            }
-        } else {
-            repeat(63) { data[index++] = 0f }
-        }
-
-        return data
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
-    private fun sendSequenceToBackend(sequence: List<FloatArray>) {
-
-        val frames = sequence.map { it.toList() }
-
-        val json = mapOf("frames" to frames)
-
-        Thread {
-            try {
-                val url = java.net.URL("http://192.168.1.11:8000/sign")
-                val conn = url.openConnection() as java.net.HttpURLConnection
-
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-
-                val body = Gson().toJson(json)
-
-                conn.outputStream.use {
-                    it.write(body.toByteArray())
-                }
-
-                val response = conn.inputStream.bufferedReader().readText()
-                Log.d("SIGN_RESPONSE", response)
-                val jsonObject = Gson().fromJson(response, JsonObject::class.java)
-                val letter = jsonObject.get("letter")?.asString ?: ""
-                GlobalState.letter.value = letter
-
-            } catch (e: Exception) {
-                Log.e("SIGN_ERROR", e.toString())
-            }
-        }.start()
+    fun close() {
+        handLandmarker.close()
     }
-
-
 }
 
 private fun ImageProxy.toBitmap(): Bitmap {
@@ -178,9 +220,4 @@ private fun ImageProxy.toBitmap(): Bitmap {
 
     return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 }
-data class HandPoint(
-    val id: Int,
-    val x: Float,
-    val y: Float,
-    val z: Float
-)
+

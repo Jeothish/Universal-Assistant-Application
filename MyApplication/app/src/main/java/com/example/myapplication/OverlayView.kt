@@ -1,5 +1,3 @@
-package com.example.myapplication
-
 /*
  * Copyright 2022 The TensorFlow Authors. All Rights Reserved.
  *
@@ -16,6 +14,8 @@ package com.example.myapplication
  * limitations under the License.
  */
 
+// Open source Google Mediapipe code from
+//https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/hand_landmarker/android
 
 import android.content.Context
 import android.graphics.Canvas
@@ -23,11 +23,14 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.content.ContextCompat
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import kotlin.math.max
 import kotlin.math.min
+import com.example.myapplication.R
+
 
 class OverlayView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs) {
@@ -53,7 +56,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     }
 
     private fun initPaints() {
-        linePaint.color = Color.GREEN
+        linePaint.color =
+            ContextCompat.getColor(context!!, R.color.mp_color_primary)
         linePaint.strokeWidth = LANDMARK_STROKE_WIDTH
         linePaint.style = Paint.Style.STROKE
 
@@ -68,20 +72,24 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
             for (landmark in handLandmarkerResult.landmarks()) {
                 for (normalizedLandmark in landmark) {
                     canvas.drawPoint(
-                        (width - (normalizedLandmark.x() * imageWidth * scaleFactor)),
+                        normalizedLandmark.x() * imageWidth * scaleFactor,
                         normalizedLandmark.y() * imageHeight * scaleFactor,
                         pointPaint
                     )
                 }
 
                 HandLandmarker.HAND_CONNECTIONS.forEach {
-                    val startX = width - (landmark[it.start()].x() * imageWidth * scaleFactor)
-                    val startY = landmark[it.start()].y() * imageHeight * scaleFactor
-                    val endX   = width - (landmark[it.end()].x() * imageWidth * scaleFactor)
-                    val endY   = landmark[it.end()].y() * imageHeight * scaleFactor
-
-                    canvas.drawLine(startX, startY, endX, endY, linePaint)
-
+                    canvas.drawLine(
+                        landmark.get(it!!.start())
+                            .x() * imageWidth * scaleFactor,
+                        landmark.get(it.start())
+                            .y() * imageHeight * scaleFactor,
+                        landmark.get(it.end())
+                            .x() * imageWidth * scaleFactor,
+                        landmark.get(it.end())
+                            .y() * imageHeight * scaleFactor,
+                        linePaint
+                    )
                 }
             }
         }
@@ -104,7 +112,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 min(width * 1f / imageWidth, height * 1f / imageHeight)
             }
             RunningMode.LIVE_STREAM -> {
-
+                // PreviewView is in FILL_START mode. So we need to scale up the
+                // landmarks to match with the size that the captured images will be
+                // displayed.
                 max(width * 1f / imageWidth, height * 1f / imageHeight)
             }
         }
