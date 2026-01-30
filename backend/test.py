@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 
+
 # mediapipe landmarks dataset from
 # https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
 
@@ -18,7 +19,7 @@ y= df["label"].values
 encoder = LabelEncoder() # to orgnize all alphabet labels
 y_encode = encoder.fit_transform(y)
 print(encoder.classes_)
-np.save("asl_labels.npy", encoder.classes_)
+np.save("asl_labels_og_retrain.npy", encoder.classes_)
 
 #split into testing and training
 X_train, X_temp, y_train, y_temp = train_test_split(X, y_encode, test_size = 0.3, random_state = 42, stratify = y_encode)
@@ -38,4 +39,4 @@ test_loss, test_acc = model.evaluate(X_test, y_test)
 
 print("Test accuracy:", test_acc)
 #save model
-model.save("asl_mediapipe_model.keras")
+model.save("asl_mediapipe_model_original_retrain.keras")

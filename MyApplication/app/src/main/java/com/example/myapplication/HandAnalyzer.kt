@@ -30,7 +30,7 @@ class HandAnalyzer(
                     .setModelAssetPath("hand_landmarker.task")
                     .build()
             )
-            .setNumHands(1)
+            .setNumHands(2)
             .setMinHandDetectionConfidence(0.7f)
             .setMinHandPresenceConfidence(0.7f)
             .setMinTrackingConfidence(0.7f)
@@ -55,14 +55,10 @@ class HandAnalyzer(
                     Log.d(TAG, "MediaPipe detected: $detectedHand hand (score: ${handedness.score()})")
 
 
-                    val shouldFlip = detectedHand == "Left"
 
-                    if (shouldFlip) {
-                        Log.d(TAG, "Flipping landmarks (user showing right hand)")
-                    }
 
-                    val normalizedFeatures = normalizeLandmarks(landmarks, flipForRightHand = shouldFlip)
-                    sendLandmarksToBackend(normalizedFeatures)
+                    val normalizedFeatures = normalizeLandmarks(landmarks)
+                    sendLandmarksToBackend(normalizedFeatures, detectedHand)
                 } else {
                     overlayView.post { overlayView.clear() }
                     GlobalState.letter.value = ""
@@ -89,21 +85,10 @@ class HandAnalyzer(
         imageProxy.close()
     }
 
-    private fun normalizeLandmarks(landmarks: List<NormalizedLandmark>, flipForRightHand: Boolean): FloatArray {
+    private fun normalizeLandmarks(landmarks: List<NormalizedLandmark>): FloatArray {
         var points = landmarks.map {
             floatArrayOf(it.x(), it.y(), it.z())
         }.toTypedArray()
-
-        // flip horizontaly
-        if (flipForRightHand) {
-            points = points.map { point ->
-                floatArrayOf(
-                    1.0f - point[0],  // flip x
-                    point[1],
-                    -point[2]
-                )
-            }.toTypedArray()
-        }
 
         // normalize to wrist
         val wrist = points[0]
@@ -138,10 +123,12 @@ class HandAnalyzer(
         return scaled.flatMap { it.toList() }.toFloatArray()
     }
 
-    private fun sendLandmarksToBackend(features: FloatArray) {
+    private fun sendLandmarksToBackend(features: FloatArray, detHand: String) {
         Thread {
             try {
                 val url = java.net.URL("http://192.168.1.11:8000/predict")
+
+
                 val conn = url.openConnection() as java.net.HttpURLConnection
 
                 conn.requestMethod = "POST"
@@ -150,7 +137,7 @@ class HandAnalyzer(
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
 
-                val json = mapOf("features" to features.toList())
+                val json = mapOf("features" to features.toList(), "hand" to detHand)
                 val body = Gson().toJson(json)
 
                 conn.outputStream.use {

@@ -2,7 +2,7 @@
 import sys
 
 import whisper
-from fastapi import FastAPI, UploadFile, File, HTTPException,Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 import tempfile
 import os
@@ -10,18 +10,18 @@ from whispertest import handle_prompt
 from collections import deque
 import numpy as np
 from pydantic import BaseModel
-from typing import List,Optional
+from typing import List, Optional
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from db import add_reminders_db,get_reminders_db,edit_reminders_db,delete_reminders_db
+from db import add_reminders_db, get_reminders_db, edit_reminders_db, delete_reminders_db
 import psycopg2
 
-def get_connection():
 
+def get_connection():
     # Connect to the database
     try:
         connection = psycopg2.connect(
-           os.getenv("DATABASE_URL")
+            os.getenv("DATABASE_URL")
         )
         print("Connection successful!")
         return connection
@@ -29,15 +29,19 @@ def get_connection():
     except Exception as e:
         print(f"Failed to connect: {e}")
         return None
-    
+
+
 connection = get_connection()
-app = FastAPI(title="App",description="Assistant app")
+app = FastAPI(title="App", description="Assistant app")
+
 
 class SignRequest(BaseModel):
     frames: List[List[float]]  # 30x126 array
 
+
 class TextRequest(BaseModel):
     text: str
+
 
 class ReminderCreate(BaseModel):
     reminder_title: str
@@ -47,6 +51,7 @@ class ReminderCreate(BaseModel):
     recurrence_type: Optional[str] = 'none'
     recurrence_day_of_week: Optional[int] = None
     recurrence_time: Optional[str] = None
+
 
 class ReminderGet(BaseModel):
     reminder_title: Optional[str] = None
@@ -66,11 +71,13 @@ class ReminderEdit(BaseModel):
     recurrence_type: Optional[str] = None
     recurrence_day_of_week: Optional[int] = None
     recurrence_time: Optional[str] = None
-    
+
+
 model = whisper.load_model("small")
 
+
 @app.post("/voice")
-async def voice (audio: UploadFile = File(...)):
+async def voice(audio: UploadFile = File(...)):
     if audio.content_type not in [
         "audio/wav",
         "audio/x-wave",
@@ -80,7 +87,7 @@ async def voice (audio: UploadFile = File(...)):
         "application/octet-stream",
     ]:
         raise HTTPException(status_code=400, detail="Invalid audio file")
-    with tempfile.NamedTemporaryFile(delete = False, suffix = "..m4a") as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix="..m4a") as tmp:
         tmp.write(await audio.read())
         path = tmp.name
 
@@ -88,37 +95,47 @@ async def voice (audio: UploadFile = File(...)):
         result = model.transcribe(path)
         raw_prompt = str(result["text"]).lower()
 
-        if not raw_prompt.strip() :
+        if not raw_prompt.strip():
             print("no speech detected")
             return
-        response = handle_prompt(connection,raw_prompt)
+        response = handle_prompt(connection, raw_prompt)
         print(response)
         return JSONResponse(content=response)
     finally:
-        os.remove(path) #delete audio file
+        os.remove(path)  # delete audio file
+
 
 @app.post("/text")
 async def text(req: TextRequest):
     inp = req.text.strip().lower()
-    print("text in:"+inp)
+    print("text in:" + inp)
     if not inp:
         return
     else:
-        response = handle_prompt(connection,inp)
+        response = handle_prompt(connection, inp)
         return JSONResponse(content=response)
 
 
+class SingleFrameRequest(BaseModel):
+    features: List[float]
+    hand: str
 
-class SingleFrameRequest(BaseModel): features: List[float]
 
-#modelASL = tf.keras.models.load_model("asl_mediapipe_model.keras")
-#labels = np.load("asl_labels.npy", allow_pickle=True)
+modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
+modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
 
+
+labelsR = np.load("asl_labels.npy", allow_pickle=True)
+labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
+
+pred_queueL = deque(maxlen=10)
+pred_queueR = deque(maxlen=10)
 pred_queue = deque(maxlen=10)
 SEQUENCE_LENGTH = 30
 FEATURES_PER_FRAME = 63
 
-def normalize_frame(frame_63): #need this as differnt hand / cameras sizes have differnet coords
+
+def normalize_frame(frame_63):  # need this as differnt hand / cameras sizes have differnet coords
     pts = np.array(frame_63).reshape(21, 3)
 
     # wrist normalize
@@ -134,7 +151,6 @@ def normalize_frame(frame_63): #need this as differnt hand / cameras sizes have 
 
 @app.post("/predict")
 async def predict(data: SingleFrameRequest):
-
     try:
 
         if len(data.features) != FEATURES_PER_FRAME:
@@ -143,14 +159,21 @@ async def predict(data: SingleFrameRequest):
                 detail=f"Expected {FEATURES_PER_FRAME} features, got {len(data.features)}"
             )
 
-
         normalized = normalize_frame(data.features)
 
+        features = normalized.reshape(1, -1)  # (1,63) model inpt shape
 
-        features = normalized.reshape(1, -1)# (1,63) model inpt shape
+        if data.hand == "Right":
+            pred = modelASLL.predict(features, verbose=0) #media pipe inverts hands so mp right = actual left
+            pred_queue = pred_queueL
+            labels = labelsL
+            print("left hand")
+        else:
+            pred = modelASLR.predict(features, verbose=0)
+            pred_queue = pred_queueR
+            labels = labelsR
+            print("right hand")
 
-
-        pred = modelASL.predict(features, verbose=0)
         idx = int(np.argmax(pred))
         conf = float(np.max(pred))
 
@@ -158,12 +181,13 @@ async def predict(data: SingleFrameRequest):
         if conf > 0.7:
             pred_queue.append(idx)
 
-        # Use majority voting from queue
+        # input smooting to prevent glitching
         if len(pred_queue) > 0:
             final_idx = max(set(pred_queue), key=pred_queue.count)
             letter = str(labels[final_idx])
 
         print(f"Pred: {letter} (confidence: {conf:.2f})")
+
 
         return JSONResponse(content={
             "letter": letter,
@@ -178,14 +202,15 @@ async def predict(data: SingleFrameRequest):
 async def echo_asl(req: TextRequest):
     text = req.text.lower()
     tokens = ["REST"]
-    
+
     for char in text:
         if char.isalpha():
             tokens.append(char.upper())
-    
+
     tokens.append("REST")
-    
-    return {"tokens":tokens}
+
+    return {"tokens": tokens}
+
 
 @app.get("/reminders/get")
 async def get_reminder(reminder: ReminderGet = Depends()):
@@ -193,8 +218,8 @@ async def get_reminder(reminder: ReminderGet = Depends()):
         results = get_reminders_db(connection, **reminder.dict())
         return results
     except Exception as e:
-        return JSONResponse({"error" : str(e)}, status_code=500)
-    
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 
 @app.post("/reminders/add")
 async def add_reminder(reminder: ReminderCreate):
@@ -207,43 +232,44 @@ async def add_reminder(reminder: ReminderCreate):
                          reminder.recurrence_type,
                          reminder.recurrence_day_of_week,
                          reminder.recurrence_time)
-        return JSONResponse({"message":"Reminder added successfully!"})
+        return JSONResponse({"message": "Reminder added successfully!"})
     except Exception as e:
-        return JSONResponse({"error" : str(e)}, status_code=500)
-    
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.delete("/reminders/delete/{reminder_id}")
 def delete_reminder(reminder_id: int):
     try:
-        delete_reminders_db(reminder_id,connection)
-        return JSONResponse({"message":"Reminder deleted successfully!"})
+        delete_reminders_db(reminder_id, connection)
+        return JSONResponse({"message": "Reminder deleted successfully!"})
     except Exception as e:
-        return JSONResponse({"error" : str(e)}, status_code=500)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
 
 @app.patch("/reminders/edit/{reminder_id}")
 def edit_reminder(reminder_id: int, reminder: ReminderEdit):
     try:
         edit_reminders_db(connection,
-                         reminder_id,
-                         reminder.reminder_title,
-                         reminder.reminder_date,
-                         reminder.reminder_description,
-                         reminder.is_complete,
-                         reminder.recurrence_type,
-                         reminder.recurrence_day_of_week,
-                         reminder.recurrence_time)
-        return JSONResponse({"message":"Reminder edited successfully!"})
+                          reminder_id,
+                          reminder.reminder_title,
+                          reminder.reminder_date,
+                          reminder.reminder_description,
+                          reminder.is_complete,
+                          reminder.recurrence_type,
+                          reminder.recurrence_day_of_week,
+                          reminder.recurrence_time)
+        return JSONResponse({"message": "Reminder edited successfully!"})
     except Exception as e:
-        return JSONResponse({"error" : str(e)}, status_code=500)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+# uvicorn main:app --host 0.0.0.0 --port 8000
+# Ensure in backend directory
+# source venv/bin/activate
+# python -m uvicorn main:app --host 0.0.0.0 --port 8000
+# uvicorn main:app --host 0.0.0.0 --port 8000
 
 
-#uvicorn main:app --host 0.0.0.0 --port 8000
-#Ensure in backend directory
-#source venv/bin/activate
-#python -m uvicorn main:app --host 0.0.0.0 --port 8000
-#uvicorn main:app --host 0.0.0.0 --port 8000
-
-
-#TODO                                       highest priority
+# TODO                                       highest priority
 # ASL input + M/N/Q/R/S right hand fix
 # reminders
 # pass in user time/ location in front end prompt
