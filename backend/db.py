@@ -63,7 +63,7 @@ def add_city_db(city,latitude,longitude,connection):
     # connection.close()
 
 
-def get_reminders_db(connection,rem_title=None,rem_date=None,rem_description=None,is_complete=None,recur_type='none',recur_day_of_week=None,recur_time=None):
+def get_reminders_db(connection,reminder_title=None,reminder_date=None,reminder_description=None,is_complete=None,recurrence_type='none',recurrence_day_of_week=None,recurrence_time=None):
     connection = connection
     cursor = connection.cursor()
     parameters=[]
@@ -74,97 +74,103 @@ def get_reminders_db(connection,rem_title=None,rem_date=None,rem_description=Non
     FROM reminders WHERE TRUE
     """
     
-    if rem_title != None:
-        QUERY += "AND title = %s"
-        parameters.append(rem_title)
+    if reminder_title != None:
+        QUERY += " AND reminder_title = %s"
+        parameters.append(reminder_title)
         
-    if rem_date != None:
-        QUERY += "AND date = %s"
-        parameters.append(rem_date)
+    if reminder_date != None:
+        QUERY += " AND reminder_date = %s"
+        parameters.append(reminder_date)
         
-    if rem_description != None:
-        QUERY += "AND reminder_des = %s"
-        parameters.append(rem_description)
+    if reminder_description != None:
+        QUERY += " AND reminder_description = %s"
+        parameters.append(reminder_description)
         
     if is_complete != None:
-        QUERY += "AND title = %s"
+        QUERY += " AND is_complete = %s"
         parameters.append(is_complete)
         
-    if recur_type != None:
-        QUERY += "AND title = %s"
-        parameters.append(recur_type)
+    if recurrence_type != None:
+        QUERY += " AND recurrence_type = %s"
+        parameters.append(recurrence_type)
         
-    if recur_day_of_week != None:
-        QUERY += "AND title = %s"
-        parameters.append(recur_day_of_week)
+    if recurrence_day_of_week != None:
+        QUERY += " AND recurrence_day_of_week = %s"
+        parameters.append(recurrence_day_of_week)
         
-    if recur_time != None:
-        QUERY += "AND title = %s"
-        parameters.append(recur_time) 
+    if recurrence_time != None:
+        QUERY += " AND recurrence_time = %s"
+        parameters.append(recurrence_time) 
          
      
     cursor.execute(QUERY,tuple(parameters))
     results = cursor.fetchall()
     cursor.close()
-    connection.close()
+    
     
     return results
         
-def add_reminders_db(connection,rem_title,rem_date,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
+def add_reminders_db(connection,reminder_title,reminder_date,reminder_description=None,is_complete=False,recurrence_type='none',recurrence_day_of_week=None,recurrence_time=None):
      connection = connection
      cursor = connection.cursor()
      
      QUERY = """
-     INSERT INTO reminders (title,reminder_date,reminder_description,is_complete,recurrence_type,recurrence_day_of_week,recurrence_time)
+     INSERT INTO reminders (reminder_title,reminder_date,reminder_description,is_complete,recurrence_type,recurrence_day_of_week,recurrence_time)
      VALUES (%s,%s,%s,%s,%s,%s,%s)
      """
-     cursor.execute(QUERY,(rem_title,rem_date,rem_description,is_complete,recur_type,recur_day_of_week,recur_time))
+     cursor.execute(QUERY,(reminder_title,reminder_date,reminder_description,is_complete,recurrence_type,recurrence_day_of_week,recurrence_time))
      connection.commit()
      cursor.close()
-     connection.close()
+     
 
-def edit_reminders_db(connection,rem_title=None,rem_date=None,rem_description=None,is_complete=False,recur_type='none',recur_day_of_week=None,recur_time=None):
+def edit_reminders_db(connection,reminder_id,reminder_title=None,reminder_date=None,reminder_description=None,is_complete=False,recurrence_type='none',recurrence_day_of_week=None,recurrence_time=None):
     connection = connection
     cursor = connection.cursor()
     parameters=[]
     
     QUERY = """
-    UPDATE reminders WHERE TRUE
+    UPDATE reminders 
+    SET 
     """
-    
-    if rem_title != None:
-        QUERY += "AND title = %s"
-        parameters.append(rem_title)
+
+    if reminder_title != None:
+        QUERY += "reminder_title = %s, "
+        parameters.append(reminder_title)
         
-    if rem_date != None:
-        QUERY += "AND date = %s"
-        parameters.append(rem_date)
+    if reminder_date != None:
+        QUERY += "reminder_date = %s, "
+        parameters.append(reminder_date)
         
-    if rem_description != None:
-        QUERY += "AND reminder_des = %s"
-        parameters.append(rem_description)
+    if reminder_description != None:
+        QUERY += "reminder_description = %s, "
+        parameters.append(reminder_description)
         
     if is_complete != None:
-        QUERY += "AND title = %s"
+        QUERY += "is_complete = %s, "
         parameters.append(is_complete)
         
-    if recur_type != None:
-        QUERY += "AND title = %s"
-        parameters.append(recur_type)
+    if recurrence_type != None:
+        QUERY += "recurrence_type = %s, "
+        parameters.append(recurrence_type)
         
-    if recur_day_of_week != None:
-        QUERY += "AND title = %s"
-        parameters.append(recur_day_of_week)
+    if recurrence_day_of_week != None:
+        QUERY += "recurrence_day_of_week = %s, "
+        parameters.append(recurrence_day_of_week)
         
-    if recur_time != None:
-        QUERY += "AND title = %s"
-        parameters.append(recur_time)  
-        
-    cursor.execute(QUERY,tuple(parameters))                          
+    if recurrence_time != None:
+        QUERY += "recurrence_time = %s, "
+        parameters.append(recurrence_time)  
+    
+    QUERY = QUERY.rstrip(", ")  
+    QUERY += " WHERE reminder_id = %s"
+    parameters.append(reminder_id)
+
+    cursor.execute(QUERY,tuple(parameters))        
+    connection.commit()
+    cursor.close()
+                     
         
      
-        
-            
 def delete_reminders_db(reminder_id,connection):
     
     connection = connection
@@ -177,7 +183,7 @@ def delete_reminders_db(reminder_id,connection):
     cursor.execute(QUERY,(reminder_id,))
     connection.commit()
     cursor.close()
-    connection.close()     
+        
      
      
     

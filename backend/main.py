@@ -2,7 +2,7 @@
 import sys
 
 import whisper
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException,Depends
 from fastapi.responses import JSONResponse
 import tempfile
 import os
@@ -10,30 +10,18 @@ from whispertest import handle_prompt
 from collections import deque
 import numpy as np
 from pydantic import BaseModel
-from typing import List
+from typing import List,Optional
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-
+from db import add_reminders_db,get_reminders_db,edit_reminders_db,delete_reminders_db
 import psycopg2
 
 def get_connection():
 
-    USER = os.getenv("user")
-    PASSWORD = os.getenv("password")
-    HOST = os.getenv("host")
-    PORT = os.getenv("port")
-    DBNAME = os.getenv("dbname")
-    print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
-
     # Connect to the database
     try:
         connection = psycopg2.connect(
-            user=USER,
-            password=PASSWORD,
-            host=HOST,
-            port=PORT,
-            dbname=DBNAME,
-            sslmode = "require"
+           os.getenv("DATABASE_URL")
         )
         print("Connection successful!")
         return connection
@@ -41,6 +29,7 @@ def get_connection():
     except Exception as e:
         print(f"Failed to connect: {e}")
         return None
+    
 connection = get_connection()
 app = FastAPI(title="App",description="Assistant app")
 
@@ -50,6 +39,34 @@ class SignRequest(BaseModel):
 class TextRequest(BaseModel):
     text: str
 
+class ReminderCreate(BaseModel):
+    reminder_title: str
+    reminder_date: str
+    reminder_description: Optional[str] = None
+    is_complete: bool = False
+    recurrence_type: Optional[str] = 'none'
+    recurrence_day_of_week: Optional[int] = None
+    recurrence_time: Optional[str] = None
+
+class ReminderGet(BaseModel):
+    reminder_title: Optional[str] = None
+    reminder_date: Optional[str] = None
+    reminder_description: Optional[str] = None
+    is_complete: Optional[bool] = None
+    recurrence_type: Optional[str] = None
+    recurrence_day_of_week: Optional[int] = None
+    recurrence_time: Optional[str] = None
+
+
+class ReminderEdit(BaseModel):
+    reminder_title: Optional[str] = None
+    reminder_date: Optional[str] = None
+    reminder_description: Optional[str] = None
+    is_complete: Optional[bool] = None
+    recurrence_type: Optional[str] = None
+    recurrence_day_of_week: Optional[int] = None
+    recurrence_time: Optional[str] = None
+    
 model = whisper.load_model("small")
 
 @app.post("/voice")
@@ -94,8 +111,8 @@ async def text(req: TextRequest):
 
 class SingleFrameRequest(BaseModel): features: List[float]
 
-modelASL = tf.keras.models.load_model("asl_mediapipe_model.keras")
-labels = np.load("asl_labels.npy", allow_pickle=True)
+#modelASL = tf.keras.models.load_model("asl_mediapipe_model.keras")
+#labels = np.load("asl_labels.npy", allow_pickle=True)
 
 pred_queue = deque(maxlen=10)
 SEQUENCE_LENGTH = 30
@@ -157,9 +174,6 @@ async def predict(data: SingleFrameRequest):
         print(f"Prediction error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-
-
-
 @app.post("/echo_asl")
 async def echo_asl(req: TextRequest):
     text = req.text.lower()
@@ -173,6 +187,59 @@ async def echo_asl(req: TextRequest):
     
     return {"tokens":tokens}
 
+@app.get("/reminders/get")
+async def get_reminder(reminder: ReminderGet = Depends()):
+    try:
+        results = get_reminders_db(connection, **reminder.dict())
+        return results
+    except Exception as e:
+        return JSONResponse({"error" : str(e)}, status_code=500)
+    
+
+@app.post("/reminders/add")
+async def add_reminder(reminder: ReminderCreate):
+    try:
+        add_reminders_db(connection,
+                         reminder.reminder_title,
+                         reminder.reminder_date,
+                         reminder.reminder_description,
+                         reminder.is_complete,
+                         reminder.recurrence_type,
+                         reminder.recurrence_day_of_week,
+                         reminder.recurrence_time)
+        return JSONResponse({"message":"Reminder added successfully!"})
+    except Exception as e:
+        return JSONResponse({"error" : str(e)}, status_code=500)
+    
+@app.delete("/reminders/delete/{reminder_id}")
+def delete_reminder(reminder_id: int):
+    try:
+        delete_reminders_db(reminder_id,connection)
+        return JSONResponse({"message":"Reminder deleted successfully!"})
+    except Exception as e:
+        return JSONResponse({"error" : str(e)}, status_code=500)
+
+@app.patch("/reminders/edit/{reminder_id}")
+def edit_reminder(reminder_id: int, reminder: ReminderEdit):
+    try:
+        edit_reminders_db(connection,
+                         reminder_id,
+                         reminder.reminder_title,
+                         reminder.reminder_date,
+                         reminder.reminder_description,
+                         reminder.is_complete,
+                         reminder.recurrence_type,
+                         reminder.recurrence_day_of_week,
+                         reminder.recurrence_time)
+        return JSONResponse({"message":"Reminder edited successfully!"})
+    except Exception as e:
+        return JSONResponse({"error" : str(e)}, status_code=500)
+
+
+#uvicorn main:app --host 0.0.0.0 --port 8000
+#Ensure in backend directory
+#source venv/bin/activate
+#python -m uvicorn main:app --host 0.0.0.0 --port 8000
 #uvicorn main:app --host 0.0.0.0 --port 8000
 
 
