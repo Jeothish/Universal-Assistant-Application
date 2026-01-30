@@ -68,6 +68,11 @@ dependencies {
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.4.3")
 
+    //Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.3")
+    implementation("androidx.compose.ui:ui:1.5.0")
+    implementation("androidx.compose.material3:material3:1.2.0")
+
 
 
     // MediaPipe
@@ -89,6 +94,8 @@ dependencies {
     // Networking
     implementation("org.java-websocket:Java-WebSocket:1.5.4")
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.navigation.compose)
 
     // Testing
     testImplementation(libs.junit)
