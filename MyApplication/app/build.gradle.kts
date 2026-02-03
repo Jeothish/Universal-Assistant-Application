@@ -71,7 +71,7 @@ dependencies {
     //Navigation
     implementation("androidx.navigation:navigation-compose:2.7.3")
     implementation("androidx.compose.ui:ui:1.5.0")
-    implementation("androidx.compose.material3:material3:1.2.0")
+    implementation("androidx.compose.material3:material3:1.3.0")
 
 
 
@@ -105,5 +105,9 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    //Search
+    implementation("androidx.compose.ui:ui:1.5.0")
+    implementation("androidx.navigation:navigation-compose:2.7.3")
 
 }

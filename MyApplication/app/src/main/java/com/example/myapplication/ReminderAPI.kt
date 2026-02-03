@@ -21,6 +21,7 @@ suspend fun getReminders(): List<ReminderGet> = withContext(Dispatchers.IO){
         val arr = jsonArray.getJSONArray(i)
         reminders.add(
             ReminderGet(
+                reminder_id = arr.optInt(0,400),
                 reminder_title = arr.optString(1,"No title"),
                 reminder_date = arr.optString(2,"No date"),
                 reminder_description = arr.optString(3,"No description"),
