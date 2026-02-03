@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 data class ReminderGet(
+    val reminder_id: Int,
     val reminder_title: String?,
     val reminder_date: String?,
     val reminder_description: String?,

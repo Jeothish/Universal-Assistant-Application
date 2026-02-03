@@ -54,6 +54,7 @@ class ReminderCreate(BaseModel):
 
 
 class ReminderGet(BaseModel):
+    reminder_id: int
     reminder_title: Optional[str] = None
     reminder_date: Optional[str] = None
     reminder_description: Optional[str] = None
@@ -121,12 +122,12 @@ class SingleFrameRequest(BaseModel):
     hand: str
 
 
-modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
-modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
+#modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
+#modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
 
 
-labelsR = np.load("asl_labels.npy", allow_pickle=True)
-labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
+#labelsR = np.load("asl_labels.npy", allow_pickle=True)
+#labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
 
 pred_queueL = deque(maxlen=10)
 pred_queueR = deque(maxlen=10)
@@ -213,9 +214,9 @@ async def echo_asl(req: TextRequest):
 
 
 @app.get("/reminders/get")
-async def get_reminder(reminder: ReminderGet = Depends()):
+async def get_reminder():
     try:
-        results = get_reminders_db(connection, **reminder.dict())
+        results = get_reminders_db(connection)
         return results
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
