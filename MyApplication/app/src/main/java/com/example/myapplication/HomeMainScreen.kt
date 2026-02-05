@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +57,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit){
         var recording by remember { mutableStateOf(false) }
         var showTestInput by remember {mutableStateOf(false)}
         val scrollState = rememberScrollState()
+        val aslInput by GlobalState.aslPrompt
 
 
 
@@ -98,6 +100,16 @@ fun HomeMainScreen(onOpenReminders: () -> Unit){
                             Alignment.TopEnd
                         ).padding(end = 80.dp, top = 20.dp, start = 40.dp)
                     )
+
+                    Text(
+                        text = "Prompt: ${aslInput.joinToString("")}",
+                        color = Color.Magenta,
+                        fontSize = 24.sp,
+                        modifier = Modifier.align(
+                            Alignment.TopEnd
+                        ).padding(end = 80.dp, top = 200.dp, start = 40.dp)
+                    )
+
                 }
 
                 val r = GlobalState.vc_result.value

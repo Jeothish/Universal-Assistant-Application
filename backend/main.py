@@ -122,12 +122,12 @@ class SingleFrameRequest(BaseModel):
     hand: str
 
 
-#modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
-#modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
+modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
+modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
 
 
-#labelsR = np.load("asl_labels.npy", allow_pickle=True)
-#labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
+labelsR = np.load("asl_labels.npy", allow_pickle=True)
+labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
 
 pred_queueL = deque(maxlen=10)
 pred_queueR = deque(maxlen=10)
@@ -153,6 +153,7 @@ def normalize_frame(frame_63):  # need this as differnt hand / cameras sizes hav
 @app.post("/predict")
 async def predict(data: SingleFrameRequest):
     try:
+
 
         if len(data.features) != FEATURES_PER_FRAME:
             raise HTTPException(
@@ -270,9 +271,12 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 # uvicorn main:app --host 0.0.0.0 --port 8000
 
 
-# TODO                                       highest priority
-# ASL input + M/N/Q/R/S right hand fix
+#TODO                                       highest priority
+# add button to clear asl prompt and confirm & send to backend
 # reminders
+# LLM function calling (functionGemma)
+# Response time
+# Azure / Pi
 # pass in user time/ location in front end prompt
 # bigger chat model
 # double pressing vc crash
