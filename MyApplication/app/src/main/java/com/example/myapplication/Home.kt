@@ -28,8 +28,14 @@ fun HomePage(modifier: Modifier = Modifier){
         }
         //Defines the reminders screen
         composable(HomeRoutes.REMINDERS){
-            RemindersScreenDisplay(returnToChat = {navController.popBackStack()}) //Goes back to previous screen
+            RemindersScreenDisplay(returnToChat = {navController.popBackStack()}, openRemindersScreen = {navController.navigate(
+                HomeRoutes.ADD_REMINDERS)})
         }
+
+        composable(HomeRoutes.ADD_REMINDERS){
+            AddReminderScreen(returnToChat = {navController.popBackStack()}) //Goes back to previous screen
+        }
+
     }
 }
 

@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.lazy.items
 
+
+
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,12 +28,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FrontHand
+import androidx.compose.material.icons.filled.KeyboardReturn
+import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.RestoreFromTrash
@@ -41,8 +48,10 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 
 import androidx.compose.runtime.getValue
@@ -54,9 +63,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.material3.OutlinedTextFieldDefaults
+
+
 
 @Composable
-fun RemindersScreenDisplay(returnToChat: () -> Unit) {
+fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: () -> Unit,) {
     var reminders by remember { mutableStateOf<List<ReminderGet>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var totalReminders by remember { mutableIntStateOf(0) }
@@ -86,6 +98,22 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit) {
         )
 
 
+        Button(onClick = returnToChat, modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFDE0F0F),
+            contentColor = Color(0xFFFFFFFF),
+        ))
+
+        {
+            Row() {
+                Icon(imageVector = Icons.Default.KeyboardReturn , contentDescription = null,modifier = Modifier.size(36.dp))
+                Text(text="Return to Chat", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
+
+            }
+        }
+
+
+
+
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
@@ -102,13 +130,17 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit) {
                 0xFFEA9049
             ), modifier = Modifier.weight(1f))
         }
+        Row(){
+            Text(text= "Active",
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold,
+                color=Color(0xFFFFC107),
+                modifier = Modifier.padding(8.dp)
+            )
 
-        Text(text= "Active",
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-            color=Color(0xFFFFC107),
-            modifier = Modifier.padding(8.dp)
-        )
+
+        }
+
 
 
     /**
@@ -131,25 +163,23 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit) {
             }
         }
 
-
-
-
-
-
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .fillMaxWidth()
                 .padding(16.dp),
-            contentAlignment = Alignment.BottomCenter
+            contentAlignment = Alignment.BottomEnd
         ) {
-            //Button to return to homepage
-            Button(
-                onClick = returnToChat,
+            IconButton(
+                onClick = {openRemindersScreen()},
+                modifier = Modifier.size(70.dp).background(color = Color(0xFFE7A23C), shape = CircleShape)
             ) {
-                Text("Return to Chat")
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = Color(0xFFFFFFFF)
+                )
             }
-
         }
     }
 
@@ -281,12 +311,470 @@ fun ReminderCard(reminder: ReminderGet){
         {
             Row() {
                 Icon(imageVector = Icons.Default.FrontHand , contentDescription = null,modifier = Modifier.size(36.dp))
-                Text(text="Translate to ASL", fontSize = 25.sp)
+                Text(text="Translate to ASL", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
 
             }
         }
         }
 }
+@Composable
+fun AddReminderScreen(returnToChat: () -> Unit){
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    var time by remember { mutableStateOf("") }
+    var recurrence_type by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
+    Column(modifier = Modifier.padding(12.dp).verticalScroll(scrollState))
+    {
+
+        Button(onClick = returnToChat, modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFDE0F0F),
+            contentColor = Color(0xFFFFFFFF),
+        ))
+
+        {
+            Row() {
+                Icon(imageVector = Icons.Default.KeyboardReturn , contentDescription = null,modifier = Modifier.size(36.dp))
+                Text(text="Return to Chat", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(25.dp))
+
+        Text(text= "Title *",
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color=Color(0xFFFFC107),
+            modifier = Modifier.padding(8.dp)
+        )
+
+        OutlinedTextField(
+            value = title,
+            onValueChange = {title= it},
+            placeholder = {
+                Text(
+                    text="What do you need to remember?",
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 20.sp
+
+                )},
+            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor =  Color(0xFFFFFFFF),
+                unfocusedContainerColor =  Color(0xFFFFFFFF),
+                focusedTextColor =  Color(0xFF000000),
+                focusedBorderColor =  Color(0xFFDBBE0E),
+                unfocusedBorderColor =  Color(0xFF423B3B),
+                unfocusedPlaceholderColor =  Color(0xFF716E6E)
+            )
+        )
+        Row() {
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardVoice,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "Speak Title",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.FrontHand,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "ASL Title",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+
+
+        }
+
+
+
+        Text(text= "Description ",
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color=Color(0xFFFFC107),
+            modifier = Modifier.padding(8.dp)
+        )
+
+        OutlinedTextField(
+            value = description,
+            onValueChange = {description= it},
+            placeholder = {
+                Text(
+                    text="Add some details...",
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 20.sp
+
+                )},
+            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor =  Color(0xFFFFFFFF),
+                unfocusedContainerColor =  Color(0xFFFFFFFF),
+                focusedTextColor =  Color(0xFF000000),
+                focusedBorderColor =  Color(0xFFDBBE0E),
+                unfocusedBorderColor =  Color(0xFF423B3B),
+                unfocusedPlaceholderColor =  Color(0xFF716E6E)
+            )
+        )
+        Row() {
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardVoice,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "Speak Description",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.FrontHand,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "ASL Description",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+
+
+        }
+
+        Text(text= "Date *",
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color=Color(0xFFFFC107),
+            modifier = Modifier.padding(8.dp)
+        )
+
+        OutlinedTextField(
+            value = date,
+            onValueChange = {date= it},
+            placeholder = {
+                Text(
+                    text="dd/mm/yyyy",
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 20.sp
+
+                )},
+            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor =  Color(0xFFFFFFFF),
+                unfocusedContainerColor =  Color(0xFFFFFFFF),
+                focusedTextColor =  Color(0xFF000000),
+                focusedBorderColor =  Color(0xFFDBBE0E),
+                unfocusedBorderColor =  Color(0xFF423B3B),
+                unfocusedPlaceholderColor =  Color(0xFF716E6E)
+            )
+        )
+        Row() {
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardVoice,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "Speak Date",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.FrontHand,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "ASL Date",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+
+
+        }
+        Text(text= "Time *",
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color=Color(0xFFFFC107),
+            modifier = Modifier.padding(8.dp)
+        )
+        OutlinedTextField(
+            value = time,
+            onValueChange = {time= it},
+            placeholder = {
+                Text(
+                    text="00:00",
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 20.sp
+
+                )},
+            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor =  Color(0xFFFFFFFF),
+                unfocusedContainerColor =  Color(0xFFFFFFFF),
+                focusedTextColor =  Color(0xFF000000),
+                focusedBorderColor =  Color(0xFFDBBE0E),
+                unfocusedBorderColor =  Color(0xFF423B3B),
+                unfocusedPlaceholderColor =  Color(0xFF716E6E)
+            )
+        )
+        Row() {
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardVoice,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "Speak Time",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.FrontHand,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "ASL Time",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+
+
+        }
+
+
+
+        Text(text= "Repeating ",
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color=Color(0xFFFFC107),
+            modifier = Modifier.padding(8.dp)
+        )
+
+        OutlinedTextField(
+            value = title,
+            onValueChange = {title= it},
+            placeholder = {
+                Text(
+                    text="Would you like this to repeat?",
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 20.sp
+
+                )},
+            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor =  Color(0xFFFFFFFF),
+                unfocusedContainerColor =  Color(0xFFFFFFFF),
+                focusedTextColor =  Color(0xFF000000),
+                focusedBorderColor =  Color(0xFFDBBE0E),
+                unfocusedBorderColor =  Color(0xFF423B3B),
+                unfocusedPlaceholderColor =  Color(0xFF716E6E)
+            )
+        )
+        Row() {
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardVoice,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "Speak Repeating",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            Button(
+                onClick = {},
+                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE7D112),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.FrontHand,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = "ASL Repeating",
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+        }
+
+        Button(onClick = {}, modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF16E70F),
+            contentColor = Color(0xFFFFFFFF),
+        ))
+
+        {
+            Row() {
+                Icon(imageVector = Icons.Default.Add , contentDescription = null,modifier = Modifier.size(36.dp))
+                Text(text="Add reminder", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+        }
+
+
+
+
+    }
+}
+
+
 
 @Composable
 fun statsBox(icon: androidx.compose.ui.graphics.vector.ImageVector, iconColour:Color = Color.DarkGray , value:Int , label:String, circleBackground: Color = Color.Gray,modifier: Modifier = Modifier ){
