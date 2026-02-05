@@ -5,4 +5,6 @@ object HomeRoutes{
     const val MAIN = "main"
     const val REMINDERS = "reminders"
 
+    const val ADD_REMINDERS = "add_reminders"
+
 }
