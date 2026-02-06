@@ -490,7 +490,8 @@ fun HomeMainScreen(onOpenReminders: () -> Unit){
 
                             item {
 
-                                Button("Sign Language", Alignment.BottomEnd)
+                                Button("Sign Language", Alignment.BottomEnd,
+                                    { recorder.sendTextToBackend(aslInput.joinToString("")) })
                             }
                         }
 
