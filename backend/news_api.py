@@ -13,9 +13,12 @@ Author:
 
 import requests
 from datetime import datetime,timezone,timedelta
+import os
 from dotenv import load_dotenv
 
-API_KEY = "REMOVED"
+load_dotenv()
+
+API_KEY = os.getenv("NEWS_API_KEY")
 
 def get_news(country=None,topic=None,source=None,language="en"):
     """
