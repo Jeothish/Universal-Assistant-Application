@@ -343,8 +343,9 @@ fun Greeting(time: String, modifier: Modifier) {
 
 
 @Composable
-fun Button(text : String,  contentAlignment: Alignment) {
+fun Button(text : String,  contentAlignment: Alignment, onSend: (String) -> Unit) {
     var asl by GlobalState.asl
+    val aslInput by GlobalState.aslPrompt
     Box(
         modifier = Modifier
             .fillMaxSize(),
@@ -352,7 +353,16 @@ fun Button(text : String,  contentAlignment: Alignment) {
     ) {
         Button(
 
-            onClick = {asl= !asl},
+            onClick =  {
+                if (aslInput.joinToString("").isNotBlank()) {
+                    if (asl) {
+                        onSend(text)
+                        GlobalState.aslPrompt.value = mutableListOf<String>()
+
+                    }
+
+                }
+                asl = !asl},
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(222,172,255),
                 contentColor = Color.Black
