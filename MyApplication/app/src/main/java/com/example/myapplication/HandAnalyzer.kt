@@ -196,7 +196,8 @@ class HandAnalyzer(
                             else if (letter == "space"){
                                 aslPrompt.value = (aslPrompt.value + " ").toMutableList()
                             }
-                            else {
+                            else if (letter != "del" && prevLetter != "del") {
+
                                 aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
                             }
 
