@@ -21,24 +21,23 @@ suspend fun getReminders(): List<ReminderGet> = withContext(Dispatchers.IO){
     val reminders = mutableListOf<ReminderGet>()
 
     for (i in 0 until jsonArray.length()){
-        val arr = jsonArray.getJSONArray(i)
+        val obj = jsonArray.getJSONObject(i)
         reminders.add(
             ReminderGet(
-                reminder_id = arr.optInt(0,400),
-                reminder_title = arr.optString(1,"No title"),
-                reminder_date = arr.optString(2,"No date"),
-                reminder_description = arr.optString(3,"No description"),
-                is_complete = arr.optBoolean(4,false) ,
-                recurrence_type = arr.optString(5,"none"),
-                recurrence_day_of_week = if(arr.isNull(6)) null else arr.getInt(6),
-                recurrence_time = arr.optString(7,null)
-                ))
+                reminder_id = obj.getInt("reminder_id"),
+                reminder_title = obj.optString("reminder_title",null),
+                reminder_date = obj.optString("reminder_date",null),
+                reminder_description = obj.optString("reminder_description",null),
+                is_complete = obj.optBoolean("is_complete",false),
+                recurrence_type = obj.optString("recurrence_type",null),
+                reminder_time = obj.optString("reminder_time",null),
+            ))
     }
     return@withContext reminders
 }
 
 suspend fun createReminder(reminder: ReminderCreate): Boolean = withContext(Dispatchers.IO){
-    val url = URL("http://192.168.1.135:8000/reminders/get")
+    val url = URL("http://192.168.1.135:8000/reminders/add")
     val connection = url.openConnection() as HttpURLConnection
 
     connection.requestMethod = "POST"
@@ -51,8 +50,7 @@ suspend fun createReminder(reminder: ReminderCreate): Boolean = withContext(Disp
         put("reminder_description", reminder.reminder_description)
         put("is_complete", reminder.is_complete)
         put("recurrence_type", reminder.recurrence_type)
-        put("recurrence_day_of_week", reminder.recurrence_day_of_week)
-        put("recurrence_time", reminder.recurrence_type)
+        put("reminder_time", reminder.reminder_time)
     }
 
     connection.outputStream.use { outputStream -> outputStream.write(json.toString().toByteArray())}
@@ -71,7 +69,7 @@ suspend fun deleteReminder(reminderId: Int): Boolean = withContext(Dispatchers.I
 }
 
 suspend fun updateReminders(reminderId: Int, reminder: ReminderEdit): Boolean = withContext(Dispatchers.IO) {
-    val url = URL("http://192.168.1.135:8000/reminders/update/$reminderId")
+    val url = URL("http://192.168.1.135:8000/reminders/edit/$reminderId")
     val connection = url.openConnection() as HttpURLConnection
 
     connection.requestMethod = "PATCH"
@@ -82,10 +80,9 @@ suspend fun updateReminders(reminderId: Int, reminder: ReminderEdit): Boolean = 
         reminder.reminder_title?.let { title -> put("reminder_title", title) }
         reminder.reminder_date?.let { date -> put("reminder_date", date) }
         reminder.reminder_description?.let { description-> put("reminder_description", description) }
-        reminder.is_complete?.let { isComplete -> put("reminder_is_complete", isComplete) }
+        reminder.is_complete?.let { isComplete -> put("is_complete", isComplete) }
         reminder.recurrence_type?.let { type -> put("recurrence_type", type) }
-        reminder.recurrence_day_of_week?.let { day -> put("recurrence_day_of_week", day) }
-        reminder.recurrence_time?.let {time ->  put("recurrence_time", time)}
+        reminder.reminder_time?.let {time ->  put("reminder_time", time)}
     }
 
     connection.outputStream.use { outputStream -> outputStream.write(json.toString().toByteArray())}
