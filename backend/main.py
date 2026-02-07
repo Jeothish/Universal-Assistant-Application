@@ -2,8 +2,9 @@
 import sys
 
 import whisper
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends , Query
 from fastapi.responses import JSONResponse
+from datetime import date,time
 import tempfile
 import os
 from dotenv import load_dotenv
@@ -50,20 +51,18 @@ class ReminderCreate(BaseModel):
     reminder_date: str
     reminder_description: Optional[str] = None
     is_complete: bool = False
-    recurrence_type: Optional[str] = 'none'
-    recurrence_day_of_week: Optional[int] = None
-    recurrence_time: Optional[str] = None
+    recurrence_type: Optional[str] = None
+    reminder_time: Optional[str] = None
 
 
 class ReminderGet(BaseModel):
     reminder_id: int
     reminder_title: Optional[str] = None
-    reminder_date: Optional[str] = None
+    reminder_date: Optional[date] = None
     reminder_description: Optional[str] = None
     is_complete: Optional[bool] = None
     recurrence_type: Optional[str] = None
-    recurrence_day_of_week: Optional[int] = None
-    recurrence_time: Optional[str] = None
+    reminder_time: Optional[time] = None
 
 
 class ReminderEdit(BaseModel):
@@ -72,8 +71,7 @@ class ReminderEdit(BaseModel):
     reminder_description: Optional[str] = None
     is_complete: Optional[bool] = None
     recurrence_type: Optional[str] = None
-    recurrence_day_of_week: Optional[int] = None
-    recurrence_time: Optional[str] = None
+    reminder_time: Optional[str] = None
 
 
 model = whisper.load_model("small")
@@ -215,14 +213,38 @@ async def echo_asl(req: TextRequest):
     return {"tokens": tokens}
 
 
-@app.get("/reminders/get")
-async def get_reminder():
-    try:
-        results = get_reminders_db(connection)
-        return results
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
-
+@app.get("/reminders/get", response_model=list[ReminderGet])
+async def get_reminder(
+    reminder_title: str | None = Query(None),
+    reminder_date: str | None = Query(None),
+    reminder_description: str | None = Query(None),
+    is_complete: bool | None = Query(None),
+    recurrence_type: str | None = Query(None),
+    reminder_time: str | None = Query(None),
+):
+    rows = get_reminders_db(
+        connection,
+        reminder_title=reminder_title,
+        reminder_date=reminder_date,
+        reminder_description=reminder_description,
+        is_complete=is_complete,
+        recurrence_type=recurrence_type,
+        reminder_time=reminder_time
+    )
+    
+    return [
+        ReminderGet(
+            reminder_id = r[0],
+            reminder_title=r[1],
+            reminder_date=r[2],
+            reminder_description=r[3],
+            is_complete=r[4],
+            recurrence_type=r[5],
+            reminder_time=r[6]
+        )
+        for r in rows
+    ]
+    
 
 @app.post("/reminders/add")
 async def add_reminder(reminder: ReminderCreate):
@@ -233,8 +255,7 @@ async def add_reminder(reminder: ReminderCreate):
                          reminder.reminder_description,
                          reminder.is_complete,
                          reminder.recurrence_type,
-                         reminder.recurrence_day_of_week,
-                         reminder.recurrence_time)
+                         reminder.reminder_time)
         return JSONResponse({"message": "Reminder added successfully!"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -259,8 +280,7 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
                           reminder.reminder_description,
                           reminder.is_complete,
                           reminder.recurrence_type,
-                          reminder.recurrence_day_of_week,
-                          reminder.recurrence_time)
+                          reminder.reminder_time)
         return JSONResponse({"message": "Reminder edited successfully!"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
