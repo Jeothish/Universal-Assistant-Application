@@ -15,10 +15,10 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from db import add_reminders_db, get_reminders_db, edit_reminders_db, delete_reminders_db
 import psycopg2
-
+from InputProcessing import handle_prompt_with_qwen
 
 def get_connection():
-    # Connect to the database
+    # connect to database
     try:
         connection = psycopg2.connect(
             os.getenv("DATABASE_URL")
@@ -41,6 +41,7 @@ class SignRequest(BaseModel):
 
 class TextRequest(BaseModel):
     text: str
+    time: str
 
 
 class ReminderCreate(BaseModel):
@@ -99,7 +100,7 @@ async def voice(audio: UploadFile = File(...)):
         if not raw_prompt.strip():
             print("no speech detected")
             return
-        response = handle_prompt(connection, raw_prompt)
+        response = handle_prompt_with_qwen(raw_prompt,connection)
         print(response)
         return JSONResponse(content=response)
     finally:
@@ -109,11 +110,12 @@ async def voice(audio: UploadFile = File(...)):
 @app.post("/text")
 async def text(req: TextRequest):
     inp = req.text.strip().lower()
+    time = req.time.strip()
     print("text in:" + inp)
     if not inp:
         return
     else:
-        response = handle_prompt(connection, inp)
+        response = handle_prompt_with_qwen(inp,connection,time)
         return JSONResponse(content=response)
 
 
@@ -272,13 +274,13 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 
 
 #TODO                                       highest priority
-# add button to clear asl prompt and confirm & send to backend
-# reminders
-# LLM function calling (functionGemma)
-# Response time
 # Azure / Pi
-# pass in user time/ location in front end prompt
-# bigger chat model
-# double pressing vc crash
+# caching
+# rate limiting
+# TTS
+# Response time
+# pass in user location in front end prompt
+# bigger model for chat (api??)
+# double pressing vc crash (double pressing buttons in genreal)
 # news unsupported domains (done for rte)
 #                                           lowest priority

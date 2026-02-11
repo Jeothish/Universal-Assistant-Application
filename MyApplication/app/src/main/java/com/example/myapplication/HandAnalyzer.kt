@@ -15,6 +15,7 @@ import com.google.gson.JsonObject
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import kotlin.math.sqrt
 import OverlayView
+
 class HandAnalyzer(
     context: Context,
     private val overlayView: OverlayView
@@ -160,7 +161,7 @@ class HandAnalyzer(
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
 
-                val json = mapOf("features" to features.toList(), "hand" to detHand)
+                val json = mapOf("features" to features.toList(), "hand" to detHand)//json object to send to backend
                 val body = Gson().toJson(json)
 
                 conn.outputStream.use {

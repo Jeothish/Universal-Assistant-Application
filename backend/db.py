@@ -5,31 +5,20 @@ import os
 # Load environment variables from .env
 # load_dotenv()
 #
-# def get_connection():
-#
-#     USER = os.getenv("user")
-#     PASSWORD = os.getenv("password")
-#     HOST = os.getenv("host")
-#     PORT = os.getenv("port")
-#     DBNAME = os.getenv("dbname")
-#     print(f"Connecting with USER={USER}, PASSWORD={'*' * len(PASSWORD)}, HOST={HOST}, PORT={PORT}, DBNAME={DBNAME}")
-#
-#     # Connect to the database
-#     try:
-#         connection = psycopg2.connect(
-#             user=USER,
-#             password=PASSWORD,
-#             host=HOST,
-#             port=PORT,
-#             dbname=DBNAME,
-#             sslmode = "require"
-#         )
-#         print("Connection successful!")
-#         return connection
-#
-#     except Exception as e:
-#         print(f"Failed to connect: {e}")
-#         return None
+def get_connection():
+    # connect to database
+    try:
+        connection = psycopg2.connect(
+            os.getenv("DATABASE_URL")
+        )
+        print("Connection successful!")
+        return connection
+
+    except Exception as e:
+        print(f"Failed to connect: {e}")
+        return None
+
+
 
 def get_cities_db(city,connection):
 

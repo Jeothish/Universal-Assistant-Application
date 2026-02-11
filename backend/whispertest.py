@@ -10,6 +10,7 @@ from app import *
 from openai import OpenAI
 import pycountry
 from datetime import datetime
+from db import get_connection
 
 client = OpenAI(
     base_url="http://localhost:1234/v1",
@@ -181,6 +182,9 @@ def handle_prompt(connection,raw_prompt: str) -> dict:
     response_llm = get_intent_llm(raw_prompt)
     intent_llm = response_llm["intent"]
     print(raw_prompt)
+    if connection.closed:
+        print("connection not found, restarting")
+        connection = get_connection()
 
 
     #get weather forecast

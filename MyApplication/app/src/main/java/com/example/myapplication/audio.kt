@@ -13,7 +13,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 
-
+import java.time.LocalDateTime
+import java.time.LocalTime
 data class NewsItem(
     val Title: String,
     val Link: String,
@@ -78,7 +79,7 @@ class audio(private val context: Context) {
 
                 val payload = """
                     {
-                        "text": "${text.replace("\"","\\\"")}"
+                        "text": "${text.replace("\"","\\\"")}", "time": "${LocalDateTime.now().toString()}"
                         }
                 """.trimIndent()
 
