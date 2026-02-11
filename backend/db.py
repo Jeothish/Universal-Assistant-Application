@@ -52,7 +52,7 @@ def add_city_db(city,latitude,longitude,connection):
     # connection.close()
 
 
-def get_reminders_db(connection,reminder_title=None,reminder_date=None,reminder_description=None,is_complete=None,recurrence_type='none',recurrence_day_of_week=None,recurrence_time=None):
+def get_reminders_db(connection,reminder_title=None,reminder_date=None,reminder_description=None,is_complete=None,recurrence_type=None,reminder_time=None):
     connection = connection
     cursor = connection.cursor()
     parameters=[]
@@ -83,36 +83,46 @@ def get_reminders_db(connection,reminder_title=None,reminder_date=None,reminder_
         QUERY += " AND recurrence_type = %s"
         parameters.append(recurrence_type)
         
-    if recurrence_day_of_week != None:
-        QUERY += " AND recurrence_day_of_week = %s"
-        parameters.append(recurrence_day_of_week)
         
-    if recurrence_time != None:
-        QUERY += " AND recurrence_time = %s"
-        parameters.append(recurrence_time) 
-         
-     
-    cursor.execute(QUERY,tuple(parameters))
-    results = cursor.fetchall()
-    cursor.close()
-    
-    
-    return results
+    if reminder_time != None:
+        QUERY += " AND reminder_time = %s"
+        parameters.append(reminder_time)
+
+    try:
+        cursor.execute(QUERY,tuple(parameters))
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    except Exception as e:
+        connection.rollback()
+        print(f"Database error when getting reminders: {e}")
+        return []
+    finally:
+        cursor.close()
+
+
+
         
-def add_reminders_db(connection,reminder_title,reminder_date,reminder_description=None,is_complete=False,recurrence_type='none',recurrence_day_of_week=None,recurrence_time=None):
+def add_reminders_db(connection,reminder_title,reminder_date,reminder_description=None,is_complete=False,recurrence_type='none',reminder_time=None):
      connection = connection
      cursor = connection.cursor()
      
      QUERY = """
-     INSERT INTO reminders (reminder_title,reminder_date,reminder_description,is_complete,recurrence_type,recurrence_day_of_week,recurrence_time)
-     VALUES (%s,%s,%s,%s,%s,%s,%s)
+     INSERT INTO reminders (reminder_title,reminder_date,reminder_description,is_complete,recurrence_type,reminder_time)
+     VALUES (%s,%s,%s,%s,%s,%s)
      """
-     cursor.execute(QUERY,(reminder_title,reminder_date,reminder_description,is_complete,recurrence_type,recurrence_day_of_week,recurrence_time))
-     connection.commit()
-     cursor.close()
+     try:
+        cursor.execute(QUERY,(reminder_title,reminder_date,reminder_description,is_complete,recurrence_type,reminder_time))
+        connection.commit()
+     except Exception as e:
+         connection.rollback()
+         print(f"Database error when adding reminders: {e}")
+     finally:
+         cursor.close()
+
      
 
-def edit_reminders_db(connection,reminder_id,reminder_title=None,reminder_date=None,reminder_description=None,is_complete=False,recurrence_type='none',recurrence_day_of_week=None,recurrence_time=None):
+def edit_reminders_db(connection,reminder_id,reminder_title=None,reminder_date=None,reminder_description=None,is_complete=None,recurrence_type=None,reminder_time=None):
     connection = connection
     cursor = connection.cursor()
     parameters=[]
@@ -142,24 +152,16 @@ def edit_reminders_db(connection,reminder_id,reminder_title=None,reminder_date=N
         QUERY += "recurrence_type = %s, "
         parameters.append(recurrence_type)
         
-    if recurrence_day_of_week != None:
-        QUERY += "recurrence_day_of_week = %s, "
-        parameters.append(recurrence_day_of_week)
         
-    if recurrence_time != None:
-        QUERY += "recurrence_time = %s, "
-        parameters.append(recurrence_time)  
     
     QUERY = QUERY.rstrip(", ")  
     QUERY += " WHERE reminder_id = %s"
     parameters.append(reminder_id)
-
     cursor.execute(QUERY,tuple(parameters))        
     connection.commit()
     cursor.close()
                      
         
-     
 def delete_reminders_db(reminder_id,connection):
     
     connection = connection
@@ -172,14 +174,3 @@ def delete_reminders_db(reminder_id,connection):
     cursor.execute(QUERY,(reminder_id,))
     connection.commit()
     cursor.close()
-        
-     
-     
-    
-     
-     
-    
-       
-    
-    
-        

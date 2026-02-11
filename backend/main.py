@@ -49,20 +49,14 @@ class ReminderCreate(BaseModel):
     reminder_date: str
     reminder_description: Optional[str] = None
     is_complete: bool = False
-    recurrence_type: Optional[str] = 'none'
-    recurrence_day_of_week: Optional[int] = None
-    recurrence_time: Optional[str] = None
 
 
 class ReminderGet(BaseModel):
     reminder_id: int
     reminder_title: Optional[str] = None
-    reminder_date: Optional[str] = None
     reminder_description: Optional[str] = None
     is_complete: Optional[bool] = None
     recurrence_type: Optional[str] = None
-    recurrence_day_of_week: Optional[int] = None
-    recurrence_time: Optional[str] = None
 
 
 class ReminderEdit(BaseModel):
@@ -71,8 +65,6 @@ class ReminderEdit(BaseModel):
     reminder_description: Optional[str] = None
     is_complete: Optional[bool] = None
     recurrence_type: Optional[str] = None
-    recurrence_day_of_week: Optional[int] = None
-    recurrence_time: Optional[str] = None
 
 
 model = whisper.load_model("small")
@@ -101,6 +93,7 @@ async def voice(audio: UploadFile = File(...)):
             print("no speech detected")
             return
         response = handle_prompt_with_qwen(raw_prompt,connection)
+
         print(response)
         return JSONResponse(content=response)
     finally:
@@ -155,7 +148,6 @@ def normalize_frame(frame_63):  # need this as differnt hand / cameras sizes hav
 @app.post("/predict")
 async def predict(data: SingleFrameRequest):
     try:
-
 
         if len(data.features) != FEATURES_PER_FRAME:
             raise HTTPException(
@@ -216,13 +208,6 @@ async def echo_asl(req: TextRequest):
     return {"tokens": tokens}
 
 
-@app.get("/reminders/get")
-async def get_reminder():
-    try:
-        results = get_reminders_db(connection)
-        return results
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/reminders/add")
@@ -233,9 +218,7 @@ async def add_reminder(reminder: ReminderCreate):
                          reminder.reminder_date,
                          reminder.reminder_description,
                          reminder.is_complete,
-                         reminder.recurrence_type,
-                         reminder.recurrence_day_of_week,
-                         reminder.recurrence_time)
+                         reminder.recurrence_type)
         return JSONResponse({"message": "Reminder added successfully!"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -259,9 +242,7 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
                           reminder.reminder_date,
                           reminder.reminder_description,
                           reminder.is_complete,
-                          reminder.recurrence_type,
-                          reminder.recurrence_day_of_week,
-                          reminder.recurrence_time)
+                          reminder.recurrence_type)
         return JSONResponse({"message": "Reminder edited successfully!"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)

@@ -1,4 +1,5 @@
-# 3rd-Year-Project
+# Universal Assistant Application (3rd Year Project)
+
 
 ## Whisper:
     pip install openai-whisper

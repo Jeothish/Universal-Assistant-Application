@@ -15,7 +15,6 @@ import com.google.gson.JsonObject
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import kotlin.math.sqrt
 import OverlayView
-
 class HandAnalyzer(
     context: Context,
     private val overlayView: OverlayView

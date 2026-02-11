@@ -1,7 +1,11 @@
 package com.example.myapplication
 
+import android.app.DatePickerDialog
+import android.content.Context
 import android.graphics.Paint
+import android.icu.util.Calendar
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +17,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.lazy.items
-
 
 
 import androidx.compose.material3.Text
@@ -64,7 +67,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.OutlinedTextFieldDefaults
-
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlin.String
 
 
 @Composable
@@ -89,12 +97,25 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: () -> U
 
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = { searchQuery = it },
-            label = { Text("Search reminders...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            onValueChange = {searchQuery= it},
+            placeholder = {
+                Text(
+                    text="Search reminders...",
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 20.sp
+
+                )},
+            leadingIcon = {Icon(Icons.Default.Search, contentDescription = null)},
+            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor =  Color(0xFFFFFFFF),
+                unfocusedContainerColor =  Color(0xFFFFFFFF),
+                focusedTextColor =  Color(0xFF000000),
+                focusedBorderColor =  Color(0xFFDBBE0E),
+                unfocusedBorderColor =  Color(0xFF423B3B),
+                unfocusedPlaceholderColor =  Color(0xFF716E6E)
+            )
         )
 
 
@@ -143,45 +164,45 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: () -> U
 
 
 
-    /**
+        /**
         for (reminder in reminders) {
-            Text("Title : ${reminder.reminder_title}")
-            Text("Date : ${reminder.reminder_date}")
-            Text("Description : ${reminder.reminder_description ?: "No description"}")
-            Text("Completed: ${if (reminder.is_complete == true) "Yes" else "No"}")
-            Text("Recurrence Type: ${reminder.recurrence_type}")
-            Text("Recurrence Day: ${reminder.recurrence_day_of_week}")
-            Text("Recurrence Time: ${reminder.recurrence_time}")
+        Text("Title : ${reminder.reminder_title}")
+        Text("Date : ${reminder.reminder_date}")
+        Text("Description : ${reminder.reminder_description ?: "No description"}")
+        Text("Completed: ${if (reminder.is_complete == true) "Yes" else "No"}")
+        Text("Recurrence Type: ${reminder.recurrence_type}")
+        Text("Recurrence Day: ${reminder.recurrence_day_of_week}")
+        Text("Recurrence Time: ${reminder.recurrence_time}")
         }
-        */
+         */
 
         LazyColumn(
             modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)){
 
             items(reminders) {reminder -> ReminderCard(reminder)}
 
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            IconButton(
-                onClick = {openRemindersScreen()},
-                modifier = Modifier.size(70.dp).background(color = Color(0xFFE7A23C), shape = CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = Color(0xFFFFFFFF)
-                )
-            }
         }
     }
+
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.BottomEnd
+    ) {
+        IconButton(
+            onClick = {openRemindersScreen()},
+            modifier = Modifier.size(70.dp).background(color = Color(0xFFE7A23C), shape = CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                tint = Color(0xFFFFFFFF)
+            )
+        }
+    }
+}
 
 @Composable
 fun ReminderCard(reminder: ReminderGet){
@@ -191,116 +212,116 @@ fun ReminderCard(reminder: ReminderGet){
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1D1D1D)),
     )
     {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        )
+        {
+            RadioButton(
+                selected = checkTest,
+                onClick = { checkTest = !checkTest },
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = Color(0xFF0DF108),
+                    unselectedColor = Color(0xFFFFFFFF),
+                    disabledSelectedColor = Color(0xFF1D1D1D),
+                    disabledUnselectedColor = Color(0xFF383434)
+                ),
+                modifier = Modifier.scale(2f)
             )
-            {
-                RadioButton(
-                    selected = checkTest,
-                    onClick = { checkTest = !checkTest },
-                    colors = RadioButtonDefaults.colors(
-                        selectedColor = Color(0xFF0DF108),
-                        unselectedColor = Color(0xFFFFFFFF),
-                        disabledSelectedColor = Color(0xFF1D1D1D),
-                        disabledUnselectedColor = Color(0xFF383434)
-                    ),
-                    modifier = Modifier.scale(2f)
+
+            Spacer(modifier = Modifier.width(35.dp))
+
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                Text(
+                    text = reminder.reminder_title ?: "No title",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 25.sp,
+                    color = Color(0xFFFFFFFF),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(5.dp))
 
-                Spacer(modifier = Modifier.width(35.dp))
+                Text(
+                    text = reminder.reminder_description ?: "No description",
+                    fontSize = 18.sp,
+                    color = Color(0xFF7B7676)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Column(modifier = Modifier.padding(16.dp)) {
-
-                    Text(
-                        text = reminder.reminder_title ?: "No title",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 25.sp,
-                        color = Color(0xFFFFFFFF),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(5.dp))
-
-                    Text(
-                        text = reminder.reminder_description ?: "No description",
-                        fontSize = 18.sp,
-                        color = Color(0xFF7B7676)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .background(
-                                    color = Color(0xFFACC1C7),
-                                    shape = RoundedCornerShape(50)
-                                )
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = reminder.reminder_date ?: "No date",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0E0E0E)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .background(
+                                color = Color(0xFFACC1C7),
+                                shape = RoundedCornerShape(50)
                             )
-                        }
-                        Spacer(modifier = Modifier.width(5.dp))
+                            .padding(12.dp)
+                    ) {
                         Text(
-                            text = " Repeats ${reminder.recurrence_type ?: "No date"}",
-                            fontSize = 10.sp,
+                            text = "${reminder.reminder_date ?: "No date"} | ${reminder.reminder_time ?: "No time"}",
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFFFFFF),
+                            color = Color(0xFF0E0E0E)
                         )
-
                     }
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Repeats ${reminder.recurrence_type ?: "does not repeat"}",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFFFFF),
+                    )
+
                 }
             }
-                Row(Modifier.padding(16.dp)){
+        }
+        Row(Modifier.padding(16.dp)){
 
-                    Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1255E0),
-                        contentColor = Color(0xFFFFFFFF),
-                    ))
-                    {
-                        Column() {
-                            Icon(imageVector = Icons.Default.RecordVoiceOver , contentDescription = null,modifier = Modifier.size(36.dp))
-                            Text("Read")
-                        }
-
-                    }
-
-                    Spacer(modifier = Modifier.width(25.dp))
-
-                    Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE0C512),
-                        contentColor = Color(0xFFFFFFFF),
-                    ))
-
-                    {
-                        Column() {
-                            Icon(imageVector = Icons.Default.Edit , contentDescription = null,modifier = Modifier.size(36.dp))
-                            Text("Edit")
-
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(25.dp))
-
-                    Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFEC0A0A),
-                        contentColor = Color(0xFFFFFFFF),
-                    ))
-
-                    {
-                        Column() {
-                            Icon(imageVector = Icons.Default.Delete , contentDescription = null,modifier = Modifier.size(36.dp))
-                            Text("Delete")
-
-                        }
-                    }
+            Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF1255E0),
+                contentColor = Color(0xFFFFFFFF),
+            ))
+            {
+                Column() {
+                    Icon(imageVector = Icons.Default.RecordVoiceOver , contentDescription = null,modifier = Modifier.size(36.dp))
+                    Text("Read")
                 }
+
+            }
+
+            Spacer(modifier = Modifier.width(25.dp))
+
+            Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFE0C512),
+                contentColor = Color(0xFFFFFFFF),
+            ))
+
+            {
+                Column() {
+                    Icon(imageVector = Icons.Default.Edit , contentDescription = null,modifier = Modifier.size(36.dp))
+                    Text("Edit")
+
+                }
+            }
+
+            Spacer(modifier = Modifier.width(25.dp))
+
+            Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFEC0A0A),
+                contentColor = Color(0xFFFFFFFF),
+            ))
+
+            {
+                Column() {
+                    Icon(imageVector = Icons.Default.Delete , contentDescription = null,modifier = Modifier.size(36.dp))
+                    Text("Delete")
+
+                }
+            }
+        }
 
 
         Button(onClick = {}, modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
@@ -315,7 +336,7 @@ fun ReminderCard(reminder: ReminderGet){
 
             }
         }
-        }
+    }
 }
 @Composable
 fun AddReminderScreen(returnToChat: () -> Unit){
@@ -323,8 +344,14 @@ fun AddReminderScreen(returnToChat: () -> Unit){
     var description by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
-    var recurrence_type by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+    val couroutineScope = rememberCoroutineScope()
+    val calendar = Calendar.getInstance()
+    val context = LocalContext.current
+
+
+
     Column(modifier = Modifier.padding(12.dp).verticalScroll(scrollState))
     {
 
@@ -419,12 +446,7 @@ fun AddReminderScreen(returnToChat: () -> Unit){
                     )
                 }
             }
-
-
-
         }
-
-
 
         Text(text= "Description ",
             fontSize = 40.sp,
@@ -516,27 +538,48 @@ fun AddReminderScreen(returnToChat: () -> Unit){
             modifier = Modifier.padding(8.dp)
         )
 
-        OutlinedTextField(
-            value = date,
-            onValueChange = {date= it},
-            placeholder = {
-                Text(
-                    text="dd/mm/yyyy",
-                    modifier = Modifier.padding(top = 8.dp),
-                    fontSize = 20.sp
+        val datePicker = DatePickerDialog(
 
-                )},
-            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor =  Color(0xFFFFFFFF),
-                unfocusedContainerColor =  Color(0xFFFFFFFF),
-                focusedTextColor =  Color(0xFF000000),
-                focusedBorderColor =  Color(0xFFDBBE0E),
-                unfocusedBorderColor =  Color(0xFF423B3B),
-                unfocusedPlaceholderColor =  Color(0xFF716E6E)
-            )
+            context,
+            {_,year,month,dayOfMonth ->
+                calendar.set(year,month,dayOfMonth)
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                date = dateFormat.format(calendar.time)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
         )
+        Box(modifier = Modifier.fillMaxWidth().padding(8.dp).clickable{datePicker.show()}) {
+            OutlinedTextField(
+                value = date,
+                onValueChange = {},
+                placeholder = {
+                    Text(
+                        text = "Select Date",
+                        modifier = Modifier.padding(top = 8.dp),
+                        fontSize = 20.sp
+
+                    )
+                },
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFFFFFFF),
+                    unfocusedContainerColor = Color(0xFFFFFFFF),
+                    focusedTextColor = Color(0xFF000000),
+                    focusedBorderColor = Color(0xFFDBBE0E),
+                    unfocusedBorderColor = Color(0xFF423B3B),
+                    unfocusedPlaceholderColor = Color(0xFF716E6E),
+                    disabledContainerColor = Color(0xFFFFFFFF),
+                    disabledTextColor = Color(0xFF000000),
+                    unfocusedTextColor =  Color(0xFF000000)
+                ),
+                enabled = false
+            )
+        }
+
         Row() {
             Button(
                 onClick = {},
@@ -587,9 +630,6 @@ fun AddReminderScreen(returnToChat: () -> Unit){
                     )
                 }
             }
-
-
-
         }
         Text(text= "Time *",
             fontSize = 40.sp,
@@ -602,7 +642,7 @@ fun AddReminderScreen(returnToChat: () -> Unit){
             onValueChange = {time= it},
             placeholder = {
                 Text(
-                    text="00:00",
+                    text="HH:MM:SS",
                     modifier = Modifier.padding(top = 8.dp),
                     fontSize = 20.sp
 
@@ -683,8 +723,8 @@ fun AddReminderScreen(returnToChat: () -> Unit){
         )
 
         OutlinedTextField(
-            value = title,
-            onValueChange = {title= it},
+            value = type,
+            onValueChange = {type= it},
             placeholder = {
                 Text(
                     text="Would you like this to repeat?",
@@ -756,10 +796,26 @@ fun AddReminderScreen(returnToChat: () -> Unit){
 
         }
 
-        Button(onClick = {}, modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF16E70F),
-            contentColor = Color(0xFFFFFFFF),
-        ))
+        Button(onClick = {
+            couroutineScope.launch {
+                try {
+                    createReminder(ReminderCreate(
+                        reminder_title = title,
+                        reminder_date = date,
+                        reminder_description = description,
+                        is_complete = false,
+                        recurrence_type = type,
+                        reminder_time = time
+                    ))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        },
+            modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF16E70F),
+                contentColor = Color(0xFFFFFFFF),
+            ))
 
         {
             Row() {
@@ -773,6 +829,7 @@ fun AddReminderScreen(returnToChat: () -> Unit){
 
     }
 }
+
 
 
 
@@ -819,4 +876,3 @@ fun statsBox(icon: androidx.compose.ui.graphics.vector.ImageVector, iconColour:C
     }
 
 }
-

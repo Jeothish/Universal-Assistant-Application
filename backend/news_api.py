@@ -16,7 +16,6 @@ from datetime import datetime,timezone,timedelta
 
 
 
-
 def get_news(country=None,topic=None,source=None,language="en"):
     """
     Gets the top headlines of a given city and topic
