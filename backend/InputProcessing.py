@@ -78,7 +78,7 @@ FUNCTION_DEFINITIONS = [
                 "properties": {
                     "country": {
                         "type": "string",
-                        "description": "Country name (e.g., 'Ireland', 'USA', 'UK'). Leave empty for worldwide news."
+                        "description": "Country name (e.g., 'Ireland', 'USA', 'UK'). if none specified default to 'None'."
                     },
                     "category": {
                         "type": "string",
@@ -103,7 +103,7 @@ FUNCTION_DEFINITIONS = [
 
 def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None, connection=None):
 
-    if connection.closed:#incase connection between db and backend is severed
+    if connection.closed: #incase connection between db and backend is severed
         print("connection not found, restarting")
         connection = get_connection()
 
@@ -155,13 +155,21 @@ def execute_news_function(country: str = None, category: str = None, source: str
         error_msg = " (RTE is not supported. Showing results from Independent.ie instead.)"
 
 
-    if country:
+    if country and country.lower() != "none":
         country = country_code(country)
+
     else:
-        country = "wo"  # worldwide
+        country = None
 
     # get news
     headlines = get_news(country, category, source)
+
+    if isinstance(headlines, dict) and "error" in headlines:#incase of error e.g. no articles found,
+        print("Headlines not found"+headlines["error"])
+        return {
+            "headlines": [],
+            "error_msg": "\n"+headlines["error"]
+        }
 
     return {
         "headlines": headlines,
@@ -170,6 +178,10 @@ def execute_news_function(country: str = None, category: str = None, source: str
 
 
 def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = None) -> dict:
+
+    if connection.closed: #incase connection between db and backend is severed
+        print("connection not found, restarting")
+        connection = get_connection()
 
     if (current_time is None):
         current_time = datetime.now().strftime("%A, %B %d, %Y at %H:%M")

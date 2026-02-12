@@ -12,7 +12,13 @@ Author:
 
 
 import requests
+import os
+from dotenv import load_dotenv
 from datetime import datetime,timezone,timedelta
+
+load_dotenv()
+
+API_KEY=os.getenv("NEWS_API_KEY")
 
 
 

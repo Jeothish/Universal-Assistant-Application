@@ -346,6 +346,7 @@ fun Greeting(time: String, modifier: Modifier) {
 fun Button(text : String,  contentAlignment: Alignment, onSend: (String) -> Unit) {
     var asl by GlobalState.asl
     val aslInput by GlobalState.aslPrompt
+    val thinking by GlobalState.thinking
     Box(
         modifier = Modifier
             .fillMaxSize(),
@@ -354,15 +355,19 @@ fun Button(text : String,  contentAlignment: Alignment, onSend: (String) -> Unit
         Button(
 
             onClick =  {
-                if (aslInput.joinToString("").isNotBlank()) {
-                    if (asl) {
-                        onSend(text)
-                        GlobalState.aslPrompt.value = mutableListOf<String>()
+                if (!thinking){
+                    if (aslInput.joinToString("").isNotBlank()) {
+                        if (asl) {
+                            onSend(text)
+                            GlobalState.aslPrompt.value = mutableListOf<String>()
+
+                        }
 
                     }
-
+                    asl = !asl
                 }
-                asl = !asl},
+
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(222,172,255),
                 contentColor = Color.Black
@@ -373,7 +378,7 @@ fun Button(text : String,  contentAlignment: Alignment, onSend: (String) -> Unit
                 .height(100.dp)
                 .width(160.dp)
         ) {
-            Text(text)
+            Text(if (!thinking) {text} else {"Please wait until assistant is finished thinking."})
         }
     }
 }

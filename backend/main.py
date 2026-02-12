@@ -258,6 +258,7 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 # Azure / Pi
 # caching
 # rate limiting
+# Streaming output (chat)
 # TTS
 # Response time
 # pass in user location in front end prompt

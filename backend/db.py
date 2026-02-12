@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables from .env
-# load_dotenv()
+load_dotenv()
 #
 def get_connection():
     # connect to database

@@ -458,6 +458,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit){
                             item {
                                 Button(
                                     onClick = {
+
                                         if (!recording) {
                                             recorder.startRec()
                                             recording = true
