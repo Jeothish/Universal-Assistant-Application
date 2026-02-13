@@ -31,7 +31,7 @@ def get_connection():
         return None
 
 
-connection = get_connection()
+# connection = get_connection()
 app = FastAPI(title="App", description="Assistant app")
 
 
@@ -92,6 +92,7 @@ async def voice(audio: UploadFile = File(...)):
         if not raw_prompt.strip():
             print("no speech detected")
             return
+        connection = None
         response = handle_prompt_with_qwen(raw_prompt,connection)
 
         print(response)
@@ -108,6 +109,7 @@ async def text(req: TextRequest):
     if not inp:
         return
     else:
+        connection = None
         response = handle_prompt_with_qwen(inp,connection,time)
         return JSONResponse(content=response)
 
@@ -213,6 +215,7 @@ async def echo_asl(req: TextRequest):
 @app.post("/reminders/add")
 async def add_reminder(reminder: ReminderCreate):
     try:
+        connection = None
         add_reminders_db(connection,
                          reminder.reminder_title,
                          reminder.reminder_date,
@@ -227,6 +230,7 @@ async def add_reminder(reminder: ReminderCreate):
 @app.delete("/reminders/delete/{reminder_id}")
 def delete_reminder(reminder_id: int):
     try:
+        connection = None
         delete_reminders_db(reminder_id, connection)
         return JSONResponse({"message": "Reminder deleted successfully!"})
     except Exception as e:
@@ -236,6 +240,7 @@ def delete_reminder(reminder_id: int):
 @app.patch("/reminders/edit/{reminder_id}")
 def edit_reminder(reminder_id: int, reminder: ReminderEdit):
     try:
+        connection = None
         edit_reminders_db(connection,
                           reminder_id,
                           reminder.reminder_title,

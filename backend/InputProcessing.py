@@ -179,9 +179,10 @@ def execute_news_function(country: str = None, category: str = None, source: str
 
 def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = None) -> dict:
 
-    if connection.closed: #incase connection between db and backend is severed
-        print("connection not found, restarting")
-        connection = get_connection()
+    # if connection.closed or connection is None: #incase connection between db and backend is severed
+    #     print("connection not found, restarting")
+    #     connection = get_connection()
+    connection = get_connection()
 
     if (current_time is None):
         current_time = datetime.now().strftime("%A, %B %d, %Y at %H:%M")

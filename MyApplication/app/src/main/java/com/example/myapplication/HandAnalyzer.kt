@@ -33,6 +33,7 @@ class HandAnalyzer(
 
     private var prevAction =""
     private var timer =0
+    private val lock = Any()
 
     init {
         val options = HandLandmarker.HandLandmarkerOptions.builder()
@@ -181,38 +182,35 @@ class HandAnalyzer(
 
 
                     println(timer)
-                    if (prevLetter ==""){ // asl senetnce construction using delay
-                        prevLetter = letter
-                        timer = 0
-                    }
-                    if (letter == prevLetter)
-                    {
-
-                        if (timer >= 13){
-
-                            if (letter == "del" && aslPrompt.value.isNotEmpty()) {
-                                aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
-                            }
-                            else if (letter == "space"){
-                                aslPrompt.value = (aslPrompt.value + " ").toMutableList()
-                            }
-                            else if (letter != "del" && prevLetter != "del") {
-
-                                aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
-                            }
-
+                    synchronized(lock) {
+                        if (prevLetter == "") { // asl senetnce construction using delay
+                            prevLetter = letter
                             timer = 0
                         }
-                        else{
-                            timer++
+                        if (letter == prevLetter) {
 
+                            if (timer >= 13) {
+
+                                if (letter == "del" && aslPrompt.value.isNotEmpty()) {
+                                    aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
+                                } else if (letter == "space") {
+                                    aslPrompt.value = (aslPrompt.value + " ").toMutableList()
+                                } else if (letter != "del" && prevLetter != "del") {
+
+                                    aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
+                                }
+
+                                timer = -13
+                            } else {
+                                timer++
+
+                            }
+                        } else {
+                            prevCall = 0
+                            timer = 0
                         }
+                        prevLetter = letter
                     }
-                    else{
-                        prevCall =0
-                        timer = 0
-                    }
-                    prevLetter = letter
 
                     //asl word construction using "space" as confirm sign
 
@@ -310,4 +308,3 @@ private fun ImageProxy.toBitmap(): Bitmap {
 
     return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 }
-
