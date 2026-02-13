@@ -2,7 +2,7 @@
 import sys
 
 import whisper
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import FastAPI, Query, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 import tempfile
 import os
@@ -31,7 +31,7 @@ def get_connection():
         return None
 
 
-# connection = get_connection()
+connection = get_connection()
 app = FastAPI(title="App", description="Assistant app")
 
 
@@ -119,18 +119,18 @@ class SingleFrameRequest(BaseModel):
     hand: str
 
 
-modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
-modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
+#modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
+#modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
 
 
-labelsR = np.load("asl_labels.npy", allow_pickle=True)
-labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
+#labelsR = np.load("asl_labels.npy", allow_pickle=True)
+#labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
 
-pred_queueL = deque(maxlen=10)
-pred_queueR = deque(maxlen=10)
-pred_queue = deque(maxlen=10)
-SEQUENCE_LENGTH = 30
-FEATURES_PER_FRAME = 63
+#pred_queueL = deque(maxlen=10)
+#pred_queueR = deque(maxlen=10)
+#pred_queue = deque(maxlen=10)
+#SEQUENCE_LENGTH = 30
+#FEATURES_PER_FRAME = 63
 
 
 def normalize_frame(frame_63):  # need this as differnt hand / cameras sizes have differnet coords
@@ -210,12 +210,42 @@ async def echo_asl(req: TextRequest):
     return {"tokens": tokens}
 
 
-
+@app.get("/reminders/get", response_model=list[ReminderGet])
+async def get_reminder(
+    reminder_title: str | None = Query(None),
+    reminder_date: str | None = Query(None),
+    reminder_description: str | None = Query(None),
+    is_complete: bool | None = Query(None),
+    recurrence_type: str | None = Query(None),
+    reminder_time: str | None = Query(None),
+):
+    rows = get_reminders_db(
+        connection = get_connection(),
+        reminder_title=reminder_title,
+        reminder_date=reminder_date,
+        reminder_description=reminder_description,
+        is_complete=is_complete,
+        recurrence_type=recurrence_type,
+        reminder_time=reminder_time
+    )
+    
+    return [
+        ReminderGet(
+            reminder_id = r[0],
+            reminder_title=r[1],
+            reminder_date=r[2],
+            reminder_description=r[3],
+            is_complete=r[4],
+            recurrence_type=r[5],
+            reminder_time=r[6]
+        )
+        for r in rows
+    ]
 
 @app.post("/reminders/add")
 async def add_reminder(reminder: ReminderCreate):
     try:
-        connection = None
+        connection = get_connection()
         add_reminders_db(connection,
                          reminder.reminder_title,
                          reminder.reminder_date,
@@ -230,7 +260,7 @@ async def add_reminder(reminder: ReminderCreate):
 @app.delete("/reminders/delete/{reminder_id}")
 def delete_reminder(reminder_id: int):
     try:
-        connection = None
+        connection = get_connection()
         delete_reminders_db(reminder_id, connection)
         return JSONResponse({"message": "Reminder deleted successfully!"})
     except Exception as e:
@@ -240,7 +270,7 @@ def delete_reminder(reminder_id: int):
 @app.patch("/reminders/edit/{reminder_id}")
 def edit_reminder(reminder_id: int, reminder: ReminderEdit):
     try:
-        connection = None
+        connection = get_connection()
         edit_reminders_db(connection,
                           reminder_id,
                           reminder.reminder_title,

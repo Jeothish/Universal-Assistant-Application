@@ -69,6 +69,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -76,12 +77,13 @@ import kotlin.String
 
 
 @Composable
-fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: () -> Unit,) {
+fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existingReminder: ReminderGet?) -> Unit) {
     var reminders by remember { mutableStateOf<List<ReminderGet>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var totalReminders by remember { mutableIntStateOf(0) }
     var completedReminders by remember { mutableIntStateOf(0) }
     var remainingReminders by remember { mutableIntStateOf(0) }
+    val courotineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         try {
@@ -179,7 +181,14 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: () -> U
         LazyColumn(
             modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)){
 
-            items(reminders) {reminder -> ReminderCard(reminder)}
+            items(reminders) {reminder -> ReminderCard(
+                reminder = reminder,
+                onEdit = {reminder -> openRemindersScreen(reminder)},
+                onDelete = {id -> courotineScope.launch{
+                    deleteReminder(id)
+                    reminders = getReminders()
+                }}
+            )}
 
         }
     }
@@ -192,7 +201,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: () -> U
         contentAlignment = Alignment.BottomEnd
     ) {
         IconButton(
-            onClick = {openRemindersScreen()},
+            onClick = {openRemindersScreen(null)},
             modifier = Modifier.size(70.dp).background(color = Color(0xFFE7A23C), shape = CircleShape)
         ) {
             Icon(
@@ -205,7 +214,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: () -> U
 }
 
 @Composable
-fun ReminderCard(reminder: ReminderGet){
+fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete: (Int) -> Unit){
     var checkTest by remember { mutableStateOf(false) } //Bind to is_complete later
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -294,7 +303,7 @@ fun ReminderCard(reminder: ReminderGet){
 
             Spacer(modifier = Modifier.width(25.dp))
 
-            Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+            Button(onClick = {onEdit(reminder)}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFE0C512),
                 contentColor = Color(0xFFFFFFFF),
             ))
@@ -309,7 +318,8 @@ fun ReminderCard(reminder: ReminderGet){
 
             Spacer(modifier = Modifier.width(25.dp))
 
-            Button(onClick = {}, modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+            Button(onClick = {onDelete(reminder.reminder_id)},
+             modifier = Modifier.height(100.dp).width(100.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFEC0A0A),
                 contentColor = Color(0xFFFFFFFF),
             ))
@@ -339,16 +349,17 @@ fun ReminderCard(reminder: ReminderGet){
     }
 }
 @Composable
-fun AddReminderScreen(returnToChat: () -> Unit){
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf("") }
-    var time by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf("") }
+fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = null){
+    var title by remember { mutableStateOf(existingReminder?.reminder_title ?:"") }
+    var description by remember { mutableStateOf(existingReminder?.reminder_description ?:"") }
+    var date by remember { mutableStateOf(existingReminder?.reminder_date ?:"") }
+    var time by remember { mutableStateOf(existingReminder?.reminder_time ?:"") }
+    var type by remember { mutableStateOf(existingReminder?.recurrence_type ?:"") }
     val scrollState = rememberScrollState()
     val couroutineScope = rememberCoroutineScope()
     val calendar = Calendar.getInstance()
     val context = LocalContext.current
+    val isEditing = existingReminder != null
 
 
 
@@ -799,14 +810,30 @@ fun AddReminderScreen(returnToChat: () -> Unit){
         Button(onClick = {
             couroutineScope.launch {
                 try {
-                    createReminder(ReminderCreate(
-                        reminder_title = title,
-                        reminder_date = date,
-                        reminder_description = description,
-                        is_complete = false,
-                        recurrence_type = type,
-                        reminder_time = time
-                    ))
+                    if(isEditing){
+                       val  updateReminders = ReminderEdit(
+                           reminder_title = title.ifBlank { null },
+                           reminder_date = date.ifBlank { null },
+                           reminder_description = description.ifBlank { null },
+                           is_complete = false,
+                           recurrence_type = type.ifBlank { null },
+                           reminder_time = time.ifBlank { null }
+                                    )
+                        updateReminders(reminderId = existingReminder.reminder_id, reminder = updateReminders)
+                        returnToChat()
+                    }
+                    else{
+                        createReminder(ReminderCreate(
+                            reminder_title = title,
+                            reminder_date = date,
+                            reminder_description = description,
+                            is_complete = false,
+                            recurrence_type = type,
+                            reminder_time = time
+                        ))
+                        returnToChat()
+                    }
+
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -819,8 +846,8 @@ fun AddReminderScreen(returnToChat: () -> Unit){
 
         {
             Row() {
-                Icon(imageVector = Icons.Default.Add , contentDescription = null,modifier = Modifier.size(36.dp))
-                Text(text="Add reminder", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
+                Icon(imageVector = if (isEditing) Icons.Default.Edit else  Icons.Default.Add , contentDescription = null,modifier = Modifier.size(36.dp))
+                Text(text= if (isEditing) "Edit reminder" else "Add reminder", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
             }
         }
 

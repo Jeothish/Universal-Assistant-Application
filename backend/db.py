@@ -152,14 +152,24 @@ def edit_reminders_db(connection,reminder_id,reminder_title=None,reminder_date=N
         QUERY += "recurrence_type = %s, "
         parameters.append(recurrence_type)
         
+    if reminder_time != None:
+        QUERY += "reminder_time = %s, "
+        parameters.append(reminder_time)
+            
         
     
     QUERY = QUERY.rstrip(", ")  
     QUERY += " WHERE reminder_id = %s"
     parameters.append(reminder_id)
-    cursor.execute(QUERY,tuple(parameters))        
-    connection.commit()
-    cursor.close()
+    
+    try:
+        cursor.execute(QUERY,tuple(parameters))        
+        connection.commit()
+    except Exception as e:
+        connection.rollback()
+        print(f"Database error when editingreminders: {e}")
+    finally:
+        cursor.close()
                      
         
 def delete_reminders_db(reminder_id,connection):
@@ -171,6 +181,11 @@ def delete_reminders_db(reminder_id,connection):
     DELETE FROM reminders
     WHERE reminder_id = %s
     """
-    cursor.execute(QUERY,(reminder_id,))
-    connection.commit()
-    cursor.close()
+    try:
+        cursor.execute(QUERY,(reminder_id,))
+        connection.commit()
+    except:
+        connection.rollback()
+        print(f"Database error when deleting reminders: {e}")
+    finally:
+        cursor.close()
