@@ -107,6 +107,9 @@ def add_reminders_db(connection,reminder_title,reminder_date,reminder_descriptio
      connection = connection
      cursor = connection.cursor()
      
+     if not recurrence_type or recurrence_type.strip() == "":
+         recurrence_type = 'none'
+         
      QUERY = """
      INSERT INTO reminders (reminder_title,reminder_date,reminder_description,is_complete,recurrence_type,reminder_time)
      VALUES (%s,%s,%s,%s,%s,%s)

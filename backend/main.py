@@ -16,6 +16,7 @@ from tensorflow.keras.models import Sequential
 from db import add_reminders_db, get_reminders_db, edit_reminders_db, delete_reminders_db
 import psycopg2
 from InputProcessing import handle_prompt_with_qwen
+from datetime import time
 
 def get_connection():
     # connect to database
@@ -49,15 +50,19 @@ class ReminderCreate(BaseModel):
     reminder_date: str
     reminder_description: Optional[str] = None
     is_complete: bool = False
+    recurrence_type: Optional[str] = None
+    reminder_time: time
+
 
 
 class ReminderGet(BaseModel):
     reminder_id: int
     reminder_title: Optional[str] = None
+    reminder_date: str
     reminder_description: Optional[str] = None
     is_complete: Optional[bool] = None
     recurrence_type: Optional[str] = None
-
+    reminder_time: time
 
 class ReminderEdit(BaseModel):
     reminder_title: Optional[str] = None
@@ -65,7 +70,7 @@ class ReminderEdit(BaseModel):
     reminder_description: Optional[str] = None
     is_complete: Optional[bool] = None
     recurrence_type: Optional[str] = None
-
+    reminder_time: time
 
 model = whisper.load_model("small")
 
@@ -233,7 +238,7 @@ async def get_reminder(
         ReminderGet(
             reminder_id = r[0],
             reminder_title=r[1],
-            reminder_date=r[2],
+            reminder_date=str(r[2]),
             reminder_description=r[3],
             is_complete=r[4],
             recurrence_type=r[5],
@@ -251,7 +256,8 @@ async def add_reminder(reminder: ReminderCreate):
                          reminder.reminder_date,
                          reminder.reminder_description,
                          reminder.is_complete,
-                         reminder.recurrence_type)
+                         reminder.recurrence_type,
+                         reminder.reminder_time)
         return JSONResponse({"message": "Reminder added successfully!"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -277,7 +283,8 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
                           reminder.reminder_date,
                           reminder.reminder_description,
                           reminder.is_complete,
-                          reminder.recurrence_type)
+                          reminder.recurrence_type,
+                          reminder.reminder_time)
         return JSONResponse({"message": "Reminder edited successfully!"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
