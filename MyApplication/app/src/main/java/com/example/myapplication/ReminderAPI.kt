@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -17,6 +18,7 @@ suspend fun getReminders(): List<ReminderGet> = withContext(Dispatchers.IO){
     connection.requestMethod = "GET"
 
     val response = connection.inputStream.bufferedReader().readText()
+    Log.d("API RESPONSE", response)
     val jsonArray = JSONArray(response)
     val reminders = mutableListOf<ReminderGet>()
 
@@ -36,15 +38,15 @@ suspend fun getReminders(): List<ReminderGet> = withContext(Dispatchers.IO){
     return@withContext reminders
 }
 
-suspend fun createReminder(reminder: ReminderCreate): Boolean = withContext(Dispatchers.IO){
+suspend fun createReminder(reminder: ReminderCreate): Int= withContext(Dispatchers.IO) {
     val url = URL("http://192.168.1.135:8000/reminders/add")
     val connection = url.openConnection() as HttpURLConnection
 
     connection.requestMethod = "POST"
     connection.doOutput = true
-    connection.setRequestProperty("Content-Type","application/json")
+    connection.setRequestProperty("Content-Type", "application/json")
 
-    val json = JSONObject().apply{
+    val json = JSONObject().apply {
         put("reminder_title", reminder.reminder_title)
         put("reminder_date", reminder.reminder_date)
         put("reminder_description", reminder.reminder_description)
@@ -53,12 +55,28 @@ suspend fun createReminder(reminder: ReminderCreate): Boolean = withContext(Disp
         put("reminder_time", reminder.reminder_time)
     }
 
-    connection.outputStream.use { outputStream -> outputStream.write(json.toString().toByteArray())}
+    connection.outputStream.use { outputStream ->
+        outputStream.write(json.toString().toByteArray())
+    }
 
     val success = connection.responseCode in 200..299
+
+    val reminderId = if (success) {
+        try {
+            val response = connection.inputStream.bufferedReader().readText()
+            val responseJson = JSONObject(response)
+            responseJson.optInt("reminder_id", -1)
+        } catch (e: Exception) {
+            -1
+        }
+    } else {
+        -1
+    }
+
     connection.disconnect()
-    return@withContext success
+    return@withContext reminderId
 }
+
 
 suspend fun deleteReminder(reminderId: Int): Boolean = withContext(Dispatchers.IO){
     val url = URL("http://192.168.1.135:8000/reminders/delete/$reminderId")

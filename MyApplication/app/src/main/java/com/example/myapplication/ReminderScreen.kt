@@ -1,9 +1,11 @@
 package com.example.myapplication
 
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.graphics.Paint
 import android.icu.util.Calendar
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,7 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.lazy.items
-
+import android.widget.Toast
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +49,7 @@ import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.StoreMallDirectory
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -67,8 +70,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Snackbar
+
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -76,18 +89,23 @@ import java.util.Locale
 import kotlin.String
 
 
+
+
 @Composable
 fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existingReminder: ReminderGet?) -> Unit) {
     var reminders by remember { mutableStateOf<List<ReminderGet>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
-    var totalReminders by remember { mutableIntStateOf(0) }
-    var completedReminders by remember { mutableIntStateOf(0) }
-    var remainingReminders by remember { mutableIntStateOf(0) }
+    val totalReminders by remember { derivedStateOf{reminders.size} }
+    val completedReminders by remember { derivedStateOf{reminders.count{reminder -> reminder.is_complete == true}} }
+    val remainingReminders by remember { derivedStateOf{reminders.count{reminder -> reminder.is_complete == false}} }
     val courotineScope = rememberCoroutineScope()
+
 
     LaunchedEffect(Unit) {
         try {
             reminders = getReminders()
+
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -183,10 +201,17 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
 
             items(reminders) {reminder -> ReminderCard(
                 reminder = reminder,
-                onEdit = {reminder -> openRemindersScreen(reminder)},
+                onEdit = {reminder ->
+                    courotineScope.launch {
+                        openRemindersScreen(reminder)
+                        reminders = getReminders()
+
+                    }
+                         },
                 onDelete = {id -> courotineScope.launch{
                     deleteReminder(id)
                     reminders = getReminders()
+
                 }}
             )}
 
@@ -212,10 +237,52 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
         }
     }
 }
+@Composable
+fun customPopup(
+    snackbarHostState: SnackbarHostState,
+    message: String
+){
+    val courotineScope = rememberCoroutineScope()
 
+    Box(modifier = Modifier.fillMaxSize()){
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.Center)
+        ){
+            data -> Snackbar(containerColor = Color(0xFFD01515)){
+                Row(verticalAlignment = Alignment.CenterVertically){
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color(0xFFFFFFFF),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = data.visuals.message,
+                        fontSize = 20.sp,
+                        color = Color.White
+                    )
+                }
+             }
+        }
+
+        LaunchedEffect(message) {
+            courotineScope.launch{
+                snackbarHostState.showSnackbar(
+                    message = message,
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
+}
 @Composable
 fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete: (Int) -> Unit){
-    var checkTest by remember { mutableStateOf(false) } //Bind to is_complete later
+    Log.d("ReminderCard", "Date: ${reminder.reminder_date}, Time: ${reminder.reminder_time}")
+    var isComplete by remember { mutableStateOf(reminder.is_complete == true) }
+    val courotineScope = rememberCoroutineScope()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1D1D1D)),
@@ -227,8 +294,28 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
         )
         {
             RadioButton(
-                selected = checkTest,
-                onClick = { checkTest = !checkTest },
+                selected = isComplete,
+                onClick = {
+                    isComplete = !isComplete
+                    courotineScope.launch {
+                        try {
+                            updateReminders(
+                                reminder.reminder_id,
+                                ReminderEdit(
+                                    reminder_title = reminder.reminder_title,
+                                    reminder_date = reminder.reminder_date,
+                                    reminder_description = reminder.reminder_description,
+                                    is_complete = isComplete,
+                                    recurrence_type = reminder.recurrence_type,
+                                    reminder_time = reminder.reminder_time
+                                )
+                            )
+                        }
+                        catch (e: Exception){
+                            e.printStackTrace()
+                        }
+                    }
+                          },
                 colors = RadioButtonDefaults.colors(
                     selectedColor = Color(0xFF0DF108),
                     unselectedColor = Color(0xFFFFFFFF),
@@ -274,6 +361,7 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0E0E0E)
+
                         )
                     }
                     Spacer(modifier = Modifier.width(5.dp))
@@ -360,7 +448,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
     val calendar = Calendar.getInstance()
     val context = LocalContext.current
     val isEditing = existingReminder != null
-
+    val snackbarHostState = remember{ SnackbarHostState()}
 
 
     Column(modifier = Modifier.padding(12.dp).verticalScroll(scrollState))
@@ -567,7 +655,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
                 onValueChange = {},
                 placeholder = {
                     Text(
-                        text = "Select Date",
+                        text = "Select Date (YYYY-MM-DD)",
                         modifier = Modifier.padding(top = 8.dp),
                         fontSize = 20.sp
 
@@ -642,33 +730,46 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
                 }
             }
         }
-        Text(text= "Time *",
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-            color=Color(0xFFFFC107),
-            modifier = Modifier.padding(8.dp)
-        )
-        OutlinedTextField(
-            value = time,
-            onValueChange = {time= it},
-            placeholder = {
-                Text(
-                    text="HH:MM:SS",
-                    modifier = Modifier.padding(top = 8.dp),
-                    fontSize = 20.sp
+        val timePicker = TimePickerDialog(
 
-                )},
-            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor =  Color(0xFFFFFFFF),
-                unfocusedContainerColor =  Color(0xFFFFFFFF),
-                focusedTextColor =  Color(0xFF000000),
-                focusedBorderColor =  Color(0xFFDBBE0E),
-                unfocusedBorderColor =  Color(0xFF423B3B),
-                unfocusedPlaceholderColor =  Color(0xFF716E6E)
-            )
+            context,
+            {_,hourOfDay,minute ->
+
+                time = String.format("%02d:%02d:00", hourOfDay,minute)
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            true
         )
+        Box(modifier = Modifier.fillMaxWidth().padding(8.dp).clickable{timePicker.show()}) {
+            OutlinedTextField(
+                value = time,
+                onValueChange = {},
+                placeholder = {
+                    Text(
+                        text = "Select Time (HH:MM:SS)",
+                        modifier = Modifier.padding(top = 8.dp),
+                        fontSize = 20.sp
+
+                    )
+                },
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFFFFFFF),
+                    unfocusedContainerColor = Color(0xFFFFFFFF),
+                    focusedTextColor = Color(0xFF000000),
+                    focusedBorderColor = Color(0xFFDBBE0E),
+                    unfocusedBorderColor = Color(0xFF423B3B),
+                    unfocusedPlaceholderColor = Color(0xFF716E6E),
+                    disabledContainerColor = Color(0xFFFFFFFF),
+                    disabledTextColor = Color(0xFF000000),
+                    unfocusedTextColor =  Color(0xFF000000)
+                ),
+                enabled = false
+            )
+        }
         Row() {
             Button(
                 onClick = {},
@@ -808,6 +909,22 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
         }
 
         Button(onClick = {
+
+            if(title.isBlank()){
+                Toast.makeText(context,"Enter a date!", Toast.LENGTH_SHORT).show()
+                return@Button
+            }
+
+            if(date.isBlank()){
+                Toast.makeText(context,"Enter a date!", Toast.LENGTH_SHORT).show()
+                return@Button
+            }
+
+            if(time.isBlank()){
+                Toast.makeText(context,"Enter a time!", Toast.LENGTH_SHORT).show()
+                return@Button
+            }
+
             couroutineScope.launch {
                 try {
                     if(isEditing){
@@ -821,9 +938,13 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
                                     )
                         updateReminders(reminderId = existingReminder.reminder_id, reminder = updateReminders)
                         returnToChat()
+
+                        if(date.isNotBlank() && time.isNotBlank()){
+                            AlarmScheuduler.scheduleAlarm(context,existingReminder.reminder_id,title,description,date,time)
+                        }
                     }
                     else{
-                        createReminder(ReminderCreate(
+                        val newReminderID = createReminder(ReminderCreate(
                             reminder_title = title,
                             reminder_date = date,
                             reminder_description = description,
@@ -832,6 +953,11 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
                             reminder_time = time
                         ))
                         returnToChat()
+                        if(date.isNotBlank() && time.isNotBlank()){
+                            AlarmScheuduler.scheduleAlarm(context,newReminderID,title,description,date,time)
+                        }
+
+
                     }
 
                 } catch (e: Exception) {

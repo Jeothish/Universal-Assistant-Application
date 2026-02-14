@@ -96,6 +96,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.compose.material3)
 
     // Testing
     testImplementation(libs.junit)
@@ -110,4 +111,9 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.5.0")
     implementation("androidx.navigation:navigation-compose:2.7.3")
 
+    //Alarm
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.compose.material3:material3:1.1.2")
 }

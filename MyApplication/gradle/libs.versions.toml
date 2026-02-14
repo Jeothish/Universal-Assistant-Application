@@ -12,6 +12,7 @@ material3 = "1.4.0"
 media3 = "1.2.1"
 constraintlayout = "2.2.1"
 navigationCompose = "2.9.6"
+composeMaterial3 = "1.5.6"
 
 
 
@@ -38,6 +39,7 @@ androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compo
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

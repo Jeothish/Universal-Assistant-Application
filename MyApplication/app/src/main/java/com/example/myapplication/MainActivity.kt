@@ -98,15 +98,17 @@ class MainActivity : ComponentActivity() {
 
     private val cameraPermission = Manifest.permission.CAMERA
     private val micPermission = Manifest.permission.RECORD_AUDIO
-
+    private val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
 
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val cameraGranted = permissions[Manifest.permission.CAMERA] == true
             val micGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
+            val notificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
+            if (cameraGranted && micGranted && notificationGranted) {
 
-            if (cameraGranted && micGranted) {
+
                 setContent {
                     MyApplicationTheme {
                         MyApplicationApp()
@@ -132,7 +134,19 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
 
-        if (cameraGranted && micGranted) {
+        val notificationGranted = if (android.os.Build.VERSION.SDK_INT >= 33){
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+        else{
+            true
+        }
+
+        if (cameraGranted && micGranted && notificationGranted) {
+
+
             setContent {
                 MyApplicationTheme {
                     MyApplicationApp()
@@ -147,6 +161,8 @@ class MainActivity : ComponentActivity() {
             )
         }
     }
+
+
 
 }
 
