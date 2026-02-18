@@ -4,6 +4,7 @@ import sys
 import whisper
 from fastapi import FastAPI, Query, UploadFile, File, HTTPException, Depends, Form
 from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
 import tempfile
 import os
 from whispertest import handle_prompt
@@ -17,6 +18,8 @@ from db import add_reminders_db, get_reminders_db, edit_reminders_db, delete_rem
 import psycopg2
 from InputProcessing import handle_prompt_with_qwen
 from datetime import time
+
+load_dotenv() 
 
 def get_connection():
     # connect to database
@@ -296,7 +299,8 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 
 # uvicorn main:app --host 0.0.0.0 --port 8000
 # Ensure in backend directory
-# source venv/bin/activate
+# source venv/bin/activate - MAC
+#.\venv\Scripts\Activate.ps1 - WINDOWS
 # python -m uvicorn main:app --host 0.0.0.0 --port 8000
 # uvicorn main:app --host 0.0.0.0 --port 8000
 

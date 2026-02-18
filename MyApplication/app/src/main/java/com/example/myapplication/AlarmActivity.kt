@@ -1,5 +1,7 @@
 package com.example.myapplication
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,6 +26,7 @@ import android.media.Ringtone
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.content.Context
+import android.content.Intent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -45,11 +48,13 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.launch
+import kotlin.text.forEach
 
 
 class AlarmActivity : ComponentActivity() {
     private var ringtone: Ringtone? = null
     private var vibrator: Vibrator? = null
+    private var reminderId: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,7 +70,7 @@ class AlarmActivity : ComponentActivity() {
         val description = intent.getStringExtra("description") ?: ""
         val date = intent.getStringExtra("date") ?: ""
         val time = intent.getStringExtra("time") ?: ""
-        val reminderId = intent.getIntExtra("reminder_id", -1)
+        reminderId = intent.getIntExtra("reminder_id", -1)
 
         startAlarmSound()
 
@@ -106,6 +111,30 @@ class AlarmActivity : ComponentActivity() {
         vibrator?.cancel()
     }
 
+    private fun snoozeAlarm(reminderId: Int, title: String, description: String,date: String,time: String) {
+        val snoozeTime = System.currentTimeMillis() + (15 * 60 * 1000)
+        val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
+            putExtra("reminder_id", reminderId)
+            putExtra("title", title)
+            putExtra("description", description)
+            putExtra("date", date)
+            putExtra("time", time)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+           this,
+            reminderId,
+            snoozeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, snoozeTime, pendingIntent)
+        stopAlarmSound()
+        finish()
+    }
+
+
     @Composable
     fun pulsingIcon() {
 
@@ -132,215 +161,238 @@ class AlarmActivity : ComponentActivity() {
     }
 
 
+
     @Composable
     fun AlarmScreen(title: String, description: String, date: String, time: String,onDismiss: () -> Unit) {
 
+        if (!GlobalState.hideResponse.value) {
+            Column(
+                modifier = Modifier.fillMaxSize().background(Color(0xFF020C26)).padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                pulsingIcon()
 
-        Column(
-            modifier = Modifier.fillMaxSize().background(Color(0xFF020C26)).padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            pulsingIcon()
+                Spacer(modifier = Modifier.height(5.dp))
 
-            Spacer(modifier = Modifier.height(5.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth().height(250.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1D1D1D)),
-            )
-            {
-                Column(modifier = Modifier.padding(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth().height(250.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1D1D1D)),
+                )
                 {
+                    Column(modifier = Modifier.padding(16.dp))
+                    {
 
-                    Text(
-                        text = title,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 35.sp,
-                        color = Color(0xFFFFFFFF),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center
+                        Text(
+                            text = title,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 35.sp,
+                            color = Color(0xFFFFFFFF),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(1.dp))
+
+                        Divider(
+                            color = Color.Gray,
+                            thickness = 2.dp,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = description,
+                            fontSize = 25.sp,
+                            color = Color(0xFFFFFFFF),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(27.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .background(
+                                        color = Color(0xFFFCFC0B),
+                                        shape = RoundedCornerShape(50)
+                                    )
+                                    .padding(12.dp)
+                            ) {
+                                Row() {
+                                    /*
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarMonth,
+                                        contentDescription = null,
+                                        tint = Color(0xFF000000),
+                                        modifier = Modifier
+                                            .size(55.dp)
+
+                                    )
+                                    */
+
+                                    Text(
+                                        text = "Due: $date | $time",
+                                        fontSize = 25.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF000000)
+
+                                    )
+                                }
+                            }
+
+                        }
+                    }
+
+
+                }
+
+                Spacer(modifier = Modifier.height(27.dp))
+
+
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+
+                    ) {
+
+                    Button(
+                        onClick = {},
+                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF3DD712),
+                            contentColor = Color(0xFFFFFFFF),
+                        )
                     )
 
-                    Spacer(modifier = Modifier.height(1.dp))
+                    {
+                        Row() {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardVoice,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Text(
+                                text = "Read Aloud",
+                                fontSize = 25.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
 
-                    Divider(
-                        color = Color.Gray,
-                        thickness = 2.dp,
-                        modifier = Modifier.padding(vertical=8.dp)
-                    )
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        text = description,
-                        fontSize = 25.sp,
-                        color = Color(0xFFFFFFFF),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center
-                    )
 
-                    Spacer(modifier = Modifier.height(27.dp))
+                    Button(
+                        onClick = {
+                            val tokens = mutableListOf<String>()
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .background(
-                                    color = Color(0xFFFCFC0B),
-                                    shape = RoundedCornerShape(50)
-                                )
-                                .padding(12.dp)
-                        ) {
-                            Row() {
-                                /*
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = null,
-                                    tint = Color(0xFF000000),
-                                    modifier = Modifier
-                                        .size(55.dp)
-
-                                )
-                                */
-
-                                Text(
-                                    text = "Due: $date | $time",
-                                    fontSize = 25.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF000000)
-
+                            title.forEach { t ->
+                                if (t.isLetter()) tokens.add(
+                                    t.uppercaseChar().toString()
                                 )
                             }
+
+                          description.forEach { d ->
+                                if (d.isLetter()) tokens.add(
+                                    d.uppercaseChar().toString()
+                                )
+                            }
+
+                            GlobalState.aslTokens.value = tokens
+                            GlobalState.hideResponse.value = true
+                                  },
+                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFC30AEC),
+                            contentColor = Color(0xFFFFFFFF),
+                        )
+                    )
+
+                    {
+                        Row() {
+                            Icon(
+                                imageVector = Icons.Default.FrontHand,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Text(
+                                text = "Translate to ASL",
+                                fontSize = 25.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+
                         }
-
                     }
-                }
-
-
-            }
-
-            Spacer(modifier = Modifier.height(27.dp))
 
 
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-
-            ) {
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF3DD712),
-                        contentColor = Color(0xFFFFFFFF),
+                    Button(
+                        onClick = {snoozeAlarm(reminderId,title,description,date,time)},
+                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1762E3),
+                            contentColor = Color(0xFFFFFFFF),
+                        )
                     )
-                )
 
-                {
-                    Row() {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardVoice,
-                            contentDescription = null,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Text(
-                            text = "Read Aloud",
-                            fontSize = 25.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                    {
+                        Row() {
+                            Icon(
+                                imageVector = Icons.Default.AccessAlarms,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Text(
+                                text = "Snooze (15mins)",
+                                fontSize = 25.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
 
+                        }
                     }
-                }
 
 
 
-                Button(
-                    onClick = {},
-                    modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFC30AEC),
-                        contentColor = Color(0xFFFFFFFF),
+                    Button(
+                        onClick = {onDismiss()},
+                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE80F0F),
+                            contentColor = Color(0xFFFFFFFF),
+                        )
                     )
-                )
 
-                {
-                    Row() {
-                        Icon(
-                            imageVector = Icons.Default.FrontHand,
-                            contentDescription = null,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Text(
-                            text = "Translate to ASL",
-                            fontSize = 25.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                    {
+                        Row() {
+                            Icon(
+                                imageVector = Icons.Default.AlarmOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Text(
+                                text = "Stop Alarm",
+                                fontSize = 25.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
 
-                    }
-                }
-
-
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1762E3),
-                        contentColor = Color(0xFFFFFFFF),
-                    )
-                )
-
-                {
-                    Row() {
-                        Icon(
-                            imageVector = Icons.Default.AccessAlarms,
-                            contentDescription = null,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Text(
-                            text = "Snooze (15mins)",
-                            fontSize = 25.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-
-                    }
-                }
-
-
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE80F0F),
-                        contentColor = Color(0xFFFFFFFF),
-                    )
-                )
-
-                {
-                    Row() {
-                        Icon(
-                            imageVector = Icons.Default.AlarmOff,
-                            contentDescription = null,
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Text(
-                            text = "Stop Alarm",
-                            fontSize = 25.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-
+                        }
                     }
                 }
             }
+        }
+
+        if(GlobalState.hideResponse.value){
+            ASLRenderer(tokens = GlobalState.aslTokens.value,onReturn = {GlobalState.hideResponse.value = false})
         }
     }
 }

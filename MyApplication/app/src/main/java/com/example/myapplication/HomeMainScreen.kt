@@ -69,7 +69,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit){
             }
 
             if (aslTokens.isNotEmpty() && hideResponse) {
-                ASLRenderer(tokens = aslTokens, isPlaying = isASLPlaying,replayTrigger = replayKey)
+                ASLRenderer(tokens = aslTokens, onReturn = {hideResponse = false})
             }
 
             Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -138,8 +138,6 @@ fun HomeMainScreen(onOpenReminders: () -> Unit){
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 20.dp, start = 10.dp, end = 0.dp, top=20.dp)
                         )
-
-
 
                         if (intent == "chat") {
                             if (!hideResponse) {
@@ -289,126 +287,8 @@ fun HomeMainScreen(onOpenReminders: () -> Unit){
                             }
                         }
 
-                    } else {
-                        Row(
-                            modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-10).dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-
-
-                            Button(
-                                onClick = { isASLPlaying = !isASLPlaying },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if(isASLPlaying) Color.Red else Color.Green,
-                                    contentColor = Color.White
-                                )
-                            )
-                            { Text(if (isASLPlaying) "Pause" else "Resume") }
-
-                            Button(
-                                onClick = { hideResponse = !hideResponse },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.Blue,
-                                    contentColor = Color.White
-                                )
-                            )
-                            { Text("Return") }
-
-                            Button(
-                                onClick = {
-                                    isASLPlaying = true
-                                    replayKey++ },
-
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.Magenta,
-                                    contentColor = Color.White
-                                )
-                            )
-                            { Text("Replay") }
-                        }
                     }
                 }
-
-                if (hideResponse && intent == "chat") {
-                    Row(
-                        modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-10).dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-
-
-                        Button(
-                            onClick = { isASLPlaying = !isASLPlaying },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if(isASLPlaying) Color.Red else Color.Green,
-                                contentColor = Color.White
-                            )
-                        )
-                        { Text(if (isASLPlaying) "Pause" else "Resume") }
-
-                        Button(
-                            onClick = { hideResponse = !hideResponse },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Blue,
-                                contentColor = Color.White
-                            )
-                        )
-                        { Text("Return") }
-
-                        Button(
-                            onClick = {
-                                isASLPlaying = true
-                                replayKey++ },
-
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Magenta,
-                                contentColor = Color.White
-                            )
-                        )
-                        { Text("Replay") }
-                    }
-                }
-
-                if (hideResponse && intent == "weather") {
-                    Row(
-                        modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-10).dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-
-
-                        Button(
-                            onClick = { isASLPlaying = !isASLPlaying },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if(isASLPlaying) Color.Red else Color.Green,
-                                contentColor = Color.White
-                            )
-                        )
-                        { Text(if (isASLPlaying) "Pause" else "Resume") }
-
-                        Button(
-                            onClick = { hideResponse = !hideResponse },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Blue,
-                                contentColor = Color.White
-                            )
-                        )
-                        { Text("Return") }
-
-                        Button(
-                            onClick = {
-                                isASLPlaying = true
-                                replayKey++ },
-
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Magenta,
-                                contentColor = Color.White
-                            )
-                        )
-                        { Text("Replay") }
-                    }
-                }
-
-
-
 
                 Column(modifier = Modifier.fillMaxSize()) {
 

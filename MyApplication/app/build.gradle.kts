@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.compose.material3)
+    implementation(libs.play.services.location)
 
     // Testing
     testImplementation(libs.junit)

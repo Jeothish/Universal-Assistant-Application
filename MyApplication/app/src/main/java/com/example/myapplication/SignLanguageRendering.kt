@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.*
+
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.viewinterop.AndroidView
@@ -22,14 +23,15 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun ASLRenderer(
     tokens: List<String>,
-    isPlaying: Boolean,
-    replayTrigger: Int
+    onReturn: () -> Unit
 ) {
-    val context = LocalContext.current
 
+    val context = LocalContext.current
     var currentTokenIndex by remember { mutableStateOf(0) }
     var pausedPositionMs by remember { mutableLongStateOf(0L) }
     var isLetterPlaying by remember { mutableStateOf(false) }
+    var isPlaying by remember { mutableStateOf(true) }
+    var replayTrigger by remember { mutableStateOf(0) }
 
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
@@ -108,19 +110,10 @@ fun ASLRenderer(
             delay(500)
             currentTokenIndex = 0
             pausedPositionMs = 0L
+            isPlaying = false
         }
     }
 
-    if (tokens.isNotEmpty() && currentTokenIndex < tokens.size) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "Current Letter: ${tokens[currentTokenIndex]}",
-                color = Color.White,
-                fontSize = 32.sp,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 70.dp)
-            )
-        }
-    }
 
     //Go to start of sequence and replay
     LaunchedEffect(replayTrigger) {
@@ -128,7 +121,58 @@ fun ASLRenderer(
         pausedPositionMs = 0L
         exoPlayer.seekTo(0)
         exoPlayer.pause()
+        isPlaying = true
     }
+
+    Box(modifier = Modifier.fillMaxSize()){
+        if(tokens.isNotEmpty() && currentTokenIndex < tokens.size){
+            Text(
+                text = "Current Letter: ${tokens[currentTokenIndex]}",
+                color =  Color(0xFFFFFFFF),
+                fontSize = 32.sp,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-10).dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+
+
+            Button(
+                onClick = { isPlaying = !isPlaying },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if(isPlaying) Color.Red else Color.Green,
+                    contentColor = Color.White
+                )
+            )
+            { Text(if (isPlaying) "Pause" else "Resume") }
+
+            Button(
+                onClick = {onReturn()},
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Blue,
+                    contentColor = Color.White
+                )
+            )
+            { Text("Return") }
+
+            Button(
+                onClick = {
+                    isPlaying = true
+                    replayTrigger++ },
+
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Magenta,
+                    contentColor = Color.White
+                )
+            )
+            { Text("Replay") }
+        }
+
+    }
+
 
     //Cleanup ExoPlayer
     DisposableEffect(Unit) {

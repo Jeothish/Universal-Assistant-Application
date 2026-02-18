@@ -23,5 +23,7 @@ object GlobalState {
 
     val aslPrompt = mutableStateOf(mutableListOf<String>())
 
+    val hideResponse = mutableStateOf(false)
+
     val userCity = mutableStateOf("Dublin")
 }
