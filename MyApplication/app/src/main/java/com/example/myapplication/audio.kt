@@ -80,7 +80,7 @@ class audio(private val context: Context) {
 
                 val payload = """
                     {
-                        "text": "${text.replace("\"","\\\"")}", "time": "${LocalDateTime.now().toString()} ${LocalDate.now().dayOfWeek}"
+                        "text": "${text.replace("\"","\\\"")}", "time": "${LocalDateTime.now().toString()} ${LocalDate.now().dayOfWeek}", "city": "${GlobalState.userCity.value}"
                         }
                 """.trimIndent()
 
@@ -170,6 +170,21 @@ class audio(private val context: Context) {
                 val output = conn.outputStream
                 val writer = output.bufferedWriter()
 
+                //send user time
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"timestamp\"\r\n\r\n")
+                writer.write(LocalDateTime.now().toString() + " " +LocalDate.now().dayOfWeek)
+                writer.write("\r\n")
+                writer.flush()
+
+                //send user city
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"city\"\r\n\r\n")
+                writer.write(GlobalState.userCity.value)
+                writer.write("\r\n")
+                writer.flush()
+
+                //send the audio
                 writer.write("--$boundary\r\n")
                 writer.write(
                     "Content-Disposition: form-data; name=\"audio\"; filename=\"audio.m4a\"\r\n"

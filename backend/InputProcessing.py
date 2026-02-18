@@ -3,6 +3,8 @@ import json
 from datetime import datetime, timedelta
 from openai import OpenAI
 import pycountry
+from unicodedata import category
+
 from db import get_connection
 
 
@@ -14,12 +16,14 @@ client = OpenAI(
 
 from app import get_current_weather, get_forecast_weather_day, get_forecast_weather_specific_time, get_coordinates, \
     get_news
+from emedding import get_intent
 
 #Cached for coords
 cache_coords = {
     "dublin": (53.33306, -6.24889),
     "galway": (53.27245, -9.05095),
-    "san francisco": (37.77493, -122.41942)
+    "san francisco": (37.77493, -122.41942),
+    "athlone":(53.4239, -7.9403)
 }
 
 UK_VARIANTS = ["uk", "england", "wales", "scotland", "northern ireland", "britain"]
@@ -50,7 +54,7 @@ FUNCTION_DEFINITIONS = [
                 "properties": {
                     "city": {
                         "type": "string",
-                        "description": "The city name (e.g., 'Dublin', 'San Francisco', 'London')"
+                        "description": "The city name ONLY if explicitly mentioned by user. Leave empty otherwise (e.g., 'Dublin', 'San Francisco', 'London')"
                     },
                     "days_ahead": {
                         "type": "integer",
@@ -64,7 +68,7 @@ FUNCTION_DEFINITIONS = [
                         "maximum": 23
                     }
                 },
-                "required": ["city"]
+                "required": []
             }
         }
     },
@@ -72,26 +76,39 @@ FUNCTION_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "get_news_headlines",
-            "description": "Get top news headlines for a country, category, or source.",
+            "description": "Get top news headlines for a country and/or a topic.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "country": {
                         "type": "string",
-                        "description": "Country name (e.g., 'Ireland', 'USA', 'UK'). if none specified default to 'None'."
+                        "description": "Country name ONLY if explicitly mentioned by user. Leave empty otherwise. (e.g., 'Ireland', 'USA', 'UK')."
                     },
-                    "category": {
+                    # "category": {
+                    #     "type": "string",
+                    #     "enum": [
+                    #         "business", "crime", "domestic", "education", "entertainment",
+                    #         "environment", "food", "health", "lifestyle", "politics",
+                    #         "science", "sports", "technology", "top", "tourism", "world", "other"
+                    #     ],
+                    #     "description": "News category"
+                    #},
+                    # "source": {
+                    #     "type": "string",
+                    #     "enum": [
+                    #             "bbc", "cnn", "reuters", "apnews", "theguardian", "independent",
+                    #             "irishtimes", "irishexaminer", "rte", "thejournal", "breakingnews",
+                    #             "skynews", "foxnews", "nbcnews", "abcnews", "cbsnews", "msnbc",
+                    #             "washingtonpost", "nytimes", "thesun", "dailymail", "telegraph",
+                    #             "irishmirror", "express", "economist", "bloomberg", "forbes",
+                    #             "techcrunch", "theverge", "wired", "arstechnica", "engadget",
+                    #             "eurosport", "sportinglife", "talksport"
+                    #         ],
+                    #     "description": "ONLY insert if user explicitly names a news source. "
+                    #},#Leave empty otherwise. Specific news source domain (lowercase, no spaces, no .com/.ie extensions). E.g., 'bbc', 'cnn', 'independent'
+                    "topic":{
                         "type": "string",
-                        "enum": [
-                            "business", "crime", "domestic", "education", "entertainment",
-                            "environment", "food", "health", "lifestyle", "politics",
-                            "science", "sports", "technology", "top", "tourism", "world", "other"
-                        ],
-                        "description": "News category"
-                    },
-                    "source": {
-                        "type": "string",
-                        "description": "Specific news source domain (lowercase, no spaces, no .com/.ie extensions). E.g., 'bbc', 'cnn', 'independent'"
+                        "description": "news topic such as 'Olympics', 'World Cup', 'Donald Trump' etc. Leave empty otherwise."
                     }
                 },
                 "required": []
@@ -103,10 +120,10 @@ FUNCTION_DEFINITIONS = [
 
 def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None, connection=None):
 
-    if connection.closed: #incase connection between db and backend is severed
-        print("connection not found, restarting")
-        connection = get_connection()
-
+    # if connection.closed: #incase connection between db and backend is severed
+    #     print("connection not found, restarting")
+    #     connection = get_connection()
+    connection = get_connection()
     city = city.lower()
 
 
@@ -145,7 +162,7 @@ def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None, c
     }
 
 
-def execute_news_function(country: str = None, category: str = None, source: str = None):
+def execute_news_function(country: str = None,  source: str = None, topic: str = None):
 
 
     error_msg = ""
@@ -162,7 +179,7 @@ def execute_news_function(country: str = None, category: str = None, source: str
         country = None
 
     # get news
-    headlines = get_news(country, category, source)
+    headlines = get_news(country, cat=None, source=None, language="en", specific_topic=topic )
 
     if isinstance(headlines, dict) and "error" in headlines:#incase of error e.g. no articles found,
         print("Headlines not found"+headlines["error"])
@@ -177,15 +194,29 @@ def execute_news_function(country: str = None, category: str = None, source: str
     }
 
 
-def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = None) -> dict:
+def handle_prompt_with_qwen(raw_prompt: str,default_city:str, connection=None, current_time = None) -> dict:
 
     # if connection.closed or connection is None: #incase connection between db and backend is severed
     #     print("connection not found, restarting")
     #     connection = get_connection()
     connection = get_connection()
 
+
     if (current_time is None):
         current_time = datetime.now().strftime("%A, %B %d, %Y at %H:%M")
+
+    intent = get_intent(raw_prompt)
+    print("intent: "+intent)
+    # Decide tool choice based on intent
+    if intent == "weather":
+        tools = [FUNCTION_DEFINITIONS[0]]  # Only weather function
+        tool_choice = "required"
+    elif intent == "news":
+        tools = [FUNCTION_DEFINITIONS[1]]  # Only news function
+        tool_choice = "required"
+    else:
+        tools = FUNCTION_DEFINITIONS  # All functions available
+        tool_choice = "auto"
 
     messages = [
         {
@@ -194,7 +225,8 @@ def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = Non
                 "You are a helpful assistant that can provide weather forecasts and news headlines. "
                 f"Current date and time: {current_time}. "
                 "Use the available functions to help answer user queries. "
-                "If the user's request is not about weather or news, respond conversationally without using functions."
+                #f"for this prompt use the {intent} function."
+                # "If the user's request is not about weather or news, respond conversationally without using functions."
             )
         },
         {
@@ -205,10 +237,10 @@ def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = Non
 
 
     response = client.chat.completions.create(
-        model="local-model",
+        model="functiongemma-270m-it",
         messages=messages,
-        tools=FUNCTION_DEFINITIONS,
-        tool_choice="auto",  # let model decide whe to use functions
+        tools=tools,
+        tool_choice=tool_choice,  # let model decide whe to use functions
         temperature=0.1
     )
 
@@ -226,8 +258,13 @@ def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = Non
 
         # call funcs
         if function_name == "get_weather_forecast":
+            llm_city = function_args.get("city")
+            if (llm_city.lower() not in raw_prompt) or (llm_city is None):
+                llm_city = default_city
+
+
             result = execute_weather_function(
-                city=function_args.get("city"),
+                city=llm_city,
                 days_ahead=function_args.get("days_ahead", 0),
                 hour=function_args.get("hour"),
                 connection=connection
@@ -236,15 +273,16 @@ def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = Non
             return {
                 "intent": "weather",
                 "prompt": raw_prompt,
-                "city": function_args.get("city"),
+                "city": llm_city,
                 "result": result.get("weather", result)
             }
 
         elif function_name == "get_news_headlines":
             result = execute_news_function(
                 country=function_args.get("country"),
-                category=function_args.get("category"),
-                source=function_args.get("source")
+                #category=function_args.get("category"),
+                #source=function_args.get("source"),
+                topic=function_args.get("topic")
             )
             print(result)
             return {
@@ -262,25 +300,3 @@ def handle_prompt_with_qwen(raw_prompt: str, connection=None, current_time = Non
             "result": response_message.content
         }
 
-
-# Example usage and testing
-# if __name__ == "__main__":
-#     # Test prompts
-#     test_prompts = [
-#         "Show me tomorrow's weather in Galway at 3pm",
-#         "Get me the latest tech news from the San francisco",
-#         "What's happening in Irish politics?",
-#         "Hello, how are you?",
-#         "Weather forecast for San Francisco next Tuesday"
-#     ]
-#
-#     print("=" * 60)
-#     print("QWEN 3 FUNCTION CALLING TEST")
-#     print("=" * 60)
-#
-#     for prompt in test_prompts:
-#         print(f"\nUser: {prompt}")
-#         result = handle_prompt_with_qwen(prompt)
-#         print(f"Intent: {result['intent']}")
-#         print(f"Result: {json.dumps(result['result'], indent=2)}")
-#         print("-" * 60)

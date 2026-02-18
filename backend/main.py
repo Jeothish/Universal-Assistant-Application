@@ -2,7 +2,7 @@
 import sys
 
 import whisper
-from fastapi import FastAPI, Query, UploadFile, File, HTTPException, Depends
+from fastapi import FastAPI, Query, UploadFile, File, HTTPException, Depends, Form
 from fastapi.responses import JSONResponse
 import tempfile
 import os
@@ -43,6 +43,7 @@ class SignRequest(BaseModel):
 class TextRequest(BaseModel):
     text: str
     time: str
+    city: str
 
 
 class ReminderCreate(BaseModel):
@@ -76,7 +77,9 @@ model = whisper.load_model("small")
 
 
 @app.post("/voice")
-async def voice(audio: UploadFile = File(...)):
+async def voice(audio: UploadFile = File(...), timestamp: str = Form(None), city: str = Form(None)):
+    print("Time: "+timestamp)
+    print("City: "+city)
     if audio.content_type not in [
         "audio/wav",
         "audio/x-wave",
@@ -98,7 +101,7 @@ async def voice(audio: UploadFile = File(...)):
             print("no speech detected")
             return
         connection = None
-        response = handle_prompt_with_qwen(raw_prompt,connection)
+        response = handle_prompt_with_qwen(raw_prompt,city,connection, timestamp)
 
         print(response)
         return JSONResponse(content=response)
@@ -110,12 +113,14 @@ async def voice(audio: UploadFile = File(...)):
 async def text(req: TextRequest):
     inp = req.text.strip().lower()
     time = req.time.strip()
+    city = req.city.strip()
+    print("City: "+city)
     print("text in:" + inp)
     if not inp:
         return
     else:
         connection = None
-        response = handle_prompt_with_qwen(inp,connection,time)
+        response = handle_prompt_with_qwen(inp,city,connection,time, )
         return JSONResponse(content=response)
 
 
@@ -124,18 +129,18 @@ class SingleFrameRequest(BaseModel):
     hand: str
 
 
-#modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
-#modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
+modelASLL = tf.keras.models.load_model("asl_mediapipe_model.keras")
+modelASLR = tf.keras.models.load_model("asl_mediapipe_model_custom_og.keras")
 
 
-#labelsR = np.load("asl_labels.npy", allow_pickle=True)
-#labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
+labelsR = np.load("asl_labels.npy", allow_pickle=True)
+labelsL = np.load("asl_labels_og_retrain.npy", allow_pickle=True)
 
-#pred_queueL = deque(maxlen=10)
-#pred_queueR = deque(maxlen=10)
-#pred_queue = deque(maxlen=10)
-#SEQUENCE_LENGTH = 30
-#FEATURES_PER_FRAME = 63
+pred_queueL = deque(maxlen=10)
+pred_queueR = deque(maxlen=10)
+pred_queue = deque(maxlen=10)
+SEQUENCE_LENGTH = 30
+FEATURES_PER_FRAME = 63
 
 
 def normalize_frame(frame_63):  # need this as differnt hand / cameras sizes have differnet coords
@@ -302,9 +307,11 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 # rate limiting
 # Streaming output (chat)
 # TTS
-# Response time
+# llm humanize weather info
+# fix news sources functiongemma
 # pass in user location in front end prompt
+# Universal ASL
 # bigger model for chat (api??)
 # double pressing vc crash (double pressing buttons in genreal)
-# news unsupported domains (done for rte)
+# news handle unsupported domains (done for rte)
 #                                           lowest priority

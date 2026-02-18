@@ -22,7 +22,7 @@ API_KEY=os.getenv("NEWS_API_KEY")
 
 
 
-def get_news(country=None,topic=None,source=None,language="en"):
+def get_news(country=None,cat=None,source=None,language="en", specific_topic=None):
     """
     Gets the top headlines of a given city and topic
 
@@ -44,7 +44,8 @@ def get_news(country=None,topic=None,source=None,language="en"):
         "apikey" : API_KEY,
         "domain" : source,
         "country" : country,
-        "category" : topic
+        "category" : cat,
+        "q": specific_topic
 
     }
     

@@ -93,6 +93,11 @@ import OverlayView
 
 import androidx.constraintlayout.helper.widget.Grid
 
+import android.location.Geocoder
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -106,7 +111,9 @@ class MainActivity : ComponentActivity() {
             val cameraGranted = permissions[Manifest.permission.CAMERA] == true
             val micGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
             val notificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
+            val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
             if (cameraGranted && micGranted && notificationGranted) {
+                if (locationGranted) fetchUserCity()
 
 
                 setContent {
@@ -140,12 +147,18 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         }
+
+
         else{
             true
         }
+        val locationGranted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
 
         if (cameraGranted && micGranted && notificationGranted) {
-
+            if (locationGranted) fetchUserCity()
 
             setContent {
                 MyApplicationTheme {
@@ -156,13 +169,31 @@ class MainActivity : ComponentActivity() {
             requestPermissionLauncher.launch(
                 arrayOf(
                     Manifest.permission.CAMERA,
-                    Manifest.permission.RECORD_AUDIO
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                    Manifest.permission.ACCESS_FINE_LOCATION
                 )
             )
         }
     }
 
+    private fun fetchUserCity() {
+        val fusedClient = LocationServices.getFusedLocationProviderClient(this)
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return//ensure permission is granted
+
+        fusedClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                val geocoder = Geocoder(this, Locale.getDefault()) //convert coords to city
+                val city = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                    ?.firstOrNull()?.locality
+                if (city != null) {
+                    GlobalState.userCity.value = city
+                    Log.d("LOCATION", "City: $city")
+                }
+            }
+        }
+    }
 
 }
 

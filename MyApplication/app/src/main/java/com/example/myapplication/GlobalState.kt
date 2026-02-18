@@ -22,4 +22,6 @@ object GlobalState {
     val aslTokens = mutableStateOf<List<String>>(emptyList())
 
     val aslPrompt = mutableStateOf(mutableListOf<String>())
+
+    val userCity = mutableStateOf("Dublin")
 }
