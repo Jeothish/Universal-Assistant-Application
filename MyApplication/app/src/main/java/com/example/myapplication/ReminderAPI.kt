@@ -12,7 +12,7 @@ import kotlin.String
 import kotlin.apply
 
 suspend fun getReminders(): List<ReminderGet> = withContext(Dispatchers.IO){
-    val url = URL("http://192.168.1.135:8000/reminders/get")
+    val url = URL("http://192.168.1.11:8000/reminders/get")
     val connection = url.openConnection() as HttpURLConnection
 
     connection.requestMethod = "GET"
@@ -39,7 +39,7 @@ suspend fun getReminders(): List<ReminderGet> = withContext(Dispatchers.IO){
 }
 
 suspend fun createReminder(reminder: ReminderCreate): Int= withContext(Dispatchers.IO) {
-    val url = URL("http://192.168.1.135:8000/reminders/add")
+    val url = URL("http://192.168.1.11:8000/reminders/add")
     val connection = url.openConnection() as HttpURLConnection
 
     connection.requestMethod = "POST"
@@ -79,7 +79,7 @@ suspend fun createReminder(reminder: ReminderCreate): Int= withContext(Dispatche
 
 
 suspend fun deleteReminder(reminderId: Int): Boolean = withContext(Dispatchers.IO){
-    val url = URL("http://192.168.1.135:8000/reminders/delete/$reminderId")
+    val url = URL("http://192.168.1.11:8000/reminders/delete/$reminderId")
     val connection = url.openConnection() as HttpURLConnection
 
     connection.requestMethod = "DELETE"
@@ -87,7 +87,7 @@ suspend fun deleteReminder(reminderId: Int): Boolean = withContext(Dispatchers.I
 }
 
 suspend fun updateReminders(reminderId: Int, reminder: ReminderEdit): Boolean = withContext(Dispatchers.IO) {
-    val url = URL("http://192.168.1.135:8000/reminders/edit/$reminderId")
+    val url = URL("http://192.168.1.11:8000/reminders/edit/$reminderId")
     val connection = url.openConnection() as HttpURLConnection
 
     connection.requestMethod = "PATCH"

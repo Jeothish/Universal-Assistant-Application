@@ -54,6 +54,7 @@ TRAINING_EXAMPLES = {
         "Updates on the Olympics",
         "What's happening in the environment sector?",
         "Show me education news"
+        "updates on the leaving certificate"
     ],
     "chat": [
         "Hello, how are you?",

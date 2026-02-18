@@ -305,17 +305,18 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 # uvicorn main:app --host 0.0.0.0 --port 8000
 
 
+
+#change ip in reminderapi, audio.kt,
+
 #TODO                                       highest priority
 # Azure / Pi
 # caching
 # rate limiting
 # Streaming output (chat)
 # TTS
+# llm memory
 # llm humanize weather info
-# fix news sources functiongemma
-# pass in user location in front end prompt
 # Universal ASL
 # bigger model for chat (api??)
 # double pressing vc crash (double pressing buttons in genreal)
-# news handle unsupported domains (done for rte)
 #                                           lowest priority

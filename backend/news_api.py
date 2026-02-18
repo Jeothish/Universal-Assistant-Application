@@ -42,7 +42,7 @@ def get_news(country=None,cat=None,source=None,language="en", specific_topic=Non
     params = {
         "language" : language,
         "apikey" : API_KEY,
-        "domain" : source,
+        "domainurl" : source,
         "country" : country,
         "category" : cat,
         "q": specific_topic

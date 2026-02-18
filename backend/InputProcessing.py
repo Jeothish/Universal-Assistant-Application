@@ -63,7 +63,7 @@ FUNCTION_DEFINITIONS = [
                     },
                     "hour": {
                         "type": "integer",
-                        "description": "Specific hour (0-23) for the forecast. If not specified, returns full day forecast.",
+                        "description": "Specific hour (24-hour format [0-23]) for the forecast. If not specified, returns full day forecast.",
                         "minimum": 0,
                         "maximum": 23
                     }
@@ -93,19 +93,47 @@ FUNCTION_DEFINITIONS = [
                     #     ],
                     #     "description": "News category"
                     #},
-                    # "source": {
-                    #     "type": "string",
-                    #     "enum": [
-                    #             "bbc", "cnn", "reuters", "apnews", "theguardian", "independent",
-                    #             "irishtimes", "irishexaminer", "rte", "thejournal", "breakingnews",
-                    #             "skynews", "foxnews", "nbcnews", "abcnews", "cbsnews", "msnbc",
-                    #             "washingtonpost", "nytimes", "thesun", "dailymail", "telegraph",
-                    #             "irishmirror", "express", "economist", "bloomberg", "forbes",
-                    #             "techcrunch", "theverge", "wired", "arstechnica", "engadget",
-                    #             "eurosport", "sportinglife", "talksport"
-                    #         ],
-                    #     "description": "ONLY insert if user explicitly names a news source. "
-                    #},#Leave empty otherwise. Specific news source domain (lowercase, no spaces, no .com/.ie extensions). E.g., 'bbc', 'cnn', 'independent'
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                        # Ireland
+                        "irishtimes.com",
+                        "independent.ie",
+                        "thejournal.ie",
+                        "breakingnews.ie",
+
+                        # United Kingdom
+                        "bbc.com",
+                        "theguardian.com",
+                        "telegraph.co.uk",
+                        "thetimes.co.uk",
+                        "sky.com",
+                        "dailymail.co.uk",
+
+                        # United States
+                        "edition.cnn.com",
+                        "nytimes.com",
+                        "washingtonpost.com",
+                        "foxnews.com",
+                        "nbcnews.com",
+                        "abcnews.go.com",
+                        "cbsnews.com",
+                        "bloomberg.com",
+
+                        # Europe
+                        "euronews.com",
+                        "politico.eu",
+                        "lemonde.fr",
+                        "france24.com",
+                        "reuters.com",
+
+                        # Asia
+                        "aljazeera.com",
+                        "japantimes.co.jp",
+                        "thehindu.com",
+                            ],
+                        "description": "ONLY insert if user explicitly names a news source. Leave empty otherwise. Specific news source website  "
+                    },
                     "topic":{
                         "type": "string",
                         "description": "news topic such as 'Olympics', 'World Cup', 'Donald Trump' etc. Leave empty otherwise."
@@ -166,10 +194,12 @@ def execute_news_function(country: str = None,  source: str = None, topic: str =
 
 
     error_msg = ""
-    if source and source.lower() == "rte":
-        source = "independent"
-        country = "Ireland"
-        error_msg = " (RTE is not supported. Showing results from Independent.ie instead.)"
+    if source:
+        source = source.lower()
+        if source == "rte.ie":
+            source = "independent.ie"
+            country = "Ireland"
+            error_msg = " (RTE is not supported. Showing results from Independent.ie instead.)"
 
 
     if country and country.lower() != "none":
@@ -179,7 +209,7 @@ def execute_news_function(country: str = None,  source: str = None, topic: str =
         country = None
 
     # get news
-    headlines = get_news(country, cat=None, source=None, language="en", specific_topic=topic )
+    headlines = get_news(country, cat=None, source=source, language="en", specific_topic=topic )
 
     if isinstance(headlines, dict) and "error" in headlines:#incase of error e.g. no articles found,
         print("Headlines not found"+headlines["error"])
@@ -215,7 +245,7 @@ def handle_prompt_with_qwen(raw_prompt: str,default_city:str, connection=None, c
         tools = [FUNCTION_DEFINITIONS[1]]  # Only news function
         tool_choice = "required"
     else:
-        tools = FUNCTION_DEFINITIONS  # All functions available
+        tools = None
         tool_choice = "auto"
 
     messages = [
@@ -225,8 +255,7 @@ def handle_prompt_with_qwen(raw_prompt: str,default_city:str, connection=None, c
                 "You are a helpful assistant that can provide weather forecasts and news headlines. "
                 f"Current date and time: {current_time}. "
                 "Use the available functions to help answer user queries. "
-                #f"for this prompt use the {intent} function."
-                # "If the user's request is not about weather or news, respond conversationally without using functions."
+                "If the user's request is not about weather or news, respond conversationally without using functions."
             )
         },
         {
@@ -237,7 +266,7 @@ def handle_prompt_with_qwen(raw_prompt: str,default_city:str, connection=None, c
 
 
     response = client.chat.completions.create(
-        model="functiongemma-270m-it",
+        model="liquid/lfm2.5-1.2b",
         messages=messages,
         tools=tools,
         tool_choice=tool_choice,  # let model decide whe to use functions
@@ -258,15 +287,23 @@ def handle_prompt_with_qwen(raw_prompt: str,default_city:str, connection=None, c
 
         # call funcs
         if function_name == "get_weather_forecast":
+
             llm_city = function_args.get("city")
-            if (llm_city.lower() not in raw_prompt) or (llm_city is None):
+            days_ahead = function_args.get("days_ahead",0)
+            hour = function_args.get("hour")
+
+            if hour == '':
+                hour = None
+            if days_ahead == '':
+                days_ahead = None
+            if (llm_city.lower() not in raw_prompt) or (llm_city is None) or (llm_city == ''):
                 llm_city = default_city
 
 
             result = execute_weather_function(
                 city=llm_city,
-                days_ahead=function_args.get("days_ahead", 0),
-                hour=function_args.get("hour"),
+                days_ahead=days_ahead,
+                hour=hour,
                 connection=connection
             )
             print(result)
@@ -278,11 +315,24 @@ def handle_prompt_with_qwen(raw_prompt: str,default_city:str, connection=None, c
             }
 
         elif function_name == "get_news_headlines":
+
+            country = function_args.get("country")
+            source = function_args.get("source")
+            topic = function_args.get("topic")
+
+            if country == '':
+                country = None
+            if source == '':
+                source = None
+            if topic == '':
+                topic = None
+
+
             result = execute_news_function(
-                country=function_args.get("country"),
+                country=country,
                 #category=function_args.get("category"),
-                #source=function_args.get("source"),
-                topic=function_args.get("topic")
+                source=source,
+                topic=topic
             )
             print(result)
             return {
