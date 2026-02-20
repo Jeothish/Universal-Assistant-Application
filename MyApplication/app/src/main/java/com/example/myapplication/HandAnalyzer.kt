@@ -150,7 +150,7 @@ class HandAnalyzer(
     private fun sendLandmarksToBackend(features: FloatArray, detHand: String) {
         Thread {
             try {
-                val url = java.net.URL("http://192.168.1.11:8000/predict")
+                val url = java.net.URL("http://${GlobalState.serverIP.value}:8000/predict")
 
 
                 val conn = url.openConnection() as java.net.HttpURLConnection

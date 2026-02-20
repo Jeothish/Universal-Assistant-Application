@@ -76,6 +76,8 @@ dependencies {
     //location
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
+    //long term storage
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
 
     // MediaPipe

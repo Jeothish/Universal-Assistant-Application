@@ -306,7 +306,7 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 
 
 
-#change ip in reminderapi, audio.kt,
+#change ip in reminderapi, audio.kt, handanalyzer
 
 #TODO                                       highest priority
 # Azure / Pi

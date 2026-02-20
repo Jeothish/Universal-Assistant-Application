@@ -98,6 +98,8 @@ import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import java.util.Locale
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -131,7 +133,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val cameraGranted = ContextCompat.checkSelfPermission(
+        lifecycleScope.launch {
+            GlobalState.serverIP.value = AppPreferences.loadIp(this@MainActivity)
+        }
+
+            val cameraGranted = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
@@ -254,8 +260,40 @@ fun MyApplicationApp() {
 }
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var ip by remember { mutableStateOf(GlobalState.serverIP.value) }
+
+    var saved by remember { mutableStateOf(false) }
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Settings")
+        Text(text="Settings",modifier=modifier.padding(bottom=500.dp), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(222, 172, 255))
+        OutlinedTextField(
+            value = ip,
+            onValueChange = {
+                ip = it
+                saved = false
+
+            },
+            label = { Text("IP Address") },
+            placeholder = { Text(ip) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Button(
+            onClick = {
+                GlobalState.serverIP.value = ip
+                saved =true
+                scope.launch {
+                    AppPreferences.saveIp(context, ip)
+
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(222, 172, 255)),
+            shape = RoundedCornerShape(12.dp),
+            modifier = modifier.padding(end = 0.dp, top = 90.dp)
+        ) {
+            Text(if (saved) "Saved" else "Save")
+        }
     }
 }
 

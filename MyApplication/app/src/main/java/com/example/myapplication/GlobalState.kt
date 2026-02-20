@@ -26,4 +26,6 @@ object GlobalState {
     val hideResponse = mutableStateOf(false)
 
     val userCity = mutableStateOf("Dublin")
+
+    var serverIP = mutableStateOf("192.168.1.11")
 }

@@ -71,7 +71,7 @@ class audio(private val context: Context) {
         GlobalState.thinking.value = true
         Thread{
             try{
-                val url = URL("http://192.168.1.11:8000/text")
+                val url = URL("http://${GlobalState.serverIP.value}:8000/text")
                 val conn = url.openConnection() as HttpURLConnection
 
                 conn.requestMethod= "POST"
@@ -155,7 +155,7 @@ class audio(private val context: Context) {
             try {
 
                 val boundary = "Boundary-${System.currentTimeMillis()}"
-                val url = URL("http://192.168.1.11:8000/voice")
+                val url = URL("http://${GlobalState.serverIP.value}:8000/voice")
                 val conn = url.openConnection() as HttpURLConnection
 
                 conn.requestMethod = "POST"
