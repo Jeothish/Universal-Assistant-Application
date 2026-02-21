@@ -81,9 +81,11 @@ dependencies {
 
 
     // MediaPipe
-
-
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
+
+    //tflite
+    implementation("com.google.ai.edge.litert:litert:1.0.1")
+    implementation("com.google.ai.edge.litert:litert-support:1.0.1")
 
     // CameraX
     implementation("androidx.camera:camera-core:1.3.1")

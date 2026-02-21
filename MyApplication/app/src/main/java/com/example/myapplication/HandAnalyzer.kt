@@ -15,6 +15,7 @@ import com.google.gson.JsonObject
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import kotlin.math.sqrt
 import OverlayView
+
 class HandAnalyzer(
     context: Context,
     private val overlayView: OverlayView
@@ -29,11 +30,14 @@ class HandAnalyzer(
     private var prevLetter = ""
 
     private var prevCall=0
-    private var delay = 1
+    private var delay = 10
 
     private var prevAction =""
     private var timer =0
     private val lock = Any()
+
+    private val classifierL = ASLProcessing(context, "asl_mediapipe_model_L.tflite", "asl_labels_Left.txt")
+    private val classifierR = ASLProcessing(context, "asl_mediapipe_model_R.tflite", "asl_labels_Right.txt")
 
     init {
         val options = HandLandmarker.HandLandmarkerOptions.builder()
@@ -71,7 +75,8 @@ class HandAnalyzer(
 
                     val normalizedFeatures = normalizeLandmarks(landmarks)
                     if (prevCall > delay-1) {
-                        sendLandmarksToBackend(normalizedFeatures, detectedHand)
+                       //sendLandmarksToBackend(normalizedFeatures, detectedHand)
+                        localPredict(normalizedFeatures, detectedHand)
                         prevCall=0
 
                     }
@@ -145,6 +150,68 @@ class HandAnalyzer(
         }
 
         return scaled.flatMap { it.toList() }.toFloatArray()
+    }
+
+    private fun localPredict(features: FloatArray, detHand: String){
+        Thread {
+            try {
+
+                var prediction: Pair<String, Float>
+                if (detHand.lowercase() == "right") {
+                    //use left since mediapipe inverts
+                    prediction = classifierL.predict(features)
+                    GlobalState.letter.value = prediction.first.lowercase()
+                    Log.d(TAG, "Predicted: $prediction ")
+                    println(prediction)
+
+                } else if (detHand.lowercase() == "left") {
+                    //use roght
+                    prediction = classifierR.predict(features)
+                    GlobalState.letter.value = prediction.first.lowercase()
+                    Log.d("PRED", "Predicted: $prediction ")
+                    println(prediction)
+                }
+                val letter = GlobalState.letter.value
+                println(timer)
+                synchronized(lock) {
+
+                    if (prevLetter == "") { // asl senetnce construction using delay
+                        prevLetter = letter
+                        timer = 0
+                    }
+                    if (letter == prevLetter) {
+
+
+                        if (timer >= 3) {
+
+                            if (letter == "del" && aslPrompt.value.isNotEmpty()) {
+                                aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
+                            } else if (letter == "space") {
+                                aslPrompt.value = (aslPrompt.value + " ").toMutableList()
+                            } else if (letter != "del" && prevLetter != "del") {
+
+                                aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
+                            }
+
+                            timer = -13
+                        } else {
+                            timer++
+
+                        }
+                    } else {
+                        prevCall = 0
+                        timer = 0
+                    }
+                    prevLetter = letter
+                }
+            }
+            catch(e: Exception){
+                Log.e("ASLTHREAD", "Error: ${e.message}", e)
+            }
+        }
+            .start()
+
+
     }
 
     private fun sendLandmarksToBackend(features: FloatArray, detHand: String) {
