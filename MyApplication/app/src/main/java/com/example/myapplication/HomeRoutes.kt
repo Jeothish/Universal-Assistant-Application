@@ -7,4 +7,10 @@ object HomeRoutes{
 
     const val ADD_REMINDERS = "add_reminders"
 
+    const val CHAT = "chat"
+
+    const val SETTINGS = "settings"
+
+    const val PROFILE = "profile"
+
 }

@@ -241,14 +241,14 @@ fun MyApplicationApp() {
                 }
                 AppDestinations.SETTINGS -> {
                     SettingsScreen(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding), returnToChat = {}
                     )
                 }
 
                 AppDestinations.PROFILE -> {
                     ProfileScreen(
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                        modifier = Modifier.padding(innerPadding), returnToChat = {})
+
                 }
 
 
@@ -259,7 +259,7 @@ fun MyApplicationApp() {
 
 }
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var ip by remember { mutableStateOf(GlobalState.serverIP.value) }
@@ -298,7 +298,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ProfileScreen(modifier: Modifier = Modifier) {
+fun ProfileScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text("Profile")
     }

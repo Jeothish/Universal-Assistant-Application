@@ -14,6 +14,7 @@ constraintlayout = "2.2.1"
 navigationCompose = "2.9.6"
 composeMaterial3 = "1.5.6"
 playServicesLocation = "21.3.0"
+ui = "1.10.3"
 
 
 
@@ -42,6 +43,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "composeMaterial3" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -86,6 +86,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Snackbar
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 
@@ -1129,7 +1130,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
 
 
 @Composable
-fun statsBox(icon: androidx.compose.ui.graphics.vector.ImageVector, iconColour:Color = Color.DarkGray , value:Int , label:String, circleBackground: Color = Color.Gray,modifier: Modifier = Modifier ){
+fun statsBox(icon:ImageVector, iconColour:Color = Color.DarkGray , value:Int , label:String, circleBackground: Color = Color.Gray,modifier: Modifier = Modifier ){
     Column(
         modifier = modifier
             .padding(4.dp)

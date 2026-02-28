@@ -27,7 +27,17 @@ fun HomePage(modifier: Modifier = Modifier){
             HomeMainScreen(
                 onOpenReminders = {
                     navController.navigate(HomeRoutes.REMINDERS)
+                },
+                onOpenChat = {
+                    navController.navigate(HomeRoutes.CHAT)
+                },
+                onOpenSettings = {
+                    navController.navigate(HomeRoutes.SETTINGS)
+                },
+                onOpenProfile = {
+                    navController.navigate(HomeRoutes.PROFILE)
                 }
+
             )
         }
         //Defines the reminders screen
@@ -48,7 +58,22 @@ fun HomePage(modifier: Modifier = Modifier){
                 existingReminder = reminderToEdit) //Goes back to previous screen
         }
 
+        composable(HomeRoutes.CHAT){
+            ChatScreen(returnToChat = {navController.popBackStack()})
+        }
+
+        composable(HomeRoutes.SETTINGS){
+            SettingsScreen(returnToChat = {navController.popBackStack()})
+        }
+
+        composable(HomeRoutes.PROFILE){
+            ProfileScreen(returnToChat = {navController.popBackStack()})
+        }
+
+
     }
+
+
 }
 
 
