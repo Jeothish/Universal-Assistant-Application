@@ -27,5 +27,7 @@ object GlobalState {
 
     val userCity = mutableStateOf("Dublin")
 
-    var serverIP = mutableStateOf("192.168.1.11")
+    var serverIP = mutableStateOf("192.168.1.135")
+
+    var ttsReading = mutableStateOf(false)
 }

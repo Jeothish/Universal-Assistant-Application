@@ -5,6 +5,7 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.graphics.Paint
 import android.icu.util.Calendar
+import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -324,6 +325,8 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
     Log.d("ReminderCard", "Date: ${reminder.reminder_date}, Time: ${reminder.reminder_time}")
     var isComplete by remember { mutableStateOf(reminder.is_complete == true) }
     val courotineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val ttsManager = remember { TTSManager(context) }
 
 
 
@@ -441,7 +444,11 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
             Row(Modifier.padding(16.dp)) {
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        GlobalState.ttsReading.value = !GlobalState.ttsReading.value
+                        if(GlobalState.ttsReading.value) ttsManager.speak(reminder.reminder_title!!)
+                        else ttsManager.stop()
+                    },
                     modifier = Modifier.height(100.dp).width(100.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
