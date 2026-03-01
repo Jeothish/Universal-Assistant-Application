@@ -417,12 +417,16 @@ enum class AppDestinations(
 }
 
 @Composable
-fun Greeting(time: String, modifier: Modifier) {
+fun Greeting(time: String) {
     Box(
-
-        modifier = Modifier.fillMaxSize(),contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ){
-        Text(text = "Good $time,\n\nhow can I help?",color= Color(222,172,255), fontSize = 32.sp)
+        Text(text = "Good $time,\n\nhow can I help?",
+            color= Color(222,172,255),
+            fontSize = 32.sp,
+            modifier = Modifier.padding(top = 64.dp)
+        )
     }
 }
 

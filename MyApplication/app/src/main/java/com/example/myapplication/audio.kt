@@ -139,6 +139,8 @@ class audio(private val context: Context) {
             GlobalState.vc_result.value = result
             GlobalState.vc_intent.value = intent
             GlobalState.vc_prompt.value = prompt
+            GlobalState.assistantResponses.add(result)
+            GlobalState.assistantIntents.add(intent)
             if(intent == "weather") {
                 GlobalState.city.value = city
             }

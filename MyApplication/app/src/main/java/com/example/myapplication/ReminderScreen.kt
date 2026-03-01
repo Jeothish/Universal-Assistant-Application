@@ -173,7 +173,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
                         modifier = Modifier.size(36.dp)
                     )
                     Text(
-                        text = "Return to Chat",
+                        text = "Return Home",
                         fontSize = 25.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -593,7 +593,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
         {
             Row() {
                 Icon(imageVector = Icons.Default.KeyboardReturn , contentDescription = null,modifier = Modifier.size(36.dp))
-                Text(text="Return to Chat", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
+                Text(text="Return to Reminders", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
             }
         }
         Spacer(modifier = Modifier.height(25.dp))

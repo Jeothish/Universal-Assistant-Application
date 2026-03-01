@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 
 object GlobalState {
@@ -14,6 +15,10 @@ object GlobalState {
     var vc_result = mutableStateOf("")
     var vc_prompt = mutableStateOf("")
     var vc_intent = mutableStateOf("")
+
+    val userPrompts = mutableStateListOf<String>()
+    val assistantResponses = mutableStateListOf<String>()
+    val assistantIntents = mutableStateListOf<String>()
 
     var weather = mutableStateOf(WeatherItem(0.0,0.0,"",""))
 

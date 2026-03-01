@@ -59,7 +59,10 @@ fun HomePage(modifier: Modifier = Modifier){
         }
 
         composable(HomeRoutes.CHAT){
-            ChatScreen(returnToChat = {navController.popBackStack()})
+            ChatScreen(
+                returnToChat = {navController.popBackStack()},
+                onOpenASLInput = {navController.navigate(HomeRoutes.ASL_INPUT_SCREEN)}
+            )
         }
 
         composable(HomeRoutes.SETTINGS){
@@ -69,6 +72,12 @@ fun HomePage(modifier: Modifier = Modifier){
         composable(HomeRoutes.PROFILE){
             ProfileScreen(returnToChat = {navController.popBackStack()})
         }
+
+        composable(HomeRoutes.ASL_INPUT_SCREEN){
+            ASLInputScreen(returnToChat = {navController.popBackStack()})
+        }
+
+
 
 
     }

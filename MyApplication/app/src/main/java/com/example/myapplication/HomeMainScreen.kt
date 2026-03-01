@@ -54,8 +54,10 @@ import androidx.compose.material.icons.filled.FrontHand
 import androidx.compose.material.icons.filled.LogoDev
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+
 import androidx.compose.ui.text.style.TextAlign
 
 
@@ -155,7 +157,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                 time = "evening"
             }
 
-            Greeting(time = time, modifier = Modifier.align(Alignment.Center))
+            Greeting(time = time)
         } else if (asl) {
             Text(
                 text = "Detected Sign: $letter",
@@ -479,6 +481,15 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                                 title = "Profile",
                                 description = "Manage your account",
                                 onClick = {onOpenProfile})
+                        }
+
+                        item {
+                            homeButtons(
+                                icon = Icons.Default.PhoneAndroid,
+                                iconColour = Color(0xFFE2135B),
+                                title = "Phone helper",
+                                description = "**COMING SOON**",
+                                onClick = {})
                         }
 
 
