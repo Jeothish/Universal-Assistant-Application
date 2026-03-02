@@ -318,8 +318,6 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                                 modifier = Modifier.padding(bottom = 10.dp)
                             )
 
-
-
                             Text(
                                 text = "${item.Link}",
                                 fontSize = 14.sp,
@@ -413,29 +411,29 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                                 onClick = { onOpenReminders() })
                         }
 
-                        item {
-                            homeButtons(
-                                icon = Icons.Default.Mic,
-                                iconColour = if (recording) Color(0xFFE70707) else Color(0xFF2BFF00),
-                                title = if (recording) "Stop recording" else "Voice Chat",
-                                description = "**MOVE TO ASSISTANT**",
-                                onClick = {
-
-                                    if (!recording) {
-                                        recorder.startRec()
-                                        recording = true
-                                    } else {
-
-                                        val file = recorder.stopRec()
-
-                                        file?.let { recorder.sendAudioToBackend(it) }
-                                        recording = false
-
-
-                                    }
-                                },
-                            )
-                        }
+//                        item {
+//                            homeButtons(
+//                                icon = Icons.Default.Mic,
+//                                iconColour = if (recording) Color(0xFFE70707) else Color(0xFF2BFF00),
+//                                title = if (recording) "Stop recording" else "Voice Chat",
+//                                description = "**MOVE TO ASSISTANT**",
+//                                onClick = {
+//
+//                                    if (!recording) {
+//                                        recorder.startRec()
+//                                        recording = true
+//                                    } else {
+//
+//                                        val file = recorder.stopRec()
+//
+//                                        file?.let { recorder.sendAudioToBackend(it) }
+//                                        recording = false
+//
+//
+//                                    }
+//                                },
+//                            )
+//                        }
 
                         item {
                             homeButtons(

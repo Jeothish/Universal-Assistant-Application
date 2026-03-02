@@ -17,8 +17,11 @@ object GlobalState {
     var vc_intent = mutableStateOf("")
 
     val userPrompts = mutableStateListOf<String>()
+    val userTimes = mutableStateListOf<String>()
     val assistantResponses = mutableStateListOf<String>()
     val assistantIntents = mutableStateListOf<String>()
+
+    val assistantTimes = mutableStateListOf<String>()
 
     var weather = mutableStateOf(WeatherItem(0.0,0.0,"",""))
 
@@ -26,7 +29,7 @@ object GlobalState {
     var greeting = mutableStateOf(true)
     val aslTokens = mutableStateOf<List<String>>(emptyList())
 
-    val aslPrompt = mutableStateOf(mutableListOf<String>())
+    val aslPrompt = mutableStateOf(listOf<String>())
 
     val hideResponse = mutableStateOf(false)
 

@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.RestoreFromTrash
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.StoreMallDirectory
 import androidx.compose.material.icons.filled.Warning
@@ -453,18 +454,20 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
                     modifier = Modifier.height(100.dp).width(100.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1255E0),
+                        containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
+                            0xFF0C31EC
+                        ),
                         contentColor = Color(0xFFFFFFFF),
                     )
                 )
                 {
                     Column() {
                         Icon(
-                            imageVector = Icons.Default.RecordVoiceOver,
+                            imageVector =  if(GlobalState.ttsReading.value) Icons.Default.Stop else Icons.Default.RecordVoiceOver,
                             contentDescription = null,
                             modifier = Modifier.size(36.dp)
                         )
-                        Text("Read")
+                        Text(if(GlobalState.ttsReading.value) "Stop reading" else "Read")
                     }
 
                 }

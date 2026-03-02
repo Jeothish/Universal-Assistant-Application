@@ -12,10 +12,14 @@ import com.google.gson.Gson
 
 import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.util.Date
+import java.util.Locale
+
 data class NewsItem(
     val Title: String,
     val Link: String,
@@ -68,6 +72,9 @@ class audio(private val context: Context) {
     }
 
     fun sendTextToBackend(text: String){
+        val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        GlobalState.userTimes.add(messageTime)
+        GlobalState.userPrompts.add(text)
         GlobalState.thinking.value = true
         Thread{
             try{
@@ -136,11 +143,14 @@ class audio(private val context: Context) {
 
 
         android.os.Handler(android.os.Looper.getMainLooper()).post {//update main thread
+            val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
             GlobalState.vc_result.value = result
             GlobalState.vc_intent.value = intent
             GlobalState.vc_prompt.value = prompt
+
             GlobalState.assistantResponses.add(result)
             GlobalState.assistantIntents.add(intent)
+            GlobalState.assistantTimes.add(messageTime)
             if(intent == "weather") {
                 GlobalState.city.value = city
             }
@@ -151,6 +161,7 @@ class audio(private val context: Context) {
     }
 
     fun sendAudioToBackend(audioFile: File) {
+
         GlobalState.thinking.value = true
 
         Thread {
@@ -183,6 +194,20 @@ class audio(private val context: Context) {
                 writer.write("--$boundary\r\n")
                 writer.write("Content-Disposition: form-data; name=\"city\"\r\n\r\n")
                 writer.write(GlobalState.userCity.value)
+                writer.write("\r\n")
+                writer.flush()
+
+                //send user prompts
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"user_prompts\"\r\n\r\n")
+                writer.write(GlobalState.userPrompts.joinToString("|"))
+                writer.write("\r\n")
+                writer.flush()
+
+                //send user times
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"user_times\"\r\n\r\n")
+                writer.write(GlobalState.userTimes.joinToString("|"))
                 writer.write("\r\n")
                 writer.flush()
 
