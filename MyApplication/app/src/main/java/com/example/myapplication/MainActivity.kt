@@ -241,14 +241,14 @@ fun MyApplicationApp() {
                 }
                 AppDestinations.SETTINGS -> {
                     SettingsScreen(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding), returnToChat = {}
                     )
                 }
 
                 AppDestinations.PROFILE -> {
                     ProfileScreen(
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                        modifier = Modifier.padding(innerPadding), returnToChat = {})
+
                 }
 
 
@@ -259,7 +259,7 @@ fun MyApplicationApp() {
 
 }
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var ip by remember { mutableStateOf(GlobalState.serverIP.value) }
@@ -298,7 +298,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ProfileScreen(modifier: Modifier = Modifier) {
+fun ProfileScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text("Profile")
     }
@@ -417,12 +417,16 @@ enum class AppDestinations(
 }
 
 @Composable
-fun Greeting(time: String, modifier: Modifier) {
+fun Greeting(time: String) {
     Box(
-
-        modifier = Modifier.fillMaxSize(),contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
     ){
-        Text(text = "Good $time,\n\nhow can I help?",color= Color(222,172,255), fontSize = 32.sp)
+        Text(text = "Good $time,\n\nhow can I help?",
+            color= Color(222,172,255),
+            fontSize = 32.sp,
+            modifier = Modifier.padding(top = 64.dp)
+        )
     }
 }
 

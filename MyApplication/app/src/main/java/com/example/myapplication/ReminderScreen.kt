@@ -5,6 +5,7 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.graphics.Paint
 import android.icu.util.Calendar
+import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,6 +51,7 @@ import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Pending
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.RestoreFromTrash
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.StoreMallDirectory
 import androidx.compose.material.icons.filled.Warning
@@ -85,6 +87,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Snackbar
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 
@@ -171,7 +174,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
                         modifier = Modifier.size(36.dp)
                     )
                     Text(
-                        text = "Return to Chat",
+                        text = "Return Home",
                         fontSize = 25.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -324,6 +327,8 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
     Log.d("ReminderCard", "Date: ${reminder.reminder_date}, Time: ${reminder.reminder_time}")
     var isComplete by remember { mutableStateOf(reminder.is_complete == true) }
     val courotineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val ttsManager = remember { TTSManager(context) }
 
 
 
@@ -441,22 +446,28 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
             Row(Modifier.padding(16.dp)) {
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        GlobalState.ttsReading.value = !GlobalState.ttsReading.value
+                        if(GlobalState.ttsReading.value) ttsManager.speak(reminder.reminder_title!!)
+                        else ttsManager.stop()
+                    },
                     modifier = Modifier.height(100.dp).width(100.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1255E0),
+                        containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
+                            0xFF0C31EC
+                        ),
                         contentColor = Color(0xFFFFFFFF),
                     )
                 )
                 {
                     Column() {
                         Icon(
-                            imageVector = Icons.Default.RecordVoiceOver,
+                            imageVector =  if(GlobalState.ttsReading.value) Icons.Default.Stop else Icons.Default.RecordVoiceOver,
                             contentDescription = null,
                             modifier = Modifier.size(36.dp)
                         )
-                        Text("Read")
+                        Text(if(GlobalState.ttsReading.value) "Stop reading" else "Read")
                     }
 
                 }
@@ -585,7 +596,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
         {
             Row() {
                 Icon(imageVector = Icons.Default.KeyboardReturn , contentDescription = null,modifier = Modifier.size(36.dp))
-                Text(text="Return to Chat", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
+                Text(text="Return to Reminders", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
             }
         }
         Spacer(modifier = Modifier.height(25.dp))
@@ -1122,7 +1133,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
 
 
 @Composable
-fun statsBox(icon: androidx.compose.ui.graphics.vector.ImageVector, iconColour:Color = Color.DarkGray , value:Int , label:String, circleBackground: Color = Color.Gray,modifier: Modifier = Modifier ){
+fun statsBox(icon:ImageVector, iconColour:Color = Color.DarkGray , value:Int , label:String, circleBackground: Color = Color.Gray,modifier: Modifier = Modifier ){
     Column(
         modifier = modifier
             .padding(4.dp)
