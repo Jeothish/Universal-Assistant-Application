@@ -8,14 +8,16 @@ plugins {
 
 android {
     namespace = "com.example.myapplication"
-    compileSdk {
-        version = release(36)
+    compileSdk = 35
+
+    androidResources{
+        noCompress+="litertlm"
     }
 
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -82,6 +84,14 @@ dependencies {
 
     // MediaPipe
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    //LLM
+
+    implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
+
+    //sql db
+    implementation("org.postgresql:postgresql:42.7.3")
+
+
 
     //tflite
     implementation("com.google.ai.edge.litert:litert:1.0.1")
@@ -122,7 +132,7 @@ dependencies {
 
     //Alarm
     implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    implementation("androidx.compose.material3:material3:1.1.2")
+    //implementation("androidx.core:core-ktx:1.12.0")
+    //implementation("androidx.activity:activity-compose:1.8.2")
+   // implementation("androidx.compose.material3:material3:1.1.2")
 }

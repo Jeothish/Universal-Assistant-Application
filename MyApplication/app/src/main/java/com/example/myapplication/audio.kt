@@ -2,7 +2,6 @@ package com.example.myapplication
 
 import android.content.Context
 import android.media.MediaRecorder
-import android.os.Environment
 import java.io.File
 
 import java.net.URL
@@ -16,9 +15,9 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 
 import java.time.LocalDateTime
-import java.time.LocalTime
 import java.util.Date
 import java.util.Locale
+
 
 data class NewsItem(
     val Title: String,
@@ -71,31 +70,81 @@ class audio(private val context: Context) {
         return outputFile
     }
 
+//    fun sendTextToBackend(text: String){
+//        val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+//        GlobalState.userTimes.add(messageTime)
+//        GlobalState.userPrompts.add(text)
+//        GlobalState.thinking.value = true
+//        Thread{
+//            try{
+//                Log.d("SERVER_IP", GlobalState.serverIP.value)
+//                val url = URL("http://${GlobalState.serverIP.value}:8000/text")
+//                val conn = url.openConnection() as HttpURLConnection
+//
+//                conn.requestMethod= "POST"
+//                conn.setRequestProperty("Content-Type","application/json")
+//                conn.doOutput = true
+//
+//                val payload = """
+//                    {
+//                        "text": "${text.replace("\"","\\\"")}", "time": "${LocalDateTime.now().toString()} ${LocalDate.now().dayOfWeek}", "city": "${GlobalState.userCity.value}"
+//                        }
+//                """.trimIndent()
+//
+//                conn.outputStream.use{it.write(payload.toByteArray())}
+//
+//                val response = conn.inputStream.bufferedReader().readText()
+//
+//                handleResponse(response)
+//
+//            }
+//            catch (e: Exception){
+//                Log.e("TEXT_ERROR",e.toString())
+//                GlobalState.thinking.value= false
+//            }
+//        }.start()
+//    }
+private fun parseJsonFromLLM(raw: String): JsonObject? {
+    val cleaned = raw
+        .replace("```json", "")
+        .replace("```", "")
+        .trim()
+
+    Log.d("LLM_CLEANED", cleaned)  // add this
+
+    return try {
+        Gson().fromJson(cleaned, JsonObject::class.java)
+    } catch (e: Exception) {
+        // regex fallback
+        val jsonRegex = Regex("\\{[\\s\\S]*}", RegexOption.MULTILINE)
+        val match = jsonRegex.find(cleaned)?.value
+        Log.d("LLM_MATCH", match ?: "no match")
+        try {
+            Gson().fromJson(match, JsonObject::class.java)
+        } catch (e2: Exception) {
+            Log.e("LLM_PARSE", "Failed: $cleaned")
+            null
+        }
+    }
+}
+
     fun sendTextToBackend(text: String){
         val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         GlobalState.userTimes.add(messageTime)
         GlobalState.userPrompts.add(text)
+        GlobalState.vc_prompt.value = text
         GlobalState.thinking.value = true
+        val llm = GlobalState.localLLM
         Thread{
             try{
-                val url = URL("http://${GlobalState.serverIP.value}:8000/text")
-                val conn = url.openConnection() as HttpURLConnection
+                val response = llm!!.generate(text)
+                Log.d("LLM_RESPONSE", response)
 
-                conn.requestMethod= "POST"
-                conn.setRequestProperty("Content-Type","application/json")
-                conn.doOutput = true
+                println(response)
+                val parsed = parseJsonFromLLM(response)
+                Log.d("LLM_PARSED", parsed?.toString() ?: "NULL - parse failed")
 
-                val payload = """
-                    {
-                        "text": "${text.replace("\"","\\\"")}", "time": "${LocalDateTime.now().toString()} ${LocalDate.now().dayOfWeek}", "city": "${GlobalState.userCity.value}"
-                        }
-                """.trimIndent()
-
-                conn.outputStream.use{it.write(payload.toByteArray())}
-
-                val response = conn.inputStream.bufferedReader().readText()
-
-                handleResponse(response)
+                handleResponse(parsed)
 
             }
             catch (e: Exception){
@@ -105,11 +154,11 @@ class audio(private val context: Context) {
         }.start()
     }
 
-    fun handleResponse(response: String){
+    fun handleResponse(response: JsonObject?){
         val jsonObject = Gson().fromJson(response, JsonObject::class.java)
 
         val intent = jsonObject.get("intent")?.asString ?: ""
-        val prompt = jsonObject.get("prompt")?.asString ?: ""
+        //val prompt = jsonObject.get("prompt")?.asString ?: ""
         var result = ""
 
         var city=""
@@ -146,7 +195,7 @@ class audio(private val context: Context) {
             val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
             GlobalState.vc_result.value = result
             GlobalState.vc_intent.value = intent
-            GlobalState.vc_prompt.value = prompt
+            //GlobalState.vc_prompt.value = prompt
 
             GlobalState.assistantResponses.add(result)
             GlobalState.assistantIntents.add(intent)
@@ -160,84 +209,84 @@ class audio(private val context: Context) {
         }
     }
 
-    fun sendAudioToBackend(audioFile: File) {
-
-        GlobalState.thinking.value = true
-
-        Thread {
-            try {
-
-                val boundary = "Boundary-${System.currentTimeMillis()}"
-                val url = URL("http://${GlobalState.serverIP.value}:8000/voice")
-                val conn = url.openConnection() as HttpURLConnection
-
-                conn.requestMethod = "POST"
-                conn.setRequestProperty(
-                    "Content-Type",
-                    "multipart/form-data; boundary=$boundary"
-                )
-                conn.setChunkedStreamingMode(0)
-
-                conn.doOutput = true
-
-                val output = conn.outputStream
-                val writer = output.bufferedWriter()
-
-                //send user time
-                writer.write("--$boundary\r\n")
-                writer.write("Content-Disposition: form-data; name=\"timestamp\"\r\n\r\n")
-                writer.write(LocalDateTime.now().toString() + " " +LocalDate.now().dayOfWeek)
-                writer.write("\r\n")
-                writer.flush()
-
-                //send user city
-                writer.write("--$boundary\r\n")
-                writer.write("Content-Disposition: form-data; name=\"city\"\r\n\r\n")
-                writer.write(GlobalState.userCity.value)
-                writer.write("\r\n")
-                writer.flush()
-
-                //send user prompts
-                writer.write("--$boundary\r\n")
-                writer.write("Content-Disposition: form-data; name=\"user_prompts\"\r\n\r\n")
-                writer.write(GlobalState.userPrompts.joinToString("|"))
-                writer.write("\r\n")
-                writer.flush()
-
-                //send user times
-                writer.write("--$boundary\r\n")
-                writer.write("Content-Disposition: form-data; name=\"user_times\"\r\n\r\n")
-                writer.write(GlobalState.userTimes.joinToString("|"))
-                writer.write("\r\n")
-                writer.flush()
-
-                //send the audio
-                writer.write("--$boundary\r\n")
-                writer.write(
-                    "Content-Disposition: form-data; name=\"audio\"; filename=\"audio.m4a\"\r\n"
-                )
-                writer.write("Content-Type: audio/mp4\r\n\r\n")
-                writer.flush()
-
-                audioFile.inputStream().copyTo(output)
-                output.flush()
-
-                writer.write("\r\n--$boundary--\r\n")
-                writer.flush()
-                writer.close()
-
-                val response = conn.inputStream.bufferedReader().readText()
-                Log.d("VOICE_RESPONSE", response)
-
-                handleResponse(response)
-
-
-
-            } catch (e: Exception) {
-                Log.e("VOICE_ERROR", e.toString())
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    GlobalState.thinking.value = false
-            }}
-        }.start()
-    }
+//    fun sendAudioToBackend(audioFile: File) {
+//
+//        GlobalState.thinking.value = true
+//
+//        Thread {
+//            try {
+//
+//                val boundary = "Boundary-${System.currentTimeMillis()}"
+//                val url = URL("http://${GlobalState.serverIP.value}:8000/voice")
+//                val conn = url.openConnection() as HttpURLConnection
+//
+//                conn.requestMethod = "POST"
+//                conn.setRequestProperty(
+//                    "Content-Type",
+//                    "multipart/form-data; boundary=$boundary"
+//                )
+//                conn.setChunkedStreamingMode(0)
+//
+//                conn.doOutput = true
+//
+//                val output = conn.outputStream
+//                val writer = output.bufferedWriter()
+//
+//                //send user time
+//                writer.write("--$boundary\r\n")
+//                writer.write("Content-Disposition: form-data; name=\"timestamp\"\r\n\r\n")
+//                writer.write(LocalDateTime.now().toString() + " " +LocalDate.now().dayOfWeek)
+//                writer.write("\r\n")
+//                writer.flush()
+//
+//                //send user city
+//                writer.write("--$boundary\r\n")
+//                writer.write("Content-Disposition: form-data; name=\"city\"\r\n\r\n")
+//                writer.write(GlobalState.userCity.value)
+//                writer.write("\r\n")
+//                writer.flush()
+//
+//                //send user prompts
+//                writer.write("--$boundary\r\n")
+//                writer.write("Content-Disposition: form-data; name=\"user_prompts\"\r\n\r\n")
+//                writer.write(GlobalState.userPrompts.joinToString("|"))
+//                writer.write("\r\n")
+//                writer.flush()
+//
+//                //send user times
+//                writer.write("--$boundary\r\n")
+//                writer.write("Content-Disposition: form-data; name=\"user_times\"\r\n\r\n")
+//                writer.write(GlobalState.userTimes.joinToString("|"))
+//                writer.write("\r\n")
+//                writer.flush()
+//
+//                //send the audio
+//                writer.write("--$boundary\r\n")
+//                writer.write(
+//                    "Content-Disposition: form-data; name=\"audio\"; filename=\"audio.m4a\"\r\n"
+//                )
+//                writer.write("Content-Type: audio/mp4\r\n\r\n")
+//                writer.flush()
+//
+//                audioFile.inputStream().copyTo(output)
+//                output.flush()
+//
+//                writer.write("\r\n--$boundary--\r\n")
+//                writer.flush()
+//                writer.close()
+//
+//                val response = conn.inputStream.bufferedReader().readText()
+//                Log.d("VOICE_RESPONSE", response)
+//
+//                handleResponse(response)
+//
+//
+//
+//            } catch (e: Exception) {
+//                Log.e("VOICE_ERROR", e.toString())
+//                android.os.Handler(android.os.Looper.getMainLooper()).post {
+//                    GlobalState.thinking.value = false
+//            }}
+//        }.start()
+//    }
 }

@@ -639,7 +639,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
 
                         val file = recorder.stopRec()
 
-                        file?.let { recorder.sendAudioToBackend(it) }
+                        //file?.let { recorder.sendAudioToBackend(it) }
                         recording = false
 
                     }

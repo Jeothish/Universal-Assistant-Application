@@ -94,11 +94,13 @@ import OverlayView
 import androidx.constraintlayout.helper.widget.Grid
 
 import android.location.Geocoder
+import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import java.util.Locale
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -133,7 +135,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try{
+                val llm = LocalLLM()
+                llm.initialize(context = applicationContext)
+                GlobalState.localLLM = llm
+                GlobalState.llmReady.value = true
+            }catch(e:Exception){
+                Log.e("LLM", "LLM loading failed: $e")
+            }
             GlobalState.serverIP.value = AppPreferences.loadIp(this@MainActivity)
         }
 
@@ -208,54 +218,10 @@ class MainActivity : ComponentActivity() {
 @PreviewScreenSizes
 @Composable
 fun MyApplicationApp() {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.CHAT) }
-
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            AppDestinations.entries.forEach {
-                item(
-                    icon = {
-                        Icon(
-                            it.icon,
-                            contentDescription = it.label,
-                            tint = Color(222,172,255)
-                        )
-                    },
-                    label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it },
-
-                )
-            }
-        }
-    )
-
-
-    {
-        Scaffold(modifier = Modifier.fillMaxSize())
-
-        { innerPadding ->
-            when (currentDestination){
-                AppDestinations.CHAT ->{
-                    HomePage(modifier = Modifier.padding(innerPadding))
-                }
-                AppDestinations.SETTINGS -> {
-                    SettingsScreen(
-                        modifier = Modifier.padding(innerPadding), returnToChat = {}
-                    )
-                }
-
-                AppDestinations.PROFILE -> {
-                    ProfileScreen(
-                        modifier = Modifier.padding(innerPadding), returnToChat = {})
-
-                }
-
-
-            }
-
-        }
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        HomePage(modifier = Modifier.padding(innerPadding))
     }
+
 
 }
 @Composable
@@ -282,7 +248,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
         Button(
             onClick = {
                 GlobalState.serverIP.value = ip
-                saved =true
+                saved = true
                 scope.launch {
                     AppPreferences.saveIp(context, ip)
 

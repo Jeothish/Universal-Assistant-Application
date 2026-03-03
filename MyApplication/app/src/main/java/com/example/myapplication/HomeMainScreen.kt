@@ -469,7 +469,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                                 iconColour = Color(0xFF3E3A37),
                                 title = "Settings",
                                 description = "Customise your app preferences",
-                                onClick = {onOpenSettings})
+                                onClick = {onOpenSettings()})
                         }
 
                         item {

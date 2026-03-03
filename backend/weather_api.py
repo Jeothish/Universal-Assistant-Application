@@ -15,8 +15,7 @@ import requests
 from datetime import datetime, timedelta
 from db import get_cities_db , add_city_db
 
-#API_KEY = "f57e4e15a233f51887069167cb3b8bd4"
-#UNITS = "metric"
+
 
 #Weather codes from Open-Mateo
 WEATHER_CODES = {

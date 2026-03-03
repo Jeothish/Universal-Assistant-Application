@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.Context
 import android.graphics.drawable.Icon
 import android.media.Image
 import android.provider.CalendarContract
@@ -75,6 +76,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.text.forEach
+import android.content.Intent
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.speech.RecognitionListener
+import android.os.Bundle
 
 
 @Composable
@@ -82,6 +88,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     val context = LocalContext.current
     val recorder = remember { audio(context) }
     var inputText by remember { mutableStateOf("") }
+    val speechRecognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
 
     val listState = rememberLazyListState()
     val messageCount = GlobalState.userPrompts.size
@@ -367,15 +374,25 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     Button(
                         onClick = {
                             if (!recording) {
-                                recorder.startRec()
+//                                recorder.startRec()
+                                speechRecognizer.value = startSTT(context) {spokenText ->
+                                        recording = false
+                                        speechRecognizer.value?.destroy()
+                                        speechRecognizer.value = null
+                                        if (spokenText.isNotBlank()) {
+                                            GlobalState.thinking.value = true
+                                            GlobalState.vc_prompt.value = spokenText
+                                            recorder.sendTextToBackend(spokenText)
+
+
+                                }}
                                 recording = true
-                            } else {
-
-                                val file = recorder.stopRec()
-                                file?.let { recorder.sendAudioToBackend(it) }
-                                recording = false
+                            }
+                            else {
+                                speechRecognizer.value?.stopListening()
 
 
+                                recording=false
                             }
                         },
                         modifier = Modifier.height(100.dp).width(500.dp).padding(8.dp),
@@ -752,12 +769,12 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text(news.Title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(news.Title, fontWeight = FontWeight.Bold, fontSize = 26.sp)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "${news.Description}°C",
+                        "${news.Description}\n",
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 36.sp
+                        fontSize = 16.sp
                     )
                     Text(news.Published, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Text(news.Link, fontWeight = FontWeight.Bold, fontSize = 16.sp)
@@ -1153,4 +1170,33 @@ fun ASLInputScreen(returnToChat: () -> Unit){
     }
 
 }
+fun startSTT(context: Context, onResult: (String) -> Unit): SpeechRecognizer {
+    val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
 
+    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+    }
+
+    speechRecognizer.setRecognitionListener(object : RecognitionListener {
+        override fun onResults(results: Bundle?) {
+            val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                ?.firstOrNull() ?: ""
+            onResult(text)
+        }
+        override fun onError(error: Int) {
+            onResult("")
+        }
+        override fun onPartialResults(partialResults: Bundle?) {}
+        override fun onReadyForSpeech(params: Bundle?) {}
+        override fun onBeginningOfSpeech() {}
+        override fun onRmsChanged(rmsdB: Float) {}
+        override fun onBufferReceived(buffer: ByteArray?) {}
+        override fun onEndOfSpeech() {}
+        override fun onEvent(eventType: Int, params: Bundle?) {}
+    })
+
+    speechRecognizer.startListening(intent)
+    return speechRecognizer
+}

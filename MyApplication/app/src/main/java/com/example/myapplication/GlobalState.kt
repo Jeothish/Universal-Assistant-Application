@@ -38,4 +38,8 @@ object GlobalState {
     var serverIP = mutableStateOf("192.168.1.135")
 
     var ttsReading = mutableStateOf(false)
+
+    var localLLM: LocalLLM? = null
+
+    var llmReady = mutableStateOf(false)
 }
