@@ -5,10 +5,12 @@ pluginManagement {
                 includeGroupByRegex("com\\.android.*")
                 includeGroupByRegex("com\\.google.*")
                 includeGroupByRegex("androidx.*")
+
             }
         }
         mavenCentral()
         gradlePluginPortal()
+        maven {url=uri("https://chaquo.com/maven")}
     }
 }
 dependencyResolutionManagement {

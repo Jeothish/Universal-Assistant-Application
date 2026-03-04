@@ -9,7 +9,7 @@ object Database {
 
     fun getConnection(): Connection? {
         return try {
-            val databaseUrl = System.getenv("DATABASE_URL")
+            val databaseUrl = "postgresql://neondb_owner:npg_A8RVkLUiCe5M@ep-crimson-sea-ab6clpun-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
             val connection = DriverManager.getConnection(databaseUrl)
             println("Connection successful!")
             connection

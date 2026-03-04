@@ -7,6 +7,7 @@ import java.io.File
 import java.net.URL
 import java.net.HttpURLConnection
 import android.util.Log
+import com.chaquo.python.Python
 import com.google.gson.Gson
 
 import com.google.gson.JsonObject
@@ -143,7 +144,6 @@ private fun parseJsonFromLLM(raw: String): JsonObject? {
                 println(response)
                 val parsed = parseJsonFromLLM(response)
                 Log.d("LLM_PARSED", parsed?.toString() ?: "NULL - parse failed")
-
                 handleResponse(parsed)
 
             }
@@ -163,6 +163,15 @@ private fun parseJsonFromLLM(raw: String): JsonObject? {
 
         var city=""
         if (intent == "weather") {
+
+
+            // ADD RULE BASED KW FOR WEATHER
+
+
+
+
+
+
             city = jsonObject.get("city")?.asString ?: ""
 
 
@@ -187,8 +196,6 @@ private fun parseJsonFromLLM(raw: String): JsonObject? {
         else{
             result = jsonObject.get("result")?.asString ?: ""
         }
-
-
 
 
         android.os.Handler(android.os.Looper.getMainLooper()).post {//update main thread

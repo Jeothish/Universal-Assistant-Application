@@ -100,8 +100,10 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import java.util.Locale
 import androidx.lifecycle.lifecycleScope
+import com.chaquo.python.Python
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.chaquo.python.android.AndroidPlatform
 
 class MainActivity : ComponentActivity() {
 
@@ -134,6 +136,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
 
         lifecycleScope.launch(Dispatchers.IO) {
             try{
