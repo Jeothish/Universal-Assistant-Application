@@ -13,7 +13,6 @@ Author:
 
 import requests
 from datetime import datetime, timedelta
-from db import get_cities_db , add_city_db
 
 
 
@@ -49,7 +48,7 @@ WEATHER_CODES = {
     99: "Thunderstorm with heavy hail"
 }
 
-def get_coordinates(city_name,connection):
+def get_coordinates(city_name):
     """
     Used to get the coordinates of any given city name using Geocoding API
 
@@ -60,9 +59,9 @@ def get_coordinates(city_name,connection):
         tuple: (latitude, longitude) if the city is found, otherwise None
     """
 
-    database_coords = get_cities_db(city_name,connection)
-    if database_coords:
-        return database_coords
+    # database_coords = get_cities_db(city_name,connection)
+    # if database_coords:
+    #     return database_coords
 
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={city_name}"
     response = requests.get(url)
@@ -72,13 +71,13 @@ def get_coordinates(city_name,connection):
         #[0] gets most relevant city name
         latitude = data["results"][0]['latitude']
         longitude = data["results"][0]['longitude']
-        add_city_db(city_name,latitude,longitude,connection)
+        # add_city_db(city_name,latitude,longitude,connection)
         # cache_coords[city_name] = (latitude,longitude)
         return latitude,longitude,
     else:
         return None
     
-def get_current_weather(latitude,longitude,connection):
+def get_current_weather(latitude,longitude):
     """
     Gets the current weather for the specified coordinates
 

@@ -27,14 +27,6 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
-        configure<com.chaquo.python.ChaquopyExtension> {
-            defaultConfig {
-                version = "3.11"
-                pip {
-                    install("pycountry")
-                }
-            }
-        }
 
 
     }
@@ -59,7 +51,17 @@ android {
         compose = true
     }
 }
-
+configure<com.chaquo.python.ChaquopyExtension> {
+    defaultConfig {
+        buildPython("C:/Users/HP/AppData/Local/Programs/Python/Python311/python.exe")
+        version = "3.11"
+        pip {
+            install("pycountry")
+            install("requests")
+            install("geonamescache")
+        }
+    }
+}
 dependencies {
 
     // Core + Lifecycle

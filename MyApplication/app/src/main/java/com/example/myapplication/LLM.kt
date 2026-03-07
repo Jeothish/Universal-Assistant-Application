@@ -43,7 +43,11 @@ class LocalLLM() {
     fun generateStream(prompt: String): Flow<String> {
         val conversation = engine!!.createConversation(
             ConversationConfig(
-                systemInstruction = Contents.of("You are a helpful assistant."),
+                systemInstruction = Contents.of("""
+        You are a chat assistant, respond conversationally to any user queries. 
+        
+        Current time: ${LocalDateTime.now()} ${LocalDate.now().dayOfWeek}
+    """.trimIndent()),
                 samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.8)
             )
         )
@@ -56,19 +60,7 @@ class LocalLLM() {
         engine!!.createConversation(
             ConversationConfig(
                 systemInstruction = Contents.of("""
-        You are a chat assistant. 
-        Respond ONLY with a valid JSON object, no markdown, no explanation.
-        
-        Classify the intent as one of: "chat", "weather", "news"
-        
-        If intent is "chat":
-        {"intent":"chat","result":"<your helpful response>"}
-        
-        If intent is "weather":
-        {"intent":"weather","city":"<user specified city, if none specified leave empty>","time":"<time for which forecast is requested, if none specified leave empty>" ,"result":null}
-        
-        If intent is "news":
-        {"intent":"news","result":null}
+        You are a chat assistant, respond conversationally to any user queries. 
         
         Current time: ${LocalDateTime.now()} ${LocalDate.now().dayOfWeek}
     """.trimIndent()),

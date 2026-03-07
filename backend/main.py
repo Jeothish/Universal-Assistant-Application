@@ -18,6 +18,7 @@ from db import add_reminders_db, get_reminders_db, edit_reminders_db, delete_rem
 import psycopg2
 from InputProcessing import handle_prompt_with_qwen
 from datetime import time
+from news_api import get_news
 
 load_dotenv() 
 
@@ -77,6 +78,15 @@ class ReminderEdit(BaseModel):
     reminder_time: time
 
 model = whisper.load_model("small")
+
+class Text(BaseModel):
+    text: str
+
+
+
+@app.post("/news")
+async def news(textIn: Text):
+    get_news(specific_topic=textIn.text)
 
 
 @app.post("/voice")
@@ -309,11 +319,9 @@ def edit_reminder(reminder_id: int, reminder: ReminderEdit):
 #change ip in reminderapi, audio.kt, handanalyzer
 
 #TODO                                       highest priority
-# Azure / Pi
 # caching
 # rate limiting
 # Streaming output (chat)
-# TTS
 # llm memory
 # llm humanize weather info
 # Universal ASL

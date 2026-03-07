@@ -129,29 +129,99 @@ private fun parseJsonFromLLM(raw: String): JsonObject? {
     }
 }
 
-    fun sendTextToBackend(text: String){
+//    fun sendTextToBackend(text: String){
+//        val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+//        GlobalState.userTimes.add(messageTime)
+//        GlobalState.userPrompts.add(text)
+//        GlobalState.vc_prompt.value = text
+//        GlobalState.thinking.value = true
+//        val llm = GlobalState.localLLM
+//        Thread{
+//            try{
+//                val response = llm!!.generate(text)
+//                Log.d("LLM_RESPONSE", response)
+//
+//                println(response)
+//                val parsed = parseJsonFromLLM(response)
+//                Log.d("LLM_PARSED", parsed?.toString() ?: "NULL - parse failed")
+//                handleResponse(parsed)
+//
+//            }
+//            catch (e: Exception){
+//                Log.e("TEXT_ERROR",e.toString())
+//                GlobalState.thinking.value= false
+//            }
+//        }.start()
+//    }
+
+    fun getIntent(prompt: String): String {
+        val py  = Python.getInstance()
+        val mod = py.getModule("intent")
+        return mod.callAttr("get_intent", prompt).toString()
+    }
+
+    fun weather(prompt: String, default: String = GlobalState.userCity.value): String
+        {
+            val py  = Python.getInstance()
+            val mod = py.getModule("intent")
+            return mod.callAttr("getWeather", prompt,default).toString()
+
+    }
+    fun news(prompt: String): String
+    {
+        val py  = Python.getInstance()
+        val mod = py.getModule("intent")
+        return mod.callAttr("getNews", prompt).toString()
+
+    }
+
+    fun sendTextToBackend(prompt: String){
         val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         GlobalState.userTimes.add(messageTime)
-        GlobalState.userPrompts.add(text)
-        GlobalState.vc_prompt.value = text
+        GlobalState.userPrompts.add(prompt)
+        GlobalState.vc_prompt.value = prompt
         GlobalState.thinking.value = true
         val llm = GlobalState.localLLM
         Thread{
             try{
-                val response = llm!!.generate(text)
-                Log.d("LLM_RESPONSE", response)
+                val intent = getIntent(prompt)
 
-                println(response)
-                val parsed = parseJsonFromLLM(response)
-                Log.d("LLM_PARSED", parsed?.toString() ?: "NULL - parse failed")
-                handleResponse(parsed)
+                val jsonString: String
+
+
+                if (intent == "weather"){
+                    jsonString = weather(prompt)
+                    Log.d("LLM_RESPONSE", jsonString)
+
+                }
+                else if (intent == "news"){
+                    jsonString = news(prompt)
+                    Log.d("LLM_RESPONSE", jsonString)
+
+                }
+
+                else{
+                    val llmResponse = llm!!.generate(prompt)
+                    jsonString = Gson().toJson(mapOf(
+                        "intent" to "chat",
+                        "prompt" to prompt,
+                        "result" to llmResponse))
+
+
+                    Log.d("LLM_RESPONSE", jsonString)
+                }
+                val jsonObject = Gson().fromJson(jsonString, JsonObject::class.java)
+                handleResponse(jsonObject)
+
 
             }
             catch (e: Exception){
                 Log.e("TEXT_ERROR",e.toString())
                 GlobalState.thinking.value= false
             }
+
         }.start()
+
     }
 
     fun handleResponse(response: JsonObject?){

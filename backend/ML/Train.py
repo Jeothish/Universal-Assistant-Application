@@ -5,12 +5,13 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import confusion_matrix, classification_report
-from tensorflow.keras.models import load_model
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
+from sklearn.utils.class_weight import compute_class_weight
 
 # mediapipe landmarks dataset from
 # https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
@@ -24,25 +25,34 @@ y= df["label"].values
 encoder = LabelEncoder() # to orgnize all alphabet labels
 y_encode = encoder.fit_transform(y)
 print(encoder.classes_)
-np.save("asl_labels_graph_trainL.npy", encoder.classes_)
+np.save("asl_labels_new4L.npy", encoder.classes_)
 
 #split into testing and training
 X_train, X_temp, y_train, y_temp = train_test_split(X, y_encode, test_size = 0.3, random_state = 42, stratify = y_encode)
 
 X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size = 0.5, random_state = 42, stratify = y_temp)
 
+class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)#add class weights to oversample M & N since they have the least amount of smaples
+class_weight_dict = dict(enumerate(class_weights))
+
 #train model
-model = Sequential([Dense(128, activation="relu", input_shape=(X.shape[1],)), Dropout(0.3), Dense(64, activation="relu"), Dense(len(np.unique(y_encode)), activation="softmax")])
+model = Sequential([Dense(128, activation="relu", input_shape=(X.shape[1],)), Dense(64, activation="relu"), Dense(len(np.unique(y_encode)), activation="softmax")])
 
-model.compile(optimizer=tf.keras.optimizers.Adam(0.001), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+model.compile(optimizer=tf.keras.optimizers.Adam(0.0005), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
-history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=50, batch_size=32)
+early_stop = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
+
+lr_schedule = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5
+)
+
+history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=100, batch_size=32, callbacks=[early_stop,lr_schedule], class_weight=class_weight_dict)
 
 
 #save model
-model.save("asl_mediapipe_model_graph_trainL.keras")
+model.save("asl_mediapipe_model_new4L.keras")
 
-with open("training_history_L.pkl", "wb") as f:
+with open("training_history_new4L.pkl", "wb") as f:
     pickle.dump(history.history, f)
 
 #acc vs epoch
