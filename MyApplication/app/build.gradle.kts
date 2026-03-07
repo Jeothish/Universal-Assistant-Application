@@ -103,7 +103,7 @@ dependencies {
     implementation("com.google.mediapipe:tasks-vision:0.10.14")
     //LLM
 
-    implementation("com.google.ai.edge.litertlm:litertlm-android:latest.release")
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.9.0-alpha04")
 
     //sql db
     implementation("org.postgresql:postgresql:42.7.3")

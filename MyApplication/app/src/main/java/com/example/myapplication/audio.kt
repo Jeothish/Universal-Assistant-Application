@@ -18,6 +18,11 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.withContext
 
 
 data class NewsItem(
@@ -182,30 +187,39 @@ private fun parseJsonFromLLM(raw: String): JsonObject? {
         GlobalState.vc_prompt.value = prompt
         GlobalState.thinking.value = true
         val llm = GlobalState.localLLM
-        Thread{
+        CoroutineScope(Dispatchers.IO).launch{
             try{
-                val intent = getIntent(prompt)
+                val intent = withContext(Dispatchers.Main){getIntent(prompt)}
 
                 val jsonString: String
 
 
                 if (intent == "weather"){
-                    jsonString = weather(prompt)
+                    jsonString = withContext(Dispatchers.Main){ weather(prompt)}
                     Log.d("LLM_RESPONSE", jsonString)
 
                 }
                 else if (intent == "news"){
-                    jsonString = news(prompt)
+                    jsonString =  withContext(Dispatchers.Main){news(prompt)}
                     Log.d("LLM_RESPONSE", jsonString)
 
                 }
 
                 else{
-                    val llmResponse = llm!!.generate(prompt)
+                    val fullResponse = StringBuilder()
+
+                    llm!!.generateStream(prompt).collect { token ->
+                        fullResponse.append(token)
+
+
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            GlobalState.llmResponse.value = fullResponse.toString()
+                        }
+                    }
                     jsonString = Gson().toJson(mapOf(
                         "intent" to "chat",
                         "prompt" to prompt,
-                        "result" to llmResponse))
+                        "result" to fullResponse.toString()))
 
 
                     Log.d("LLM_RESPONSE", jsonString)
@@ -220,7 +234,7 @@ private fun parseJsonFromLLM(raw: String): JsonObject? {
                 GlobalState.thinking.value= false
             }
 
-        }.start()
+        }
 
     }
 

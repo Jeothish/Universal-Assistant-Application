@@ -216,6 +216,15 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         )
                     }
                 }
+                item {
+                    if (GlobalState.thinking.value && GlobalState.llmResponse.value.isNotBlank()) {
+                        chatBubble(
+                            text = GlobalState.llmResponse.value,
+                            isUser = false,
+                            time = ""
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
