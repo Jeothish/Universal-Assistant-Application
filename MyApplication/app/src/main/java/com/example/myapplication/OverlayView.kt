@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Open source Google Mediapipe code from
+// This is Open source Google Mediapipe code for the hand detection skeleton from:
 //https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/hand_landmarker/android
 
 import android.content.Context
@@ -69,11 +69,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
         results?.let { handLandmarkerResult ->
+            val offsetX = (width - imageWidth * scaleFactor) / 2f
+            val offsetY = (height - imageHeight * scaleFactor) / 2f
+
             for (landmark in handLandmarkerResult.landmarks()) {
                 for (normalizedLandmark in landmark) {
                     canvas.drawPoint(
-                        normalizedLandmark.x() * imageWidth * scaleFactor,
-                        normalizedLandmark.y() * imageHeight * scaleFactor,
+                        normalizedLandmark.x() * imageWidth * scaleFactor + offsetX,
+                        normalizedLandmark.y() * imageHeight * scaleFactor + offsetY,
                         pointPaint
                     )
                 }
@@ -81,13 +84,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 HandLandmarker.HAND_CONNECTIONS.forEach {
                     canvas.drawLine(
                         landmark.get(it!!.start())
-                            .x() * imageWidth * scaleFactor,
+                            .x() * imageWidth * scaleFactor + offsetX,
                         landmark.get(it.start())
-                            .y() * imageHeight * scaleFactor,
+                            .y() * imageHeight * scaleFactor + offsetY,
                         landmark.get(it.end())
-                            .x() * imageWidth * scaleFactor,
+                            .x() * imageWidth * scaleFactor + offsetX,
                         landmark.get(it.end())
-                            .y() * imageHeight * scaleFactor,
+                            .y() * imageHeight * scaleFactor + offsetY,
                         linePaint
                     )
                 }
