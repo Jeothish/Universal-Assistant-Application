@@ -935,7 +935,10 @@ fun ASLInputScreen(returnToChat: () -> Unit){
             }
 
             Button(
-                onClick = returnToChat,
+                onClick = {
+                    recorder.sendTextToBackend(aslInput.joinToString(""))
+                    Toast.makeText(context,"Message Sent!", Toast.LENGTH_SHORT).show()
+                          },
                 modifier = Modifier.height(80.dp).width(200.dp).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
