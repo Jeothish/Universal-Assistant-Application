@@ -53,7 +53,7 @@ android {
 }
 configure<com.chaquo.python.ChaquopyExtension> {
     defaultConfig {
-        buildPython("C:/Users/HP/AppData/Local/Programs/Python/Python311/python.exe")
+        buildPython("C:/Users/sjeot/AppData/Local/Programs/Python/Python311/python.exe")
         version = "3.11"
         pip {
             install("pycountry")

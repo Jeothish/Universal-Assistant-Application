@@ -200,7 +200,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 
                     when {
                         intent == "weather" -> weatherBubble(
-                            GlobalState.weather.value,
+                            GlobalState.weatherHistory[index],
                             GlobalState.assistantTimes[index]
                         )
 
@@ -594,10 +594,10 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
 fun getWeatherCategory(forecast: String): String{
     return when{
         forecast.contains("snow", ignoreCase = true) -> "snow"
-        forecast.contains("rain", ignoreCase = true) -> "rain"
+        forecast.contains("rain", ignoreCase = true) ||  forecast.contains("drizzle", ignoreCase = true) -> "rain"
         forecast.contains("thunderstorm", ignoreCase = true) -> "storm"
         forecast.contains("fog", ignoreCase = true) -> "fog"
-        forecast.contains("cloud", ignoreCase = true) -> "cloud"
+        forecast.contains("cloud", ignoreCase = true) ||  forecast.contains("Overcast", ignoreCase = true) -> "cloud"
         forecast.contains("clear", ignoreCase = true) -> "clear"
         else -> "unknown"
     }
@@ -652,7 +652,7 @@ fun weatherBubble(weather: WeatherItem,time:String){
                 Column {
 
                     Text(
-                        "Weather in ${GlobalState.city.value}",
+                        "Weather in ${weather.city}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -899,7 +899,7 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
 @Composable
 fun ASLInputScreen(returnToChat: () -> Unit){
     val scrollState = rememberScrollState()
-    var showCamera by remember { mutableStateOf(false) }
+
     val letter by GlobalState.letter
     val aslInput by GlobalState.aslPrompt
     val context = LocalContext.current
@@ -911,7 +911,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
         Row() {
             Button(
                 onClick = returnToChat,
-                modifier = Modifier.height(100.dp).width(500.dp).padding(8.dp),
+                modifier = Modifier.height(80.dp).width(200.dp).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFDE0F0F),
@@ -928,11 +928,37 @@ fun ASLInputScreen(returnToChat: () -> Unit){
 
                     Text(
                         text = "Return To Chat",
-                        fontSize = 25.sp,
+                        fontSize = 15.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
+
+            Button(
+                onClick = returnToChat,
+                modifier = Modifier.height(80.dp).width(200.dp).padding(8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF9800),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+
+                    Text(
+                        text = "Send",
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
         }
 
         Row() {
@@ -943,31 +969,6 @@ fun ASLInputScreen(returnToChat: () -> Unit){
                 modifier = Modifier.padding(19.dp),
                 color = Color(0xFFFFC63A)
             )
-
-            Button(
-                onClick = {showCamera = !showCamera},
-                modifier = Modifier.height(80.dp).width(200.dp).padding(16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if(showCamera) Color(0xFFE71212) else (Color(0xFFFFBF00)),
-                    contentColor = Color(0xFF000000),
-                )
-            )
-
-            {
-                Row() {
-                    Icon(
-                        imageVector = if(showCamera) Icons.Default.Cancel else Icons.Default.Videocam,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Text(
-                        text = if(showCamera) "Stop camera" else "Start camera",
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
         }
 
         Box(
@@ -981,93 +982,74 @@ fun ASLInputScreen(returnToChat: () -> Unit){
 
 
         ){
-            if(showCamera){
                 CameraDet()
-            }
-
-            else{
-                Column(horizontalAlignment = Alignment.CenterHorizontally){
-
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = null,
-                        modifier = Modifier.size(96.dp)
-
-                    )
-
-                    Text(
-                        text ="Camera Off",
-                        fontSize = 36.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-
-                }
-
-            }
-
         }
 
-        Spacer(modifier = Modifier.height(15.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Detected letter",
-            fontSize = 25.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(19.dp),
-            color = Color(0xFFFFC63A)
-        )
 
-        Box(
-            modifier = Modifier.fillMaxWidth()
-                .height(100.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF2A2A38))
-                .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
-            contentAlignment = Alignment.Center
-        ){
+
+        Row() {
             Text(
-                text = letter,
-                fontSize = 55.sp,
+                text = "Detected letter",
+                fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(19.dp),
                 color = Color(0xFFFFC63A)
             )
-        }
 
 
 
-            Button(
-                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value + letter},
-                modifier = Modifier.height(80.dp).fillMaxWidth().padding(top=16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF27C212),
-                    contentColor = Color(0xFFFFFFFF),
+            Box(
+                modifier = Modifier.fillMaxWidth()
+                    .height(80.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF2A2A38))
+                    .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
+                contentAlignment = Alignment.Center
+            ){
+                Text(
+                    text = letter,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFC63A)
                 )
-            )
-
-            {
-                Row(modifier = Modifier.padding()){
-
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp)
-
-                    )
-
-                    Text(
-                        text ="Add Letter",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top=8.dp)
-                    )
-
-
             }
         }
 
-        Spacer(modifier = Modifier.height(15.dp))
+//            Button(
+//                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value + letter},
+//                modifier = Modifier.height(80.dp).fillMaxWidth().padding(top=16.dp),
+//                shape = RoundedCornerShape(18.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFF27C212),
+//                    contentColor = Color(0xFFFFFFFF),
+//                )
+//            )
+//
+//            {
+//                Row(modifier = Modifier.padding()){
+//
+//                    Icon(
+//                        imageVector = Icons.Default.Add,
+//                        contentDescription = null,
+//                        modifier = Modifier.size(40.dp)
+//
+//                    )
+//
+//                    Text(
+//                        text ="Add Letter",
+//                        fontSize = 20.sp,
+//                        fontWeight = FontWeight.Bold,
+//                        modifier = Modifier.padding(top=8.dp)
+//                    )
+//
+//
+//            }
+//        }
+
+        //Spacer(modifier = Modifier.height(15.dp))
 
         Text(
             text = "Your Message",
@@ -1080,7 +1062,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
 
         Box(
             modifier = Modifier.fillMaxWidth()
-                .height(120.dp)
+                .height(80.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFFFFFFFF))
                 .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
@@ -1095,87 +1077,87 @@ fun ASLInputScreen(returnToChat: () -> Unit){
             )
         }
 
-        Row(modifier = Modifier.padding()){
-
-            Button(
-                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value + " "},
-                modifier = Modifier.height(80.dp).width(200.dp).padding(top=16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF494944),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-
-            {
-                Text(
-                    text ="Add space",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-
-                )
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Button(
-                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value.dropLast(1)},
-                modifier = Modifier.height(80.dp).width(200.dp).padding(top=16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFC23607),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-
-            {
-                Text(
-                    text ="Delete Last",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
+//        Row(modifier = Modifier.padding()){
+//
+//            Button(
+//                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value + " "},
+//                modifier = Modifier.height(80.dp).width(200.dp).padding(top=16.dp),
+//                shape = RoundedCornerShape(18.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFF494944),
+//                    contentColor = Color(0xFFFFFFFF),
+//                )
+//            )
+//
+//            {
+//                Text(
+//                    text ="Add space",
+//                    fontSize = 20.sp,
+//                    fontWeight = FontWeight.Bold,
+//
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.width(10.dp))
+//
+//            Button(
+//                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value.dropLast(1)},
+//                modifier = Modifier.height(80.dp).width(200.dp).padding(top=16.dp),
+//                shape = RoundedCornerShape(18.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFFC23607),
+//                    contentColor = Color(0xFFFFFFFF),
+//                )
+//            )
+//
+//            {
+//                Text(
+//                    text ="Delete Last",
+//                    fontSize = 20.sp,
+//                    fontWeight = FontWeight.Bold,
+//                )
+//            }
+//        }
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        Row() {
-
-
-            Button(
-                onClick = {
-                    recorder.sendTextToBackend(aslInput.joinToString(""))
-                    Toast.makeText(context,"Message Sent!", Toast.LENGTH_SHORT).show()
-                          },
-                modifier = Modifier.height(120.dp).width(400.dp).padding(top = 16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFC107),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-
-
-            {
-
-                Icon(
-                    imageVector = Icons.Default.Send,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp)
-
-                )
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Text(
-                    text = "Send message",
-                    fontSize = 35.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-        }
+//        Row() {
+//
+//
+//            Button(
+//                onClick = {
+//                    recorder.sendTextToBackend(aslInput.joinToString(""))
+//                    Toast.makeText(context,"Message Sent!", Toast.LENGTH_SHORT).show()
+//                          },
+//                modifier = Modifier.height(120.dp).width(400.dp).padding(top = 16.dp),
+//                shape = RoundedCornerShape(18.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFFFFC107),
+//                    contentColor = Color(0xFFFFFFFF),
+//                )
+//            )
+//
+//
+//            {
+//
+//                Icon(
+//                    imageVector = Icons.Default.Send,
+//                    contentDescription = null,
+//                    modifier = Modifier.size(56.dp)
+//
+//                )
+//
+//                Spacer(modifier = Modifier.width(10.dp))
+//
+//                Text(
+//                    text = "Send message",
+//                    fontSize = 35.sp,
+//                    fontWeight = FontWeight.Bold,
+//                    modifier = Modifier.padding(top = 8.dp)
+//                )
+//            }
+//
+//        }
     }
 
 }

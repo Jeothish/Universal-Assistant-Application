@@ -35,6 +35,7 @@ data class NewsItem(
 
 
 data class WeatherItem(
+    val city: String,
     @SerializedName("Temperature (°C)")
     val temperature: Double,
 
@@ -195,11 +196,12 @@ class audio(private val context: Context) {
 
 
             val resultObj = jsonObject.getAsJsonObject("result")
+            val city = jsonObject.get("city")?.asString ?: "Unknown"
             val weather = Gson().fromJson(
                 resultObj,
                 WeatherItem::class.java
-            )
-            GlobalState.weather.value = weather
+            ).copy(city = city)
+            GlobalState.weatherHistory.add(weather)
         }
         else if (intent == "news"){
             val newsArray = jsonObject.getAsJsonArray("result")

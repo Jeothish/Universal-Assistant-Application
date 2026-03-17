@@ -23,7 +23,8 @@ object GlobalState {
 
     val assistantTimes = mutableStateListOf<String>()
 
-    var weather = mutableStateOf(WeatherItem(0.0,0.0,"",""))
+
+    val weatherHistory = mutableStateListOf<WeatherItem>()
 
     var newsList = mutableStateOf<List<NewsItem>>(emptyList())
     var greeting = mutableStateOf(true)
