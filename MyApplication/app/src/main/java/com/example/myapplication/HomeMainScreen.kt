@@ -128,260 +128,257 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
 
 
 
-    Box(modifier = Modifier.fillMaxSize())
-    {
+//    Box(modifier = Modifier.fillMaxSize())
+//    {
+//
+//        if (asl) {
+//            CameraDet()
+//        }
+//
+//        if (aslTokens.isNotEmpty() && hideResponse) {
+//            ASLRenderer(tokens = aslTokens, onReturn = { hideResponse = false })
+//        }
+//
+//
+//
+//
+//        if (asl || recording || GlobalState.vc_intent.value != "") {
+//            greeting = false
+//
+//        }
+//        if (greeting) {
+//            val hour = LocalTime.now().hour
+//            var time = ""
+//            if (hour > 4 && hour < 11) {
+//                time = "morning"
+//            } else if (hour > 11 && hour < 18) {
+//                time = "afternoon"
+//            } else {
+//                time = "evening"
+//            }
+//
+//            Greeting(time = time)
+//        } else if (asl) {
+//            Text(
+//                text = "Detected Sign: $letter",
+//                color = Color.Magenta,
+//                fontSize = 24.sp,
+//                modifier = Modifier.align(
+//                    Alignment.TopEnd
+//                ).padding(end = 80.dp, top = 20.dp, start = 40.dp)
+//            )
+//
+//            Text(
+//                text = "Prompt: ${aslInput.joinToString("")}",
+//                color = Color.Magenta,
+//                fontSize = 24.sp,
+//                modifier = Modifier.align(
+//                    Alignment.TopEnd
+//                ).padding(end = 80.dp, top = 200.dp, start = 40.dp)
+//            )
+//
+//        }
+//
+//        val r = GlobalState.vc_result.value
+//        val w = GlobalState.weather.value
+//        val city = GlobalState.city.value
+//        val intent = GlobalState.vc_intent.value
+//
+//        print(r)
+//
+//
+//        if ((intent == "weather" || intent == "chat") && !asl) {
+//
+//
+//            Column(
+//                modifier = Modifier
+//                    .align(Alignment.CenterStart)
+//                    .verticalScroll(scrollState)
+//                    .padding(end = 0.dp, start = 0.dp, bottom = 200.dp, top = 0.dp)
+//            )
+//
+//            {
+//                Text(
+//                    text = prompt.uppercase(),
+//                    color = Color.Green,
+//                    fontSize = 12.sp,
+//                    fontWeight = FontWeight.Bold,
+//                    modifier = Modifier.padding(
+//                        bottom = 20.dp,
+//                        start = 10.dp,
+//                        end = 0.dp,
+//                        top = 20.dp
+//                    )
+//                )
+//
+//                if (intent == "chat") {
+//                    if (!hideResponse) {
+//                        Row(
+//                            verticalAlignment = Alignment.CenterVertically,
+//                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+//                        ) {
+//
+//                            Text(
+//                                text = r,
+//                                color = Color.White,
+//                                fontSize = 18.sp,
+//                                modifier = Modifier.weight(1f).padding(
+//                                    end = 50.dp,
+//                                    start = 20.dp,
+//                                    top = 100.dp,
+//                                    bottom = 10.dp
+//                                )
+//                            )
+//
+//
+//                        }
+//                        Button(
+//                            onClick = {
+//                                val tokens = mutableListOf<String>()
+//                                r.forEach { c ->
+//                                    if (c.isLetter()) tokens.add(
+//                                        c.uppercaseChar().toString()
+//                                    )
+//                                }
+//                                GlobalState.aslTokens.value = tokens
+//                                hideResponse = true
+//                            },
+//                            modifier = Modifier.height(40.dp)
+//                                .padding(end = 0.dp, start = 20.dp)
+//                        )
+//                        { Text("Translate to ASL") }
+//
+//                    }
+//                } else {
+//                    if (!hideResponse) {
+//                        Text(text = city.uppercase(), color = Color.Magenta)
+//
+//                        Text(text = "Temperature: ${w.temperature} °C")
+//                        Text("Wind Speed: ${w.windSpeed} km/h")
+//                        Text("Forecast: ${w.forecast}")
+//                        Row(
+//                            modifier = Modifier.fillMaxWidth(),
+//                            verticalAlignment = Alignment.CenterVertically
+//                        ) {
+//                            Text("Time: ${w.time}")
+//                            Button(
+//                                onClick = {
+//                                    val tokens = mutableListOf<String>()
+//                                    w.forecast.forEach { c ->
+//                                        if (c.isLetter()) tokens.add(
+//                                            c.uppercaseChar().toString()
+//                                        )
+//                                    }
+//                                    GlobalState.aslTokens.value = tokens
+//                                    hideResponse = true
+//                                },
+//                                modifier = Modifier.height(40.dp)
+//                            )
+//                            { Text("Translate to ASL") }
+//
+//                        }
+//
+//                    }
+//
+//                }
+//
+//
+//            }
+//        } else if (intent == "news" && !asl) {
+//
+//            if (!hideResponse) {
+//
+//                Column(
+//                    modifier = Modifier
+//                        .align(Alignment.CenterStart)
+//                        .padding(top = 110.dp, start = 20.dp, end = 20.dp, bottom = 220.dp)
+//                ) {
+//
+//                    Text(
+//                        text = prompt.uppercase(),
+//                        color = Color.Green,
+//                        fontSize = 25.sp,
+//                        fontWeight = FontWeight.Bold,
+//                        modifier = Modifier.padding(
+//                            bottom = 30.dp,
+//                            start = 0.dp,
+//                            end = 0.dp,
+//                            top = 20.dp
+//                        )
+//                    )
+//
+//                    LazyColumn {
+//                        items(news) { item ->
+//
+//
+//                            Text(
+//                                text = "Title: ${item.Title}", fontSize = 20.sp,
+//                                color = Color.Magenta,
+//                                fontWeight = FontWeight.Bold,
+//                                modifier = Modifier.padding(bottom = 10.dp)
+//                            )
+//
+//                            Text(
+//                                text = "${item.Link}",
+//                                fontSize = 14.sp,
+//                                color = Color.White,
+//                                modifier = Modifier.padding(bottom = 4.dp)
+//                            )
+//
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                verticalAlignment = Alignment.CenterVertically
+//                            ) {
+//
+//                                Text(
+//                                    text = "Published: ${item.Published}\n",
+//                                    fontSize = 12.sp,
+//                                    color = Color.Gray,
+//                                    modifier = Modifier.padding(bottom = 16.dp)
+//                                )
+//
+//                                Button(
+//                                    onClick = {v
+//                                        val tokens = mutableListOf<String>()
+//                                        item.Title.forEach { c ->
+//                                            if (c.isLetter()) tokens.add(
+//                                                c.uppercaseChar().toString()
+//                                            )
+//                                        }
+//                                        GlobalState.aslTokens.value = tokens
+//                                        hideResponse = true
+//                                    },
+//                                    modifier = Modifier.height(40.dp)
+//                                )
+//                                { Text("Translate to ASL") }
+//                            }
+//                        }
+//
+//                    }
+//                }
+//
+//            }
+//        }
+//
+//
+//
+//
+//
+//            textBar { input ->
+//                GlobalState.thinking.value = true
+//                GlobalState.vc_prompt.value = input
+//
+//                recorder.sendTextToBackend(input)
+//            }
+//
+//    }
 
-        if (asl) {
-            CameraDet()
-        }
-
-        if (aslTokens.isNotEmpty() && hideResponse) {
-            ASLRenderer(tokens = aslTokens, onReturn = { hideResponse = false })
-        }
 
 
-
-
-        if (asl || recording || GlobalState.vc_intent.value != "") {
-            greeting = false
-
-        }
-        if (greeting) {
-            val hour = LocalTime.now().hour
-            var time = ""
-            if (hour > 4 && hour < 11) {
-                time = "morning"
-            } else if (hour > 11 && hour < 18) {
-                time = "afternoon"
-            } else {
-                time = "evening"
-            }
-
-            Greeting(time = time)
-        } else if (asl) {
-            Text(
-                text = "Detected Sign: $letter",
-                color = Color.Magenta,
-                fontSize = 24.sp,
-                modifier = Modifier.align(
-                    Alignment.TopEnd
-                ).padding(end = 80.dp, top = 20.dp, start = 40.dp)
-            )
-
-            Text(
-                text = "Prompt: ${aslInput.joinToString("")}",
-                color = Color.Magenta,
-                fontSize = 24.sp,
-                modifier = Modifier.align(
-                    Alignment.TopEnd
-                ).padding(end = 80.dp, top = 200.dp, start = 40.dp)
-            )
-
-        }
-
-        val r = GlobalState.vc_result.value
-        val w = GlobalState.weather.value
-        val city = GlobalState.city.value
-        val intent = GlobalState.vc_intent.value
-
-        print(r)
-
-
-        if ((intent == "weather" || intent == "chat") && !asl) {
-
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .verticalScroll(scrollState)
-                    .padding(end = 0.dp, start = 0.dp, bottom = 200.dp, top = 0.dp)
-            )
-
-            {
-                Text(
-                    text = prompt.uppercase(),
-                    color = Color.Green,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(
-                        bottom = 20.dp,
-                        start = 10.dp,
-                        end = 0.dp,
-                        top = 20.dp
-                    )
-                )
-
-                if (intent == "chat") {
-                    if (!hideResponse) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        ) {
-
-                            Text(
-                                text = r,
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                modifier = Modifier.weight(1f).padding(
-                                    end = 50.dp,
-                                    start = 20.dp,
-                                    top = 100.dp,
-                                    bottom = 10.dp
-                                )
-                            )
-
-
-                        }
-                        Button(
-                            onClick = {
-                                val tokens = mutableListOf<String>()
-                                r.forEach { c ->
-                                    if (c.isLetter()) tokens.add(
-                                        c.uppercaseChar().toString()
-                                    )
-                                }
-                                GlobalState.aslTokens.value = tokens
-                                hideResponse = true
-                            },
-                            modifier = Modifier.height(40.dp)
-                                .padding(end = 0.dp, start = 20.dp)
-                        )
-                        { Text("Translate to ASL") }
-
-                    }
-                } else {
-                    if (!hideResponse) {
-                        Text(text = city.uppercase(), color = Color.Magenta)
-
-                        Text(text = "Temperature: ${w.temperature} °C")
-                        Text("Wind Speed: ${w.windSpeed} km/h")
-                        Text("Forecast: ${w.forecast}")
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Time: ${w.time}")
-                            Button(
-                                onClick = {
-                                    val tokens = mutableListOf<String>()
-                                    w.forecast.forEach { c ->
-                                        if (c.isLetter()) tokens.add(
-                                            c.uppercaseChar().toString()
-                                        )
-                                    }
-                                    GlobalState.aslTokens.value = tokens
-                                    hideResponse = true
-                                },
-                                modifier = Modifier.height(40.dp)
-                            )
-                            { Text("Translate to ASL") }
-
-                        }
-
-                    }
-
-                }
-
-
-            }
-        } else if (intent == "news" && !asl) {
-
-            if (!hideResponse) {
-
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(top = 110.dp, start = 20.dp, end = 20.dp, bottom = 220.dp)
-                ) {
-
-                    Text(
-                        text = prompt.uppercase(),
-                        color = Color.Green,
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(
-                            bottom = 30.dp,
-                            start = 0.dp,
-                            end = 0.dp,
-                            top = 20.dp
-                        )
-                    )
-
-                    LazyColumn {
-                        items(news) { item ->
-
-
-                            Text(
-                                text = "Title: ${item.Title}", fontSize = 20.sp,
-                                color = Color.Magenta,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 10.dp)
-                            )
-
-                            Text(
-                                text = "${item.Link}",
-                                fontSize = 14.sp,
-                                color = Color.White,
-                                modifier = Modifier.padding(bottom = 4.dp)
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-
-                                Text(
-                                    text = "Published: ${item.Published}\n",
-                                    fontSize = 12.sp,
-                                    color = Color.Gray,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-
-                                Button(
-                                    onClick = {
-                                        val tokens = mutableListOf<String>()
-                                        item.Title.forEach { c ->
-                                            if (c.isLetter()) tokens.add(
-                                                c.uppercaseChar().toString()
-                                            )
-                                        }
-                                        GlobalState.aslTokens.value = tokens
-                                        hideResponse = true
-                                    },
-                                    modifier = Modifier.height(40.dp)
-                                )
-                                { Text("Translate to ASL") }
-                            }
-                        }
-
-                    }
-                }
-
-            }
-        }
-
-
-
-
-
-            textBar { input ->
-                GlobalState.thinking.value = true
-                GlobalState.vc_prompt.value = input
-
-                recorder.sendTextToBackend(input)
-            }
-
-    }
-
-
-            if (!hideResponse) {
 
                 Column(
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
                 ) {
-
-
-
 
                     Spacer(modifier = Modifier.height(170.dp))
 
@@ -391,7 +388,6 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxWidth().height(600.dp)
                     ) {
-
 
                         item {
                             homeButtons(
@@ -435,33 +431,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
 //                            )
 //                        }
 
-                        item {
-                            homeButtons(
-                                icon = Icons.Default.FrontHand,
-                                iconColour = Color(0xFFBF0FDE),
-                                title = "Sign Language",
-                                description = "**MOVE TO ASSISTANT**",
-                                onClick = {
-                                    var asl by GlobalState.asl
-                                    val aslInput by GlobalState.aslPrompt
-                                    val thinking by GlobalState.thinking
 
-                                    if (!thinking) {
-                                        if (aslInput.joinToString("").isNotBlank()) {
-                                            if (asl) {
-                                                recorder.sendTextToBackend(aslInput.joinToString(""))
-                                                GlobalState.aslPrompt.value =
-                                                    mutableListOf<String>()
-
-                                            }
-                                        }
-                                        asl = !asl
-                                    }
-
-
-                                }
-                            )
-                        }
 
                         item {
                             homeButtons(
@@ -502,6 +472,6 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
 
                     }
                 }
-            }
+
 }
 

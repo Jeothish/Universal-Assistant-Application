@@ -141,14 +141,14 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
-            try{
-                val llm = LocalLLM()
-                llm.initialize(context = applicationContext)
-                GlobalState.localLLM = llm
-                GlobalState.llmReady.value = true
-            }catch(e:Exception){
-                Log.e("LLM", "LLM loading failed: $e")
-            }
+//            try{
+//                val llm = LocalLLM()
+//                llm.initialize(context = applicationContext)
+//                GlobalState.localLLM = llm
+//                GlobalState.llmReady.value = true
+//            }catch(e:Exception){
+//                Log.e("LLM", "LLM loading failed: $e")
+//            }
             GlobalState.serverIP.value = AppPreferences.loadIp(this@MainActivity)
         }
 
