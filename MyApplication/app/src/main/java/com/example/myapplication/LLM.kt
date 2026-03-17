@@ -1,7 +1,9 @@
 package com.example.myapplication
 
-import WikiTools
+
 import android.content.Context
+import android.util.Log
+import com.chaquo.python.PyObject
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
@@ -9,11 +11,15 @@ import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.SamplerConfig
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Conversation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.chaquo.python.Python
+import kotlinx.coroutines.flow.onCompletion
 
 class LocalLLM() {
 
@@ -23,27 +29,6 @@ class LocalLLM() {
     private var msg = 0
     private var max=3
 
-    private fun startConversation(){
-
-        conversation = engine!!.createConversation(
-            ConversationConfig(
-//                systemInstruction = Contents.of("""
-//                    You are a chat assistant, respond conversationally to any user queries.
-//                    Current time: ${LocalDateTime.now()} ${LocalDate.now().dayOfWeek}
-//                """.trimIndent()),
-//                samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.8),
-                systemInstruction = Contents.of("""
-                You are a chat assistant, respond conversationally to any user queries.
-                Current time: ${LocalDateTime.now()} ${LocalDate.now().dayOfWeek}
-                IMPORTANT: For ANY question about real people, places, events, or facts, 
-                you MUST use the searchWikipedia tool. Never answer factual questions from memory.
-            """.trimIndent()),
-                samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.8),
-                tools = listOf(WikiTools())
-
-            )
-        )
-    }
     suspend fun initialize(context: Context) {
         val modelFile = File(context.filesDir, "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm")//model must be transferred from assets to local phone storage
 
@@ -64,36 +49,64 @@ class LocalLLM() {
         )
         engine = Engine(engineConfig)
         engine!!.initialize()
-        startConversation()
+
+    }
+    private fun getTopic(query:String): String{
+        val conv = engine!!.createConversation(
+            ConversationConfig(
+                systemInstruction = Contents.of("""
+                    Extract the main search topic from the user's query.
+                    Reply with ONLY the topic, nothing else.
+                    Examples:
+                    "tell me about Taylor Swift" → "Taylor Swift"
+                    "who is Elon Musk" → "Elon Musk"
+                    "what is the Eiffel Tower" → "Eiffel Tower"
+                """.trimIndent()),
+                samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0)
+            )
+        )
+        val topic = conv.sendMessage(query).toString().trim()
+        conv.close()
+        return topic
     }
 
-    // streaming
-    fun generateStream(prompt: String): Flow<String> {
+    suspend fun callWiki(query: String): String {
+        val topic = getTopic(query)
+        Log.d("LLM", "Extracted topic: $topic")
+
+        val wikiResult = WikiSearch.search(topic)
+        if (wikiResult == null) return "No Wikipedia results found for $topic. Use your own knowledge."
+
+        val title = wikiResult.optString("title")
+        val summary = wikiResult.optString("summary")
+        val url = wikiResult.optString("url")
+
+        Log.d("LLM", "Wikipedia result: $title")
+        return "Article: $title\n\n$summary"
+
+    }
+
+    suspend fun generateStream(prompt: String): Flow<String> {
         msg++
         if (msg > max) {
             conversation?.close()
-            startConversation()
             msg = 0
         }
+        val context = callWiki(prompt)
+        val conv = engine!!.createConversation(
+            ConversationConfig(
+                systemInstruction = Contents.of("""
+                    You are a helpful assistant. Answer using ONLY this Wikipedia context:
+                    
+                    $context
+                """.trimIndent()),
+                samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.8)
+            )
+        )
 
-        return conversation!!.sendMessageAsync(prompt)
+        return conv.sendMessageAsync(prompt)
             .map { it.toString() }
+            .onCompletion { conv.close() }
     }
 
-    // non stream
-    fun generate(prompt: String): String {
-        msg++
-        if (msg > max) {
-            conversation?.close()
-            startConversation()
-            msg = 0
-        }
-
-        return conversation!!.sendMessage(prompt).toString()
-
-    }
-
-    fun close() {
-        engine?.close()
-    }
 }

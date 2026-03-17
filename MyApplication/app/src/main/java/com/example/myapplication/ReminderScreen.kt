@@ -581,7 +581,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
     val context = LocalContext.current
     val isEditing = existingReminder != null
     val snackbarHostState = remember{ SnackbarHostState()}
-    val recorder = remember { audio(context) }
+    val recorder = remember { InputProcessing(context) }
     var recording by remember { mutableStateOf(false) }
 
 

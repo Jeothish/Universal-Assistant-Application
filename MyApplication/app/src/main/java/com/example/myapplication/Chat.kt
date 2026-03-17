@@ -86,7 +86,7 @@ import android.os.Bundle
 @Composable
 fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     val context = LocalContext.current
-    val recorder = remember { audio(context) }
+    val recorder = remember { InputProcessing(context) }
     var inputText by remember { mutableStateOf("") }
     val speechRecognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
 
@@ -903,7 +903,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
     val letter by GlobalState.letter
     val aslInput by GlobalState.aslPrompt
     val context = LocalContext.current
-    val recorder = remember { audio(context) }
+    val recorder = remember { InputProcessing(context) }
 
     Column(
         modifier = Modifier.padding(8.dp).verticalScroll(scrollState)

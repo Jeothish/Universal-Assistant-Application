@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from keras.src.layers import BatchNormalization
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
@@ -13,6 +14,9 @@ import seaborn as sns
 import pickle
 from sklearn.utils.class_weight import compute_class_weight
 
+
+#used wight class to oversample M and N to reduce confusion since they were under smapled, reduced learning rate to 0.0005, used lr scheduler
+
 # mediapipe landmarks dataset from
 # https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
 
@@ -25,7 +29,7 @@ y= df["label"].values
 encoder = LabelEncoder() # to orgnize all alphabet labels
 y_encode = encoder.fit_transform(y)
 print(encoder.classes_)
-np.save("asl_labels_new4L.npy", encoder.classes_)
+np.save("asl_labels_newBatch3L.npy", encoder.classes_)
 
 #split into testing and training
 X_train, X_temp, y_train, y_temp = train_test_split(X, y_encode, test_size = 0.3, random_state = 42, stratify = y_encode)
@@ -36,7 +40,7 @@ class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y
 class_weight_dict = dict(enumerate(class_weights))
 
 #train model
-model = Sequential([Dense(128, activation="relu", input_shape=(X.shape[1],)), Dense(64, activation="relu"), Dense(len(np.unique(y_encode)), activation="softmax")])
+model = Sequential([BatchNormalization(), Dense(128, activation="relu", input_shape=(X.shape[1],)), Dropout(0.3), Dense(64, activation="relu"),Dropout(0.2), Dense(len(np.unique(y_encode)), activation="softmax")])
 
 model.compile(optimizer=tf.keras.optimizers.Adam(0.0005), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
@@ -50,9 +54,9 @@ history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=100
 
 
 #save model
-model.save("asl_mediapipe_model_new4L.keras")
+model.save("asl_mediapipe_model_newBatch3L.keras")
 
-with open("training_history_new4L.pkl", "wb") as f:
+with open("training_history_newBatch3L.pkl", "wb") as f:
     pickle.dump(history.history, f)
 
 #acc vs epoch

@@ -120,7 +120,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
     val news by GlobalState.newsList
     val letter by GlobalState.letter
     val context = LocalContext.current
-    val recorder = remember { audio(context) }
+    val recorder = remember { InputProcessing(context) }
     var recording by remember { mutableStateOf(false) }
     var showTestInput by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
