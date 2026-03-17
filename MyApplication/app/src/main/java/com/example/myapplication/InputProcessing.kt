@@ -4,6 +4,8 @@ import android.content.Context
 import android.media.MediaRecorder
 import java.io.File
 
+import java.net.URL
+import java.net.HttpURLConnection
 import android.util.Log
 import com.chaquo.python.Python
 import com.google.gson.Gson
@@ -11,12 +13,15 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 
+import java.time.LocalDateTime
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
 
@@ -30,6 +35,7 @@ data class NewsItem(
 
 
 data class WeatherItem(
+    val city: String,
     @SerializedName("Temperature (°C)")
     val temperature: Double,
 
@@ -100,15 +106,13 @@ class InputProcessing(private val context: Context) {
         GlobalState.vc_prompt.value = prompt
         GlobalState.thinking.value = true
         val llm = GlobalState.localLLM
-
-        CoroutineScope(Dispatchers.IO).launch{
-
+        CoroutineScope(Dispatchers.IO).launch {
             while (!GlobalState.llmReady.value) {
-                Log.d("LLM","Wait, LLM is Loading...")
+                Log.d("LLM", "Wait, LLM is Loading...")
                 kotlinx.coroutines.delay(100)
             }
-            kotlinx.coroutines.delay(500)
-            Log.d("LLM", "LLM ready! Sending prompt: $prompt  llm state: ${GlobalState.llmReady.value}")
+            Log.d("LLM", "LLM ready! Sending prompt: $prompt")
+
             try {
                 val intent = withContext(Dispatchers.Main) { getIntent(prompt) }
                 Log.d("LLM", "Intent: $intent")
@@ -143,7 +147,6 @@ class InputProcessing(private val context: Context) {
                 Log.e("TEXT_ERROR", e.toString())
                 withContext(Dispatchers.Main) { GlobalState.thinking.value = false }
             }
-
         }
 
     }
@@ -164,11 +167,12 @@ class InputProcessing(private val context: Context) {
 
 
             val resultObj = jsonObject.getAsJsonObject("result")
+            val city = jsonObject.get("city")?.asString ?: "Unknown"
             val weather = Gson().fromJson(
                 resultObj,
                 WeatherItem::class.java
-            )
-            GlobalState.weather.value = weather
+            ).copy(city = city)
+            GlobalState.weatherHistory.add(weather)
         }
         else if (intent == "news"){
             val newsArray = jsonObject.getAsJsonArray("result")

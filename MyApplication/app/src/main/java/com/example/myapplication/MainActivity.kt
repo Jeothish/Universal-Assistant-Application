@@ -1,6 +1,5 @@
 package com.example.myapplication
 
-
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,85 +17,44 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
-
 import android.content.Context
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.*
-
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.Executors
-
-
 import android.Manifest
 import android.R
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
-
-import androidx.lifecycle.ViewModel
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.*
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import java.io.File
-import java.net.URL
-import java.net.HttpURLConnection
 import android.util.Log
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.text.font.FontWeight
-
-import androidx.compose.ui.text.style.LineHeightStyle
-import androidx.compose.ui.zIndex
-import java.time.LocalTime
-
-import com.example.myapplication.GlobalState
-import com.example.myapplication.InputProcessing.*
 import OverlayView
-
-import androidx.constraintlayout.helper.widget.Grid
-
 import android.location.Geocoder
-import android.provider.Settings
 import androidx.core.app.ActivityCompat
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import java.util.Locale
 import androidx.lifecycle.lifecycleScope
@@ -141,15 +99,15 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
-//            try{
-//                val llm = LocalLLM()
-//                llm.initialize(context = applicationContext)
-//                GlobalState.localLLM = llm
-//                GlobalState.llmReady.value = true
-//            }catch(e:Exception){
-//                Log.e("LLM", "LLM loading failed: $e")
-//            }
-            GlobalState.serverIP.value = AppPreferences.loadIp(this@MainActivity)
+            try {
+                val llm = LocalLLM()
+                llm.initialize(context = applicationContext)
+                GlobalState.localLLM = llm
+                GlobalState.llmReady.value = true
+                Log.d("LLM", "LLM loaded successfully, llmReady = ${GlobalState.llmReady.value}")
+            } catch(e: Exception) {
+                Log.e("LLM", "LLM loading failed: $e")
+            }
         }
 
             val cameraGranted = ContextCompat.checkSelfPermission(
