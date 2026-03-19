@@ -32,7 +32,6 @@ class HandAnalyzer(
     private var prevCall=0
     private var delay = 10
 
-    private var prevAction =""
     private var timer =0
     private val lock = Any()
 
@@ -182,7 +181,7 @@ class HandAnalyzer(
                     if (letter == prevLetter) {
 
 
-                        if (timer >= 3) {
+                        if (timer >= GlobalState.aslTimer.value) {
 
                             if (letter == "del" && aslPrompt.value.isNotEmpty()) {
                                 aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
@@ -193,7 +192,7 @@ class HandAnalyzer(
                                 aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
                             }
 
-                            timer = -13
+                            timer = 0
                         } else {
                             timer++
 

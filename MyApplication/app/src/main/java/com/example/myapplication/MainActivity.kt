@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
                 val llm = LocalLLM()
                 llm.initialize(context = applicationContext)
                 GlobalState.localLLM = llm
@@ -191,29 +192,30 @@ fun MyApplicationApp() {
 fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var ip by remember { mutableStateOf(GlobalState.serverIP.value) }
+    var timer by remember { mutableStateOf(GlobalState.aslTimer.value.toString()) }
 
     var saved by remember { mutableStateOf(false) }
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text="Settings",modifier=modifier.padding(bottom=500.dp), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(222, 172, 255))
         OutlinedTextField(
-            value = ip,
+            value = timer,
             onValueChange = {
-                ip = it
+                timer = it
                 saved = false
 
             },
-            label = { Text("IP Address") },
-            placeholder = { Text(ip) },
+            label = { Text("Time it takes to add a letter to the ASL message. (Enter a number between 1 and 10)") },
+            placeholder = { Text(timer) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         Button(
             onClick = {
-                GlobalState.serverIP.value = ip
+                GlobalState.aslTimer.value = timer.toIntOrNull()?.coerceIn(1, 10) ?: 2 //bounds input to 1-10
+
                 saved = true
                 scope.launch {
-                    AppPreferences.saveIp(context, ip)
+                    AppPreferences.saveTimer(context, GlobalState.aslTimer.value)
 
                 }
             },

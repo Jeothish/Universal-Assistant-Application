@@ -81,6 +81,15 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.RecognitionListener
 import android.os.Bundle
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
 
 
 @Composable
@@ -904,6 +913,10 @@ fun ASLInputScreen(returnToChat: () -> Unit){
     val aslInput by GlobalState.aslPrompt
     val context = LocalContext.current
     val recorder = remember { InputProcessing(context) }
+    var showHelp by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
 
     Column(
         modifier = Modifier.padding(8.dp).verticalScroll(scrollState)
@@ -972,6 +985,36 @@ fun ASLInputScreen(returnToChat: () -> Unit){
                 modifier = Modifier.padding(19.dp),
                 color = Color(0xFFFFC63A)
             )
+
+            Button(
+                onClick = {
+                    showHelp = true
+                    scope.launch {
+                        scrollState.animateScrollTo(scrollState.maxValue)
+                    }
+                },
+                modifier = Modifier.height(60.dp).width(200.dp).padding(8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Green,
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.Help,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+
+                    Text(
+                        text = " Help",
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
         }
 
         Box(
@@ -1161,6 +1204,97 @@ fun ASLInputScreen(returnToChat: () -> Unit){
 //            }
 //
 //        }
+        if (showHelp) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF2A2A38))
+                    .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp))
+                    .padding(20.dp)
+            ) {
+                Text(
+                    "How To Use",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFC63A),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                listOf(
+                    "Hold up any sign in front of the camera.",
+                    "The detected sign will appear in the \"Detected Letter\" box."
+                ).forEach { tip ->
+                    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Text("• ", color = Color(0xFFE7B212), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(tip, color = Color.White, fontSize = 16.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    "How to Construct a Message",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFC63A),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                listOf(
+                    "Hold a sign for 1–2 seconds to add it to the message (This can be made faster or slower in settings).",
+                    "Hold the \"backspace\" sign to delete the last letter.",
+                    "Hold the \"space\" sign to add a space."
+                ).forEach { tip ->
+                    Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                        Text("• ", color = Color(0xFFE7B212), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(tip, color = Color.White, fontSize = 16.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    "ASL Alphabet Reference",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFC63A),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Image(
+                    painter = painterResource(id = R.drawable.asl),
+                    contentDescription = "ASL Signs",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offset.x,
+                            translationY = offset.y
+                        )
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                scale = (scale * zoom).coerceIn(1f, 5f)
+                                offset = if (scale == 1f) Offset.Zero else offset + pan
+                            }
+                        },
+                    contentScale = ContentScale.FillWidth
+                )
+
+                Text(
+                    "Pinch to zoom · Drag to pan",
+                    fontSize = 13.sp,
+                    color = Color(0xFF888888),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 8.dp)
+                )
+            }
+        }
     }
 
 }

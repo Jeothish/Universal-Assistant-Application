@@ -45,4 +45,8 @@ object GlobalState {
     var llmReady = mutableStateOf(false)
 
     val llmResponse = mutableStateOf("")
+
+    var aslTimer = mutableStateOf(0)
+
+
 }
