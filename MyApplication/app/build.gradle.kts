@@ -1,10 +1,19 @@
 import org.gradle.kotlin.dsl.implementation
 
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlin:kotlin-stdlib:2.2.21")
+        force("org.jetbrains.kotlin:kotlin-reflect:2.2.21")
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.chaquopy)
+    alias(libs.plugins.ksp)
+
 }
 
 android {
@@ -53,7 +62,7 @@ android {
 }
 configure<com.chaquo.python.ChaquopyExtension> {
     defaultConfig {
-        buildPython("C:/Users/HP/AppData/Local/Programs/Python/Python311/python.exe")
+        buildPython("C:/Users/sjeot/AppData/Local/Programs/Python/Python311/python.exe")
         version = "3.11"
         pip {
             install("pycountry")
@@ -68,7 +77,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation("io.github.sceneview:sceneview:2.3.0")
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -152,4 +160,12 @@ dependencies {
     //implementation("androidx.core:core-ktx:1.12.0")
     //implementation("androidx.activity:activity-compose:1.8.2")
    // implementation("androidx.compose.material3:material3:1.1.2")
+
+    implementation("androidx.room:room-runtime:2.7.1")
+    ksp("androidx.room:room-compiler:2.7.1")
+    implementation("androidx.room:room-ktx:2.7.1")
+
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+    implementation("androidx.sqlite:sqlite-ktx:2.4.0")
+
 }

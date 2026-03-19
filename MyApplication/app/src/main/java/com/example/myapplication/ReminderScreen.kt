@@ -83,11 +83,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 
-import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Snackbar
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 
@@ -100,8 +102,16 @@ import kotlin.text.forEach
 
 
 @Composable
-fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existingReminder: ReminderGet?) -> Unit) {
-    var reminders by remember { mutableStateOf<List<ReminderGet>>(emptyList()) }
+fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existingReminder: Reminder?) -> Unit) {
+    val context = LocalContext.current
+
+    val database = remember { DatabaseProvider.getDatabase(context) }
+
+    val repository = remember {
+        ReminderRepository(database.reminderDao())
+    }
+
+    val reminders by repository.allReminders.collectAsState(initial = emptyList())
     var searchQuery by remember { mutableStateOf("") }
     val totalReminders by remember { derivedStateOf{reminders.size} }
     val completedReminders by remember { derivedStateOf{reminders.count{reminder -> reminder.is_complete == true}} }
@@ -115,18 +125,6 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
                 r.reminder_description?.contains(searchQuery, ignoreCase = true) == true
         }
     } }
-
-
-
-    LaunchedEffect(Unit) {
-        try {
-            reminders = getReminders()
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
 
     if(!GlobalState.hideResponse.value) {
         Column {
@@ -232,25 +230,31 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
 
                 items(filteredReminders) { reminder ->
                     ReminderCard(
+                        repository = repository,
                         reminder = reminder,
                         onEdit = { reminder ->
                             courotineScope.launch {
                                 openRemindersScreen(reminder)
-                                reminders = getReminders()
 
                             }
                         },
                         onDelete = { id ->
                             courotineScope.launch {
-                                deleteReminder(id)
-                                reminders = getReminders()
+                                val reminder = reminders.find{it.reminder_id == id}
+                                if(reminder != null){
+                                    repository.deleteReminder(reminder)
+                                }
 
                             }
                         },
-                        onToggleComplete = {id,isComplete -> reminders = reminders.map{ r ->
-                            if(r.reminder_id == id) r.copy(is_complete = isComplete) else r
-                        }}
-
+                        onToggleComplete = { id, isComplete ->
+                            courotineScope.launch {
+                                val reminder = reminders.find { it.reminder_id == id }
+                                if (reminder != null) {
+                                    repository.updateReminder(reminder.copy(is_complete = isComplete))
+                                }
+                            }
+                        }
                     )
                 }
 
@@ -323,9 +327,9 @@ fun customPopup(
     }
 }
 @Composable
-fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete: (Int) -> Unit,onToggleComplete: (Int,Boolean) -> Unit){
-    Log.d("ReminderCard", "Date: ${reminder.reminder_date}, Time: ${reminder.reminder_time}")
-    var isComplete by remember { mutableStateOf(reminder.is_complete == true) }
+fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Reminder) -> Unit, onDelete: (Int) -> Unit,onToggleComplete: (Int,Boolean) -> Unit){
+
+    var isComplete by remember { mutableStateOf(reminder.is_complete) }
     val courotineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val ttsManager = remember { TTSManager(context) }
@@ -347,23 +351,7 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
                     onClick = {
                         isComplete = !isComplete
                         onToggleComplete(reminder.reminder_id, isComplete)
-                        courotineScope.launch {
-                            try {
-                                updateReminders(
-                                    reminder.reminder_id,
-                                    ReminderEdit(
-                                        reminder_title = reminder.reminder_title,
-                                        reminder_date = reminder.reminder_date,
-                                        reminder_description = reminder.reminder_description,
-                                        is_complete = isComplete,
-                                        recurrence_type = reminder.recurrence_type,
-                                        reminder_time = reminder.reminder_time
-                                    )
-                                )
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
+
                     },
                     colors = RadioButtonDefaults.colors(
                         selectedColor = Color(0xFF0DF108),
@@ -569,7 +557,7 @@ fun ReminderCard(reminder: ReminderGet, onEdit: (ReminderGet) -> Unit, onDelete:
     }
 
 @Composable
-fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = null){
+fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,existingReminder: Reminder? = null){
     var title by remember { mutableStateOf(existingReminder?.reminder_title ?:"") }
     var description by remember { mutableStateOf(existingReminder?.reminder_description ?:"") }
     var date by remember { mutableStateOf(existingReminder?.reminder_date ?:"") }
@@ -1057,7 +1045,7 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
         Button(onClick = {
 
             if(title.isBlank()){
-                Toast.makeText(context,"Enter a date!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context,"Enter a title!", Toast.LENGTH_SHORT).show()
                 return@Button
             }
 
@@ -1073,38 +1061,35 @@ fun AddReminderScreen(returnToChat: () -> Unit,existingReminder: ReminderGet? = 
 
             couroutineScope.launch {
                 try {
-                    if(isEditing){
-                       val  updateReminders = ReminderEdit(
-                           reminder_title = title.ifBlank { null },
-                           reminder_date = date.ifBlank { null },
-                           reminder_description = description.ifBlank { null },
-                           is_complete = false,
-                           recurrence_type = type.ifBlank { null },
-                           reminder_time = time.ifBlank { null }
-                                    )
-                        updateReminders(reminderId = existingReminder.reminder_id, reminder = updateReminders)
-                        returnToChat()
+                    val reminder = Reminder(
+                        reminder_id = existingReminder?.reminder_id ?: 0,
+                        reminder_title = title,
+                        reminder_date = date,
+                        reminder_description = description,
+                        is_complete = false,
+                        recurrence_type = type,
+                        reminder_time = time
+                    )
 
-                        if(date.isNotBlank() && time.isNotBlank()){
-                            AlarmScheuduler.scheduleAlarm(context,existingReminder.reminder_id,title,description,date,time)
-                        }
+                    if (isEditing) {
+                        repository.updateReminder(reminder)
+                    } else {
+                        repository.addReminder(reminder)
                     }
-                    else{
-                        val newReminderID = createReminder(ReminderCreate(
-                            reminder_title = title,
-                            reminder_date = date,
-                            reminder_description = description,
-                            is_complete = false,
-                            recurrence_type = type,
-                            reminder_time = time
-                        ))
-                        returnToChat()
-                        if(date.isNotBlank() && time.isNotBlank()){
-                            AlarmScheuduler.scheduleAlarm(context,newReminderID,title,description,date,time)
-                        }
 
-
+                    // schedule alarm AFTER DB success
+                    if (date.isNotBlank() && time.isNotBlank()) {
+                        AlarmScheuduler.scheduleAlarm(
+                            context,
+                            reminder.reminder_id,
+                            title,
+                            description,
+                            date,
+                            time
+                        )
                     }
+
+                    returnToChat()
 
                 } catch (e: Exception) {
                     e.printStackTrace()

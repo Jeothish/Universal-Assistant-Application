@@ -30,9 +30,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomePage(modifier: Modifier = Modifier){
 
-
+    val context = LocalContext.current
+    val database = remember { DatabaseProvider.getDatabase(context) }
+    val repository = remember {
+        ReminderRepository(database.reminderDao())
+    }
     val navController = rememberNavController() //Keeps track of which screen is being displayed
-    var reminderToEdit by remember { mutableStateOf<ReminderGet?>(null)}
+    var reminderToEdit by remember { mutableStateOf<Reminder?>(null)}
     //Connects screen tracker with the screens
     NavHost(
         navController = navController,
@@ -69,7 +73,9 @@ fun HomePage(modifier: Modifier = Modifier){
         }
 
         composable(HomeRoutes.ADD_REMINDERS){
-            AddReminderScreen(returnToChat = {
+            AddReminderScreen(
+                repository,
+                returnToChat = {
                 navController.popBackStack()
                 reminderToEdit = null },
                 existingReminder = reminderToEdit) //Goes back to previous screen

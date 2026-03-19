@@ -146,18 +146,18 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
 //            greeting = false
 //
 //        }
-//        if (greeting) {
-//            val hour = LocalTime.now().hour
-//            var time = ""
-//            if (hour > 4 && hour < 11) {
-//                time = "morning"
-//            } else if (hour > 11 && hour < 18) {
-//                time = "afternoon"
-//            } else {
-//                time = "evening"
-//            }
-//
-//            Greeting(time = time)
+
+            val hour = LocalTime.now().hour
+            var time = ""
+            if (hour > 4 && hour < 11) {
+                time = "morning"
+            } else if (hour > 11 && hour < 18) {
+                time = "afternoon"
+            } else {
+                time = "evening"
+            }
+
+            Greeting(time = time)
 //        } else if (asl) {
 //            Text(
 //                text = "Detected Sign: $letter",
@@ -372,9 +372,6 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
 //            }
 //
 //    }
-
-
-
 
                 Column(
                     modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
