@@ -57,8 +57,10 @@ fun HomePage(modifier: Modifier = Modifier){
                 },
                 onOpenProfile = {
                     navController.navigate(HomeRoutes.PROFILE)
+                },
+                onOpenAslOutput = {
+                    navController.navigate(HomeRoutes.ASL_OUTPUT_SCREEN)
                 }
-
             )
         }
         //Defines the reminders screen
@@ -100,6 +102,12 @@ fun HomePage(modifier: Modifier = Modifier){
         composable(HomeRoutes.ASL_INPUT_SCREEN){
             ASLInputScreen(returnToChat = {navController.popBackStack()})
         }
+
+        composable(HomeRoutes.ASL_OUTPUT_SCREEN){
+            ASLOutputScreen(returnToChat = {navController.popBackStack()})
+        }
+
+
 
 
 

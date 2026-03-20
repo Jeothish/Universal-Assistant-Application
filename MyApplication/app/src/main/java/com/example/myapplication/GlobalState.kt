@@ -3,6 +3,7 @@ package com.example.myapplication
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import java.util.Locale
 
 object GlobalState {
     var asl = mutableStateOf(false)
@@ -47,6 +48,13 @@ object GlobalState {
     val llmResponse = mutableStateOf("")
 
     var aslTimer = mutableStateOf(0)
+
+    val ttsPitch = mutableStateOf(1.0f)
+
+    val ttsSpeechRate = mutableStateOf(1.0f)
+
+    val ttsLanguage = mutableStateOf(Locale.UK)
+    //val ttsPitch = mutableStateOf("")
 
 
 }

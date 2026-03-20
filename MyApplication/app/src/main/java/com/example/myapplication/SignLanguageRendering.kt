@@ -2,12 +2,18 @@ package com.example.myapplication
 
 import android.net.Uri
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardReturn
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.TextFieldValue
@@ -18,6 +24,10 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -181,3 +191,120 @@ fun ASLRenderer(
         }
     }
 }
+
+@Composable
+fun ASLOutputScreen(returnToChat: () -> Unit){
+    val tokens = mutableListOf<String>()
+    tokens.add("H")
+    tokens.add("E")
+    tokens.add("L")
+    tokens.add("L")
+    tokens.add("O")
+
+    ASLRenderer(tokens = GlobalState.aslTokens.value,onReturn = {GlobalState.hideResponse.value = false})
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row() {
+            Button(
+                onClick = returnToChat,
+                modifier = Modifier.height(80.dp).fillMaxWidth().padding(8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFDE0F0F),
+                    contentColor = Color(0xFFFFFFFF),
+                )
+            )
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardReturn,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+
+                    Text(
+                        text = "Return To Chat",
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(11.dp)
+                .height(250.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF2A2A38))
+                .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
+
+            contentAlignment = Alignment.Center
+
+
+        ) {
+            Column() {
+                Text(
+                    text = "NOW PLAYING",
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFFFFF)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .height(100.dp)
+                        .width(180.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFFFFC107)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "H",
+                        fontSize = 44.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(19.dp),
+                        color = Color(0xFF2A2A38)
+                    )
+                }
+
+                Text(
+                    text = "Letter 1 of 130",
+                    fontSize = 25.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFFFFF)
+                )
+
+
+            }
+        }
+
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(11.dp)
+                .height(250.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF2A2A38))
+                .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
+
+            contentAlignment = Alignment.Center
+
+
+        ){
+            //ASLRenderer(tokens = GlobalState.aslTokens.value,onReturn = {GlobalState.hideResponse.value = false})
+        }
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+}
+

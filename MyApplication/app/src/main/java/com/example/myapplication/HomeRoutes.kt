@@ -14,5 +14,6 @@ object HomeRoutes{
     const val PROFILE = "profile"
 
     const val ASL_INPUT_SCREEN = "asl_input_screen"
+    const val ASL_OUTPUT_SCREEN = "asl_output_screen"
 
 }

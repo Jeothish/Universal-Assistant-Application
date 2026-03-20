@@ -44,7 +44,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.Executors
 import android.Manifest
-import android.R
 import android.content.pm.PackageManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,6 +52,7 @@ import android.util.Log
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import OverlayView
+import android.content.Intent
 import android.location.Geocoder
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.LocationServices
@@ -62,6 +62,17 @@ import com.chaquo.python.Python
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.chaquo.python.android.AndroidPlatform
+import android.provider.Settings
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 
 class MainActivity : ComponentActivity() {
 
@@ -78,6 +89,7 @@ class MainActivity : ComponentActivity() {
             val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
             if (cameraGranted && micGranted && notificationGranted) {
                 if (locationGranted) fetchUserCity()
+
 
 
                 setContent {
@@ -99,16 +111,16 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
-                val llm = LocalLLM()
-                llm.initialize(context = applicationContext)
-                GlobalState.localLLM = llm
-                GlobalState.llmReady.value = true
-                Log.d("LLM", "LLM loaded successfully, llmReady = ${GlobalState.llmReady.value}")
-            } catch(e: Exception) {
-                Log.e("LLM", "LLM loading failed: $e")
-            }
+//            try {
+//                GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
+//                val llm = LocalLLM()
+//                llm.initialize(context = applicationContext)
+//                GlobalState.localLLM = llm
+//                GlobalState.llmReady.value = true
+//                Log.d("LLM", "LLM loaded successfully, llmReady = ${GlobalState.llmReady.value}")
+//            } catch(e: Exception) {
+//                Log.e("LLM", "LLM loading failed: $e")
+//            }
         }
 
             val cameraGranted = ContextCompat.checkSelfPermission(
@@ -139,6 +151,7 @@ class MainActivity : ComponentActivity() {
 
         if (cameraGranted && micGranted && notificationGranted) {
             if (locationGranted) fetchUserCity()
+            requestOverlayPermission()
 
             setContent {
                 MyApplicationTheme {
@@ -154,6 +167,16 @@ class MainActivity : ComponentActivity() {
                     Manifest.permission.ACCESS_FINE_LOCATION
                 )
             )
+        }
+    }
+
+    private fun requestOverlayPermission() {
+        if (!Settings.canDrawOverlays(this)) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
         }
     }
 
@@ -188,44 +211,228 @@ fun MyApplicationApp() {
 
 
 }
+
+
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var timer by remember { mutableStateOf(GlobalState.aslTimer.value.toString()) }
-
     var saved by remember { mutableStateOf(false) }
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text="Settings",modifier=modifier.padding(bottom=500.dp), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(222, 172, 255))
-        OutlinedTextField(
-            value = timer,
-            onValueChange = {
-                timer = it
-                saved = false
+    val ttsManager = remember { TTSManager(context) }
+    
 
-            },
-            label = { Text("Time it takes to add a letter to the ASL message. (Enter a number between 1 and 10)") },
-            placeholder = { Text(timer) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Button(
-            onClick = {
-                GlobalState.aslTimer.value = timer.toIntOrNull()?.coerceIn(1, 10) ?: 2 //bounds input to 1-10
+    Box(
+        modifier = Modifier.fillMaxWidth()
 
-                saved = true
-                scope.launch {
-                    AppPreferences.saveTimer(context, GlobalState.aslTimer.value)
+            .height(400.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color(0xFF2A2A38))
+            .border(2.dp, Color(0xFF2196F3), RoundedCornerShape(24.dp))
+            .padding(26.dp),
 
+
+
+    ) {
+
+
+        Column() {
+            Row() {
+                Box(
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(60.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF2196F3))
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        modifier = Modifier.size(106.dp),
+                        imageVector = Icons.Default.RecordVoiceOver,
+                        contentDescription = null,
+
+                        )
                 }
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(222, 172, 255)),
-            shape = RoundedCornerShape(12.dp),
-            modifier = modifier.padding(end = 0.dp, top = 90.dp)
-        ) {
-            Text(if (saved) "Saved" else "Save")
+                Text(
+                    text = "Voice & Speech",
+                    fontSize = 35.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFC63A)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            Row() {
+
+                Text(
+                    text = "Speech Speed",
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold,
+                    //modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFFFFF)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "${"%.2f".format(GlobalState.ttsSpeechRate.value)}x",
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold,
+                    //modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFC63A),
+                    textAlign = TextAlign.End
+
+                )
+            }
+
+            Slider(
+                value = GlobalState.ttsSpeechRate.value,
+                onValueChange = { GlobalState.ttsSpeechRate.value = it },
+                valueRange = 0.5f..2.0f,
+                steps = 5,
+                colors = SliderDefaults.colors(
+                    thumbColor = Color(0xFF2196F3),
+                    activeTrackColor = Color(0xFFFFC63A),
+                    inactiveTrackColor =  Color(0xFF6F6F6D)
+                )
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+
+                Text(
+                    text = "Slow",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Start,
+                    color = Color(0xFF6F6F6D)
+                )
+
+                Text(
+                    text = "Normal",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    color =  Color(0xFF6F6F6D)
+                )
+
+                Text(
+                    text = "Fast",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End,
+                    color = Color(0xFF6F6F6D)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(15.dp))
+
+            Row() {
+
+                Text(
+                    text = "Speech Pitch",
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold,
+                    //modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFFFFF)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "${"%.2f".format(GlobalState.ttsPitch.value)}x",
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold,
+                    //modifier = Modifier.padding(19.dp),
+                    color = Color(0xFFFFC63A),
+                    textAlign = TextAlign.End
+
+                )
+            }
+
+            Slider(
+                value = GlobalState.ttsPitch.value,
+                onValueChange = { GlobalState.ttsPitch.value = it },
+                valueRange = 0.7f..1.5f,
+                steps = 7,
+                colors = SliderDefaults.colors(
+                    thumbColor = Color(0xFF2196F3),
+                    activeTrackColor = Color(0xFFFFC63A),
+                    inactiveTrackColor =  Color(0xFF6F6F6D)
+                )
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+
+                Text(
+                    text = "Low",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Start,
+                    color = Color(0xFF6F6F6D)
+                )
+
+                Text(
+                    text = "Normal",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    color =  Color(0xFF6F6F6D)
+                )
+
+                Text(
+                    text = "High",
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End,
+                    color = Color(0xFF6F6F6D)
+                )
+            }
+
+
+
         }
-    }
+
+        }
+
+
+
+//    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//
+//
+//        //Text(text="Settings",modifier=modifier.padding(bottom=500.dp), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(222, 172, 255))
+//        OutlinedTextField(
+//            value = timer,
+//            onValueChange = {
+//                timer = it
+//                saved = false
+//
+//            },
+//            label = { Text("Time it takes to add a letter to the ASL message. (Enter a number between 1 and 10)") },
+//            placeholder = { Text(timer) },
+//            singleLine = true,
+//            modifier = Modifier.fillMaxWidth()
+//        )
+//        Button(
+//            onClick = {
+//                GlobalState.aslTimer.value = timer.toIntOrNull()?.coerceIn(1, 10) ?: 2 //bounds input to 1-10
+//
+//                saved = true
+//                scope.launch {
+//                    AppPreferences.saveTimer(context, GlobalState.aslTimer.value)
+//
+//                }
+//            },
+//            colors = ButtonDefaults.buttonColors(containerColor = Color(222, 172, 255)),
+//            shape = RoundedCornerShape(12.dp),
+//            modifier = modifier.padding(end = 0.dp, top = 90.dp)
+//        ) {
+//            Text(if (saved) "Saved" else "Save")
+//        }
+//    }
 }
 
 @Composable

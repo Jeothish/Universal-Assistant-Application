@@ -1009,7 +1009,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
                     )
 
                     Text(
-                        text = " Help",
+                        text = "Help",
                         fontSize = 15.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )

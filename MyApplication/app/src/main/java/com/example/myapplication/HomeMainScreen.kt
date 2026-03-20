@@ -106,7 +106,7 @@ fun homeButtons(icon: ImageVector, iconColour:Color = Color.DarkGray, title:Stri
 }
 
 @Composable
-fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSettings:() -> Unit,onOpenProfile: () -> Unit) {
+fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSettings:() -> Unit,onOpenProfile: () -> Unit,onOpenAslOutput:() -> Unit) {
 
     var isASLPlaying by remember { mutableStateOf(true) }
     var hideResponse by remember { mutableStateOf(false) }
@@ -452,9 +452,9 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                             homeButtons(
                                 icon = Icons.Default.PhoneAndroid,
                                 iconColour = Color(0xFFE2135B),
-                                title = "Phone helper",
+                                title = "ASL Test screen",
                                 description = "**COMING SOON**",
-                                onClick = {})
+                                onClick = {onOpenAslOutput()})
                         }
 
 
