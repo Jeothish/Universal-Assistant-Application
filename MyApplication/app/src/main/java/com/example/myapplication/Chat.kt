@@ -90,6 +90,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.style.TextOverflow
 
 
 @Composable
@@ -251,7 +252,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         voiceClick = false
                         aslClick = false
                     },
-                    modifier = Modifier.height(60.dp),
+                    modifier = Modifier.weight(1f).height(60.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (textClick) Color(0xFFFFC107) else Color(0xFF403E37),
@@ -280,7 +281,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         voiceClick = true
                         aslClick = false
                     },
-                    modifier = Modifier.height(60.dp),
+                    modifier = Modifier.weight(1f).height(60.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (voiceClick) Color(0xFFFFC107) else Color(0xFF3E3D36),
@@ -298,7 +299,9 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         Text(
                             text = "Voice",
                             fontSize = 16.sp,
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.padding(top = 8.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -309,7 +312,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         voiceClick = false
                         aslClick = true
                     },
-                    modifier = Modifier.height(60.dp),
+                    modifier = Modifier.weight(1f).height(60.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (aslClick) Color(0xFFFFC107) else Color(0xFF44433C),
@@ -353,7 +356,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 
                             )
                         },
-                        modifier = Modifier.height(90.dp).padding(8.dp),
+                        modifier = Modifier.height(90.dp).padding(8.dp).weight(1f),
                         shape = RoundedCornerShape(18.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color(0xFFFFFFFF),
@@ -392,7 +395,6 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     Button(
                         onClick = {
                             if (!recording) {
-//                                recorder.startRec()
                                 speechRecognizer.value = startSTT(context) {spokenText ->
                                         recording = false
                                         speechRecognizer.value?.destroy()
@@ -401,15 +403,11 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                                             GlobalState.thinking.value = true
                                             GlobalState.vc_prompt.value = spokenText
                                             recorder.sendTextToBackend(spokenText)
-
-
                                 }}
                                 recording = true
                             }
                             else {
                                 speechRecognizer.value?.stopListening()
-
-
                                 recording=false
                             }
                         },
@@ -921,10 +919,10 @@ fun ASLInputScreen(returnToChat: () -> Unit){
     Column(
         modifier = Modifier.padding(8.dp).verticalScroll(scrollState)
     ){
-        Row() {
+        Row(modifier = Modifier.fillMaxWidth()) {
             Button(
                 onClick = returnToChat,
-                modifier = Modifier.height(80.dp).width(200.dp).padding(8.dp),
+                modifier = Modifier.weight(1f).height(80.dp).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFDE0F0F),

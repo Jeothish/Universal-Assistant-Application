@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Paint
 import android.icu.util.Calendar
 import android.provider.Settings
+import android.speech.SpeechRecognizer
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -336,6 +337,7 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
 
 
 
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF1D1D1D)),
@@ -402,9 +404,11 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                         ) {
                             Text(
                                 text = "${reminder.reminder_date ?: "No date"} | ${reminder.reminder_time ?: "No time"}",
-                                fontSize = 15.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isComplete) Color(0xFF888888) else Color(0xFF0E0E0E)
+                                color = if (isComplete) Color(0xFF888888) else Color(0xFF0E0E0E),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
 
                             )
                         }
@@ -431,7 +435,8 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
 
                 }
             }
-            Row(Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 
                 Button(
                     onClick = {
@@ -439,7 +444,7 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                         if(GlobalState.ttsReading.value) ttsManager.speak(reminder.reminder_title!!)
                         else ttsManager.stop()
                     },
-                    modifier = Modifier.height(100.dp).width(100.dp),
+                    modifier = Modifier.weight(1f).height(100.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
@@ -460,11 +465,11 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
 
                 }
 
-                Spacer(modifier = Modifier.width(25.dp))
+                //Spacer(modifier = Modifier.width(25.dp))
 
                 Button(
                     onClick = { onEdit(reminder) },
-                    modifier = Modifier.height(100.dp).width(100.dp),
+                    modifier = Modifier.weight(1f).height(100.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFE0C512),
@@ -484,11 +489,11 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                     }
                 }
 
-                Spacer(modifier = Modifier.width(25.dp))
+                //Spacer(modifier = Modifier.width(25.dp))
 
                 Button(
                     onClick = { onDelete(reminder.reminder_id) },
-                    modifier = Modifier.height(100.dp).width(100.dp),
+                    modifier = Modifier.weight(1f).height(100.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFEC0A0A),
@@ -530,7 +535,7 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                     GlobalState.hideResponse.value = true
 
                           },
-                modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                modifier = Modifier.height(100.dp).fillMaxWidth().padding(16.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFC30AEC),
@@ -571,6 +576,11 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
     val snackbarHostState = remember{ SnackbarHostState()}
     val recorder = remember { InputProcessing(context) }
     var recording by remember { mutableStateOf(false) }
+    val speechRecognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
+    var voiceClick by remember { mutableStateOf(false) }
+    var aslClick by remember { mutableStateOf(false) }
+
+
 
 
     Column(modifier = Modifier.padding(12.dp).verticalScroll(scrollState))
@@ -598,7 +608,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
 
         OutlinedTextField(
             value = title,
-            onValueChange = {title= it},
+            onValueChange = {title = it},
             placeholder = {
                 Text(
                     text="What do you need to remember?",
@@ -621,15 +631,20 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
             Button(
                 onClick = {
                     if (!recording) {
-                        recorder.startRec()
+                        speechRecognizer.value = startSTT(context) {spokenText ->
+                            recording = false
+                            speechRecognizer.value?.destroy()
+                            speechRecognizer.value = null
+                            if (spokenText.isNotBlank()) {
+                                GlobalState.thinking.value = true
+                                GlobalState.vc_prompt.value = spokenText
+                                recorder.sendTextToBackend(spokenText)
+                            }}
                         recording = true
-                    } else {
-
-                        val file = recorder.stopRec()
-
-                        //file?.let { recorder.sendAudioToBackend(it) }
-                        recording = false
-
+                    }
+                    else {
+                        speechRecognizer.value?.stopListening()
+                        recording=false
                     }
                 },
                 modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
@@ -711,7 +726,24 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
         )
         Row() {
             Button(
-                onClick = {},
+                onClick = {
+                    if (!recording) {
+                        speechRecognizer.value = startSTT(context) {spokenText ->
+                            recording = false
+                            speechRecognizer.value?.destroy()
+                            speechRecognizer.value = null
+                            if (spokenText.isNotBlank()) {
+                                GlobalState.thinking.value = true
+                                GlobalState.vc_prompt.value = spokenText
+                                recorder.sendTextToBackend(spokenText)
+                            }}
+                        recording = true
+                    }
+                    else {
+                        speechRecognizer.value?.stopListening()
+                        recording=false
+                    }
+                },
                 modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -786,7 +818,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
         Box(modifier = Modifier.fillMaxWidth().padding(8.dp).clickable{datePicker.show()}) {
             OutlinedTextField(
                 value = date,
-                onValueChange = {},
+                onValueChange = {date= it},
                 placeholder = {
                     Text(
                         text = "Select Date (YYYY-MM-DD)",
@@ -815,7 +847,24 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
 
         Row() {
             Button(
-                onClick = {},
+                onClick = {
+                    if (!recording) {
+                        speechRecognizer.value = startSTT(context) {spokenText ->
+                            recording = false
+                            speechRecognizer.value?.destroy()
+                            speechRecognizer.value = null
+                            if (spokenText.isNotBlank()) {
+                                GlobalState.thinking.value = true
+                                GlobalState.vc_prompt.value = spokenText
+                                recorder.sendTextToBackend(spokenText)
+                            }}
+                        recording = true
+                    }
+                    else {
+                        speechRecognizer.value?.stopListening()
+                        recording=false
+                    }
+                },
                 modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -878,7 +927,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
         Box(modifier = Modifier.fillMaxWidth().padding(8.dp).clickable{timePicker.show()}) {
             OutlinedTextField(
                 value = time,
-                onValueChange = {},
+                onValueChange = {time= it},
                 placeholder = {
                     Text(
                         text = "Select Time (HH:MM:SS)",
@@ -906,7 +955,24 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
         }
         Row() {
             Button(
-                onClick = {},
+                onClick = {
+                    if (!recording) {
+                        speechRecognizer.value = startSTT(context) {spokenText ->
+                            recording = false
+                            speechRecognizer.value?.destroy()
+                            speechRecognizer.value = null
+                            if (spokenText.isNotBlank()) {
+                                GlobalState.thinking.value = true
+                                GlobalState.vc_prompt.value = spokenText
+                                recorder.sendTextToBackend(spokenText)
+                            }}
+                        recording = true
+                    }
+                    else {
+                        speechRecognizer.value?.stopListening()
+                        recording=false
+                    }
+                },
                 modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -991,7 +1057,24 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
         )
         Row() {
             Button(
-                onClick = {},
+                onClick = {
+                    if (!recording) {
+                        speechRecognizer.value = startSTT(context) {spokenText ->
+                            recording = false
+                            speechRecognizer.value?.destroy()
+                            speechRecognizer.value = null
+                            if (spokenText.isNotBlank()) {
+                                GlobalState.thinking.value = true
+                                GlobalState.vc_prompt.value = spokenText
+                                recorder.sendTextToBackend(spokenText)
+                            }}
+                        recording = true
+                    }
+                    else {
+                        speechRecognizer.value?.stopListening()
+                        recording=false
+                    }
+                },
                 modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
