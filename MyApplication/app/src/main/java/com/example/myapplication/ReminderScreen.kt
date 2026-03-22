@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.R.attr.right
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
@@ -284,7 +285,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
     }
 
     if (GlobalState.hideResponse.value){
-        ASLRenderer(tokens = GlobalState.aslTokens.value,onReturn = {GlobalState.hideResponse.value = false})
+        ASLOutputScreen(returnToChat = { GlobalState.hideResponse.value = false })
     }
 }
 @Composable
@@ -400,7 +401,7 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                                     if (isComplete) Color(0xFF666666) else Color(0xFFFFFFFF),
                                     shape = RoundedCornerShape(50)
                                 )
-                                .padding(12.dp)
+                                .padding(6.dp)
                         ) {
                             Text(
                                 text = "${reminder.reminder_date ?: "No date"} | ${reminder.reminder_time ?: "No time"}",
@@ -413,29 +414,29 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(9.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Icon(
-                            imageVector = if (reminder.recurrence_type == "none") Icons.Default.Cancel else Icons.Default.EventRepeat,
-                            contentDescription = null,
-                            tint = if (isComplete) Color(0xFF666666) else Color(0xFFFFFFFF),
-                            modifier = Modifier.size(24.dp)
-                        )
 
-                        Text(
-                            text = if (reminder.recurrence_type == "none") "Does not repeat" else " Repeats ${reminder.recurrence_type}",
-                            fontSize = 15.sp,
-                            textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isComplete) Color(0xFF666666) else Color(0xFFFFFFFF),
-                            textDecoration = if (isComplete) TextDecoration.LineThrough else TextDecoration.None,
-                        )
-                    }
+//                    Row(modifier = Modifier.fillMaxWidth()) {
+//                        Icon(
+//                            imageVector = if (reminder.recurrence_type == "none") Icons.Default.Cancel else Icons.Default.EventRepeat,
+//                            contentDescription = null,
+//                            tint = if (isComplete) Color(0xFF666666) else Color(0xFFFFFFFF),
+//                            modifier = Modifier.size(24.dp)
+//                        )
+//
+////                        Text(
+////                            text = if (reminder.recurrence_type == "none") "Does not repeat" else " Repeats ${reminder.recurrence_type}",
+////                            fontSize = 15.sp,
+////                            textAlign = TextAlign.Center,
+////                            fontWeight = FontWeight.Bold,
+////                            color = if (isComplete) Color(0xFF666666) else Color(0xFFFFFFFF),
+////                            textDecoration = if (isComplete) TextDecoration.LineThrough else TextDecoration.None,
+////                        )
+//                    }
 
 
                 }
             }
-            Row(modifier = Modifier.fillMaxWidth().padding(16.dp),
+            Row(modifier = Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp ),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 
                 Button(
@@ -460,7 +461,10 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                             contentDescription = null,
                             modifier = Modifier.size(36.dp)
                         )
-                        Text(if(GlobalState.ttsReading.value) "Stop reading" else "Read")
+                        Text(
+                            if(GlobalState.ttsReading.value) "Stop reading" else "Read",
+                            fontSize = 15.sp
+                        )
                     }
 
                 }
@@ -484,7 +488,10 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                             contentDescription = null,
                             modifier = Modifier.size(36.dp)
                         )
-                        Text("Edit")
+                        Text(
+                            "Edit",
+                            fontSize = 15.sp
+                        )
 
                     }
                 }
@@ -508,8 +515,9 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                             contentDescription = null,
                             modifier = Modifier.size(36.dp)
                         )
-                        Text("Delete")
-
+                        Text(
+                            "Delete",
+                            fontSize = 15.sp)
                     }
                 }
             }

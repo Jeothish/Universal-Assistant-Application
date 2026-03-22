@@ -392,7 +392,7 @@ class AlarmActivity : ComponentActivity() {
         }
 
         if(GlobalState.hideResponse.value){
-            ASLRenderer(tokens = GlobalState.aslTokens.value,onReturn = {GlobalState.hideResponse.value = false})
+            ASLOutputScreen(returnToChat = {GlobalState.hideResponse.value = false})
         }
     }
 }

@@ -20,16 +20,21 @@ class TTSManager(context: Context) {
                 tts?.language = GlobalState.ttsLanguage.value
                 tts?.setPitch(GlobalState.ttsPitch.value)
                 tts?.setSpeechRate(GlobalState.ttsSpeechRate.value)
-            }
 
-            supportedLanguages.clear()
-            supportedLanguages.addAll(Locale.getAvailableLocales().filter { tts?.isLanguageAvailable(it) == TextToSpeech.LANG_AVAILABLE}
+                supportedLanguages.clear()
+                supportedLanguages.addAll(Locale.getAvailableLocales().filter { tts?.isLanguageAvailable(it) == TextToSpeech.LANG_AVAILABLE}
                     .distinctBy { it.language }
                     .sortedBy { it.displayLanguage }
-            )
+                )
+            }
+
+
         }
     }
     fun speak(text: String){
+        tts?.language = GlobalState.ttsLanguage.value
+        tts?.setPitch(GlobalState.ttsPitch.value)
+        tts?.setSpeechRate(GlobalState.ttsSpeechRate.value)
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 

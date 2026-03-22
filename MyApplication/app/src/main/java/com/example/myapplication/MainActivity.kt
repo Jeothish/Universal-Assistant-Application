@@ -66,8 +66,12 @@ import android.provider.Settings
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -220,12 +224,15 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     var timer by remember { mutableStateOf(GlobalState.aslTimer.value.toString()) }
     var saved by remember { mutableStateOf(false) }
     val ttsManager = remember { TTSManager(context) }
-    
+    var expanded by remember { mutableStateOf(false) }
+    val languages = ttsManager.supportedLanguages
+    val selectedLanguage = GlobalState.ttsLanguage.value
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier.fillMaxWidth()
 
-            .height(400.dp)
+            .height(600.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(Color(0xFF2A2A38))
             .border(2.dp, Color(0xFF2196F3), RoundedCornerShape(24.dp))
@@ -236,7 +243,8 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     ) {
 
 
-        Column() {
+        Column(){
+
             Row() {
                 Box(
                     modifier = Modifier
@@ -390,6 +398,35 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                     textAlign = TextAlign.End,
                     color = Color(0xFF6F6F6D)
                 )
+            }
+
+            Box {
+                Button(
+                    onClick = { expanded = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                ) {
+                    Text(selectedLanguage.displayLanguage)
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)
+                        .background(Color(0xFF2A2A38), RoundedCornerShape(12.dp))
+                ) {
+                    languages.forEach { locale ->
+                        DropdownMenuItem(
+                            text = { Text(locale.displayLanguage)},
+                            onClick = {
+                                GlobalState.ttsLanguage.value = locale
+                                ttsManager.stop() // optional but clean
+                                expanded = false
+                            }
+                        )
+                    }
+                }
             }
 
 
