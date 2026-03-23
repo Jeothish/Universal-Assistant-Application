@@ -115,16 +115,16 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
-//            try {
-//                GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
-//                val llm = LocalLLM()
-//                llm.initialize(context = applicationContext)
-//                GlobalState.localLLM = llm
-//                GlobalState.llmReady.value = true
-//                Log.d("LLM", "LLM loaded successfully, llmReady = ${GlobalState.llmReady.value}")
-//            } catch(e: Exception) {
-//                Log.e("LLM", "LLM loading failed: $e")
-//            }
+            try {
+                GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
+                val llm = LocalLLM()
+                llm.initialize(context = applicationContext)
+                GlobalState.localLLM = llm
+                GlobalState.llmReady.value = true
+                Log.d("LLM", "LLM loaded successfully, llmReady = ${GlobalState.llmReady.value}")
+            } catch(e: Exception) {
+                Log.e("LLM", "LLM loading failed: $e")
+            }
         }
 
             val cameraGranted = ContextCompat.checkSelfPermission(

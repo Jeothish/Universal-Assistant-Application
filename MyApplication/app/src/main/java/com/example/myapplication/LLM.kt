@@ -19,7 +19,9 @@ import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.chaquo.python.Python
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.withTimeout
 
 class LocalLLM() {
 
@@ -28,8 +30,10 @@ class LocalLLM() {
     private var engine: Engine? = null
     private var msg = 0
     private var max=3
+    private var appContext: Context? = null
 
     suspend fun initialize(context: Context) {
+        appContext = context.applicationContext
         val modelFile = File(context.filesDir, "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm")//model must be transferred from assets to local phone storage
 
         if (!modelFile.exists()){//trasnfer model if its not alr there
@@ -51,10 +55,26 @@ class LocalLLM() {
         engine!!.initialize()
 
     }
-    private fun getTopic(query:String): String{
-        val conv = engine!!.createConversation(
-            ConversationConfig(
-                systemInstruction = Contents.of("""
+
+    suspend fun restart() {
+
+        try {
+            engine?.close()
+        } catch (e: Exception) {
+            Log.e("LLM", "Error closing engine: $e")
+        }
+        engine = null
+        conversation = null
+        msg = 0
+        initialize(appContext!!)
+        Log.d("LLM", "LLM restarted")
+    }
+    private suspend fun getTopic(query:String): String = withContext(Dispatchers.IO){
+        try{
+            withTimeout(5000L){
+                val conv = engine!!.createConversation(
+                    ConversationConfig(
+                        systemInstruction = Contents.of("""
                     Extract the main search topic from the user's query.
                     Reply with ONLY the topic, nothing else.
                     Examples:
@@ -62,27 +82,45 @@ class LocalLLM() {
                     "who is Elon Musk" → "Elon Musk"
                     "what is the Eiffel Tower" → "Eiffel Tower"
                 """.trimIndent()),
-                samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0)
-            )
-        )
-        val topic = conv.sendMessage(query).toString().trim()
-        conv.close()
-        return topic
-    }
+                        samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0)
+                    )
+                )
+                val topic = conv.sendMessage(query).toString().trim()
+                conv.close()
+                topic
+            }
+        }
+        catch (e: TimeoutCancellationException){
+            Log.d("LLM", "Error getting topic, Restarting: ${e.message}")
+            GlobalState.llmReady.value=false
+            try {
+                GlobalState.localLLM?.restart()
+                GlobalState.llmReady.value = true
+                Log.d("LLM", "LLM restarted successfully")
+            } catch (e: Exception) {
+                Log.e("LLM", "LLM restart failed: $e")
+                GlobalState.llmReady.value = false
+            }
+            query.trim().take(50)
+        }
 
-    suspend fun callWiki(query: String): String {
+        }
+
+
+
+    suspend fun callWiki(query: String): String = withContext(Dispatchers.IO) {
         val topic = getTopic(query)
         Log.d("LLM", "Extracted topic: $topic")
 
         val wikiResult = WikiSearch.search(topic)
-        if (wikiResult == null) return "No Wikipedia results found for $topic. Use your own knowledge."
+        if (wikiResult == null) return@withContext "No Wikipedia results found for $topic. Use your own knowledge."
 
         val title = wikiResult.optString("title")
         val summary = wikiResult.optString("summary")
         val url = wikiResult.optString("url")
 
         Log.d("LLM", "Wikipedia result: $title")
-        return "Article: $title\n\n$summary"
+        "Article: $title\n\n$summary"
 
     }
 
@@ -108,5 +146,5 @@ class LocalLLM() {
             .map { it.toString() }
             .onCompletion { conv.close() }
     }
-
 }
+

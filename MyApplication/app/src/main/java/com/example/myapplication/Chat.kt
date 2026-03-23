@@ -82,6 +82,7 @@ import android.speech.SpeechRecognizer
 import android.speech.RecognitionListener
 import android.os.Bundle
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
@@ -91,6 +92,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -902,6 +904,21 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
 }
 }
 
+@Composable
+fun Warning(msg: String, colour: Color,onDismiss: () -> Unit) {
+
+    LaunchedEffect(Unit) {
+        delay(2500)
+        onDismiss()
+    }
+
+    Box(modifier = Modifier.fillMaxSize().clickable{onDismiss()}, contentAlignment = Alignment.TopCenter) {
+        Box(modifier = Modifier.padding(16.dp).clip(RoundedCornerShape(16.dp)).background(colour).padding(16.dp)){
+            Text(text = msg, color = Color.Black, fontWeight = FontWeight.Bold)
+        }
+    }
+
+}
 
 @Composable
 fun ASLInputScreen(returnToChat: () -> Unit){
@@ -1027,6 +1044,21 @@ fun ASLInputScreen(returnToChat: () -> Unit){
 
         ){
                 CameraDet()
+                if (GlobalState.aslHandsError.value){
+                    Warning(msg="Multiple hands detected on screen!\nDetection may behave unexpectedly.\nPlease only use one hand.",colour=Color.Red){
+                        GlobalState.aslHandsError.value = false
+                    }
+                }
+                if (GlobalState.spaceAdded.value){
+                    Warning("Space Added",Color.Yellow){
+                        GlobalState.spaceAdded.value = false
+                    }
+                }
+                if (GlobalState.letterDeleted.value){
+                    Warning("Letter Deleted",Color.Yellow){
+                        GlobalState.letterDeleted.value = false
+                    }
+                }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -1247,7 +1279,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
                     "Hold the \"space\" sign to add a space."
                 ).forEach { tip ->
                     Row(modifier = Modifier.padding(vertical = 4.dp)) {
-                        Text("• ", color = Color(0xFFE7B212), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("- ", color = Color(0xFFE7B212), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Text(tip, color = Color.White, fontSize = 16.sp)
                     }
                 }

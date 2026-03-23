@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import java.util.Locale
@@ -55,6 +56,11 @@ object GlobalState {
 
     val ttsLanguage = mutableStateOf(Locale.UK)
     //val ttsPitch = mutableStateOf("")
+    var aslHands = mutableStateOf(0)
+    var aslHandsError = mutableStateOf(false)
+
+    var spaceAdded = mutableStateOf(false)
+    var letterDeleted = mutableStateOf(false)
 
 
 }

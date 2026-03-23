@@ -111,7 +111,7 @@ class InputProcessing(private val context: Context) {
                 Log.d("LLM", "Wait, LLM is Loading...")
                 kotlinx.coroutines.delay(100)
             }
-            Log.d("LLM", "LLM ready! Sending prompt: $prompt")
+            Log.d("LLM", "LLM ready, Sending prompt: $prompt")
 
             try {
                 val intent = withContext(Dispatchers.Main) { getIntent(prompt) }

@@ -52,6 +52,14 @@ class HandAnalyzer(
             .setRunningMode(RunningMode.LIVE_STREAM)
             .setResultListener { result, input ->
                 if (result.landmarks().isNotEmpty()) {
+                    GlobalState.aslHands.value = result.landmarks().size
+                    if (GlobalState.aslHands.value >=2){
+                        GlobalState.aslHandsError.value = true
+                    }
+                    else{
+                        GlobalState.aslHandsError.value = false
+                    }
+
                     overlayView.post {
                         overlayView.setResults(
                             result,
@@ -185,8 +193,10 @@ class HandAnalyzer(
 
                             if (letter == "del" && aslPrompt.value.isNotEmpty()) {
                                 aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
+                                GlobalState.letterDeleted.value = true
                             } else if (letter == "space") {
                                 aslPrompt.value = (aslPrompt.value + " ").toMutableList()
+                                GlobalState.spaceAdded.value = true
                             } else if (letter != "del" && prevLetter != "del") {
 
                                 aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
