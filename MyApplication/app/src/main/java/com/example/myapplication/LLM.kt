@@ -69,9 +69,8 @@ class LocalLLM() {
         initialize(appContext!!)
         Log.d("LLM", "LLM restarted")
     }
-    private suspend fun getTopic(query:String): String = withContext(Dispatchers.IO){
-        try{
-            withTimeout(5000L){
+    private fun getTopic(query:String): String {
+
                 val conv = engine!!.createConversation(
                     ConversationConfig(
                         systemInstruction = Contents.of("""
@@ -87,41 +86,26 @@ class LocalLLM() {
                 )
                 val topic = conv.sendMessage(query).toString().trim()
                 conv.close()
-                topic
+                return topic
             }
-        }
-        catch (e: TimeoutCancellationException){
-            Log.d("LLM", "Error getting topic, Restarting: ${e.message}")
-            GlobalState.llmReady.value=false
-            try {
-                GlobalState.localLLM?.restart()
-                GlobalState.llmReady.value = true
-                Log.d("LLM", "LLM restarted successfully")
-            } catch (e: Exception) {
-                Log.e("LLM", "LLM restart failed: $e")
-                GlobalState.llmReady.value = false
-            }
-            query.trim().take(50)
-        }
-
-        }
 
 
 
-    suspend fun callWiki(query: String): String = withContext(Dispatchers.IO) {
+
+
+    suspend fun callWiki(query: String): String {
         val topic = getTopic(query)
         Log.d("LLM", "Extracted topic: $topic")
 
         val wikiResult = WikiSearch.search(topic)
-        if (wikiResult == null) return@withContext "No Wikipedia results found for $topic. Use your own knowledge."
+        if (wikiResult == null) return "No Wikipedia results found for $topic. Use your own knowledge."
 
         val title = wikiResult.optString("title")
         val summary = wikiResult.optString("summary")
         val url = wikiResult.optString("url")
 
         Log.d("LLM", "Wikipedia result: $title")
-        "Article: $title\n\n$summary"
-
+        return "Article: $title\n\n$summary"
     }
 
     suspend fun generateStream(prompt: String): Flow<String> {

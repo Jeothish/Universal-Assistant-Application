@@ -88,6 +88,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
@@ -229,13 +230,31 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     }
                 }
                 item {
-                    if (GlobalState.thinking.value && GlobalState.llmResponse.value.isNotBlank()) {
-                        chatBubble(
+//                    if (GlobalState.thinking.value && GlobalState.llmResponse.value.isNotBlank()) {
+//                        chatBubble(
+//                            text = GlobalState.llmResponse.value,
+//                            isUser = false,
+//                            time = ""
+//                        )
+//                    }
+                    if (GlobalState.thinking.value){
+                        if (GlobalState.llmResponse.value.isBlank()){
+                            CircularProgressIndicator(
+                                color = Color(0xFFFFC63A),
+                                modifier = Modifier.size(32.dp),
+                                strokeWidth = 4.dp
+                            )
+                        }
+                        else{
+                            chatBubble(
                             text = GlobalState.llmResponse.value,
                             isUser = false,
                             time = ""
-                        )
+                              )
+                        }
                     }
+
+
                 }
             }
 
@@ -481,6 +500,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 fun chatBubble(text: String, isUser: Boolean,time:String){
     val context = LocalContext.current
     val ttsManager = remember { TTSManager(context) }
+    val thinking = GlobalState.thinking.value
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if(isUser) Alignment.End else Alignment.Start
@@ -499,7 +519,6 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
                 ),
             contentAlignment = Alignment.Center
         ) {
-
             Text(
                 text = text,
                 fontSize = 20.sp,
