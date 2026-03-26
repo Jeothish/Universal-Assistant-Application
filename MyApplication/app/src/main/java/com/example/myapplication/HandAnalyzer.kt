@@ -35,8 +35,8 @@ class HandAnalyzer(
     private var timer =0
     private val lock = Any()
 
-    private val classifierL = ASLProcessing(context, "asl_mediapipe_model_L.tflite", "asl_labels_Left.txt")
-    private val classifierR = ASLProcessing(context, "asl_mediapipe_model_R.tflite", "asl_labels_Right.txt")
+    private val classifierL = ASLProcessing(context, "asl_mediapipe_model_finalL.tflite", "asl_labels_finalL.txt")
+    private val classifierR = ASLProcessing(context, "asl_mediapipe_model_finalR.tflite", "asl_labels_finalR.txt")
 
     init {
         val options = HandLandmarker.HandLandmarkerOptions.builder()
