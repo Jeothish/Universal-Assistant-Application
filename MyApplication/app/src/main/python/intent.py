@@ -49,7 +49,7 @@ WEATHER_OVERRIDE = [
     "heatwave", "heat wave", "flood", "flooding", "drought",
     "weather warning", "weather alert", "storm warning"
 ]
-FUZZY_THRESHOLD = 0.95
+FUZZY_THRESHOLD = 0.8
 
 def fuzz_match(word, l):#for misspellings
     matches = difflib.get_close_matches(word, l, n=1, cutoff=FUZZY_THRESHOLD)
@@ -57,19 +57,20 @@ def fuzz_match(word, l):#for misspellings
 
 def get_intent(text):
     text=text.lower().strip()
+    text = f" {text} "
     words = text.split()
 
 
     for i in WEATHER_OVERRIDE:
-        if i in text:
+        if f" {i} " in text:
             return "weather"
 
     for i in WEATHER_KEYWORDS:
-        if i in text:
+        if f" {i} " in text:
             return "weather"
 
     for i in NEWS_KEYWORDS:
-        if i in text:
+        if f" {i} " in text:
             return "news"
 
     for i in words:

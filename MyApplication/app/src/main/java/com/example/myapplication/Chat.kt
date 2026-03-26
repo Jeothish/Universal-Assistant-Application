@@ -88,12 +88,24 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.delay
+
+
+
+data class ChatMessage(
+    val prompt: String,
+    val response: String? = null,
+    val time: String,
+    val intent: String? = null,
+    val weatherData: WeatherItem? = null,
+    val newsData: List<NewsItem>? = null
+)
 
 
 @Composable
@@ -104,14 +116,13 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     val speechRecognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
 
     val listState = rememberLazyListState()
-    val messageCount = GlobalState.userPrompts.size
-    val responseCount = GlobalState.assistantResponses.size
+    val messageCount = GlobalState.chatMessages.size
     var textClick by remember { mutableStateOf(true) }
     var voiceClick by remember { mutableStateOf(false) }
     var aslClick by remember { mutableStateOf(false) }
     var recording by remember { mutableStateOf(false) }
 
-    LaunchedEffect(messageCount, responseCount) {
+    LaunchedEffect(messageCount) {
         if (messageCount > 0) {
             listState.animateScrollToItem(messageCount - 1)
         }
@@ -158,9 +169,10 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 
                 Button(
                     onClick = {
-                        GlobalState.userPrompts.clear()
-                        GlobalState.assistantResponses.clear()
-                        GlobalState.assistantIntents.clear()
+                        GlobalState.chatMessages.clear()
+                        GlobalState.weatherHistory.clear()
+                        GlobalState.thinking.value = false
+                        GlobalState.llmResponse.value = ""
                     },
                     modifier = Modifier.height(100.dp).width(200.dp).padding(8.dp),
                     shape = RoundedCornerShape(12.dp),
@@ -201,32 +213,34 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                 ) {
 
 
-                items(messageCount) { index ->
-                    chatBubble(
-                        GlobalState.userPrompts[index],
-                        isUser = true,
-                        GlobalState.userTimes[index]
-                    )
-                    val intent = GlobalState.assistantIntents.getOrNull(index) ?: ""
-                    val response = GlobalState.assistantResponses.getOrNull(index) ?: ""
+                itemsIndexed(GlobalState.chatMessages) {index,message ->
+                    chatBubble(message.prompt,true,message.time)
+
+                    val responseText = message.response ?: ""
+                    val intent = message.intent ?: ""
 
 
-                    when {
-                        intent == "weather" -> weatherBubble(
-                            GlobalState.weatherHistory[index],
-                            GlobalState.assistantTimes[index]
-                        )
+                    if (responseText.isNotBlank()) {
+                        when (intent) {
+                            "weather" -> {
+                                message.weatherData?.let { data ->
+                                    weatherBubble(data, message.time)
+                                }
+                            }
+                            "news" -> {
+                                message.newsData?.let { list ->
+                                    newsBubble(list, message.time)
+                                }
+                            }
+                            else -> {
 
-                        intent == "news" -> newsBubble(
-                            GlobalState.newsList.value,
-                            GlobalState.assistantTimes[index]
-                        )
-
-                        response.isNotBlank() -> chatBubble(
-                            response,
-                            isUser = false,
-                            GlobalState.assistantTimes[index]
-                        )
+                                chatBubble(
+                                    text = responseText,
+                                    isUser = false,
+                                    time = message.time
+                                )
+                            }
+                        }
                     }
                 }
                 item {
@@ -247,10 +261,10 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         }
                         else{
                             chatBubble(
-                            text = GlobalState.llmResponse.value,
-                            isUser = false,
-                            time = ""
-                              )
+                                text = GlobalState.llmResponse.value,
+                                isUser = false,
+                                time = ""
+                            )
                         }
                     }
 
@@ -417,14 +431,14 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         onClick = {
                             if (!recording) {
                                 speechRecognizer.value = startSTT(context) {spokenText ->
-                                        recording = false
-                                        speechRecognizer.value?.destroy()
-                                        speechRecognizer.value = null
-                                        if (spokenText.isNotBlank()) {
-                                            GlobalState.thinking.value = true
-                                            GlobalState.vc_prompt.value = spokenText
-                                            recorder.sendTextToBackend(spokenText)
-                                }}
+                                    recording = false
+                                    speechRecognizer.value?.destroy()
+                                    speechRecognizer.value = null
+                                    if (spokenText.isNotBlank()) {
+                                        GlobalState.thinking.value = true
+                                        GlobalState.vc_prompt.value = spokenText
+                                        recorder.sendTextToBackend(spokenText)
+                                    }}
                                 recording = true
                             }
                             else {
@@ -794,133 +808,133 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
     val context = LocalContext.current
     val ttsManager = remember { TTSManager(context) }
     Column(){
-    newsList.forEach { news ->
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentWidth(Alignment.Start)
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF2A2A38))
-                .border(4.dp, Color(0xFFFFC107), RoundedCornerShape(24.dp))
-                .padding(horizontal = 22.dp, vertical = 16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text(news.Title, fontWeight = FontWeight.Bold, fontSize = 26.sp)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "${news.Description}\n",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp
-                    )
-                    Text(news.Published, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text(news.Link, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-                Spacer(modifier = Modifier.width(36.dp))
-                Icon(
-                    Icons.Default.Newspaper,
-                    contentDescription = null,
-                    tint = Color(0xFFFFC107),
-                    modifier = Modifier.size(72.dp)
-                )
-            }
-        }
-
-        Row(modifier = Modifier.padding(6.dp)) {
-            Button(
-                onClick = {
-                    GlobalState.ttsReading.value = !GlobalState.ttsReading.value
-                    if(GlobalState.ttsReading.value){
-                        ttsManager.speak(news.Title)
-                        ttsManager.speak(news.Description)
+        newsList.forEach { news ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentWidth(Alignment.Start)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF2A2A38))
+                    .border(4.dp, Color(0xFFFFC107), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 22.dp, vertical = 16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column {
+                        Text(news.Title, fontWeight = FontWeight.Bold, fontSize = 26.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "${news.Description}\n",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp
+                        )
+                        Text(news.Published, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text(news.Link, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
-                    else ttsManager.stop()
-                },
-                modifier = Modifier.height(80.dp).padding(top=16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
-                        0xFF0C31EC
-                    ),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-            {
-                Row() {
+                    Spacer(modifier = Modifier.width(36.dp))
                     Icon(
-                        imageVector =  if(GlobalState.ttsReading.value) Icons.Default.Stop else Icons.Default.RecordVoiceOver,
+                        Icons.Default.Newspaper,
                         contentDescription = null,
-                        modifier = Modifier.size(36.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Text(
-                        text = if(GlobalState.ttsReading.value) "Stop reading" else "Read",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top=6.dp)
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(72.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Row(modifier = Modifier.padding(6.dp)) {
+                Button(
+                    onClick = {
+                        GlobalState.ttsReading.value = !GlobalState.ttsReading.value
+                        if(GlobalState.ttsReading.value){
+                            ttsManager.speak(news.Title)
+                            ttsManager.speak(news.Description)
+                        }
+                        else ttsManager.stop()
+                    },
+                    modifier = Modifier.height(80.dp).padding(top=16.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
+                            0xFF0C31EC
+                        ),
+                        contentColor = Color(0xFFFFFFFF),
+                    )
+                )
+                {
+                    Row() {
+                        Icon(
+                            imageVector =  if(GlobalState.ttsReading.value) Icons.Default.Stop else Icons.Default.RecordVoiceOver,
+                            contentDescription = null,
+                            modifier = Modifier.size(36.dp)
+                        )
 
-            Button(
-                onClick = {
-                    val tokens = mutableListOf<String>()
+                        Spacer(modifier = Modifier.width(10.dp))
 
-                    news.Title.forEach { t ->
-                        if (t.isLetter()) tokens.add(
-                            t.uppercaseChar().toString()
+                        Text(
+                            text = if(GlobalState.ttsReading.value) "Stop reading" else "Read",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top=6.dp)
                         )
                     }
+                }
 
-                    news.Description.forEach { d ->
-                        if (d.isLetter()) tokens.add(
-                            d.uppercaseChar().toString()
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Button(
+                    onClick = {
+                        val tokens = mutableListOf<String>()
+
+                        news.Title.forEach { t ->
+                            if (t.isLetter()) tokens.add(
+                                t.uppercaseChar().toString()
+                            )
+                        }
+
+                        news.Description.forEach { d ->
+                            if (d.isLetter()) tokens.add(
+                                d.uppercaseChar().toString()
+                            )
+                        }
+
+                        GlobalState.aslTokens.value = tokens
+                        GlobalState.hideResponse.value = true
+                    },
+                    modifier = Modifier.height(80.dp).padding(top=16.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFB80AE8),
+                        contentColor = Color(0xFFFFFFFF),
+                    )
+                )
+                {
+                    Row() {
+                        Icon(
+                            imageVector = Icons.Default.SignLanguage,
+                            contentDescription = null,
+                            modifier = Modifier.size(36.dp)
+                        )
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Text(
+                            text ="Show ASL",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top=6.dp)
                         )
                     }
-
-                    GlobalState.aslTokens.value = tokens
-                    GlobalState.hideResponse.value = true
-                },
-                modifier = Modifier.height(80.dp).padding(top=16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFB80AE8),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-            {
-                Row() {
-                    Icon(
-                        imageVector = Icons.Default.SignLanguage,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Text(
-                        text ="Show ASL",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top=6.dp)
-                    )
                 }
             }
+
+            Text(
+                text = time,
+                fontSize = 20.sp,
+                modifier = Modifier.padding(start=9.dp, end=9.dp, top=4.dp, bottom=22.dp),
+                color = Color(0xFF636161)
+            )
+
         }
-
-        Text(
-            text = time,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(start=9.dp, end=9.dp, top=4.dp, bottom=22.dp),
-            color = Color(0xFF636161)
-        )
-
     }
-}
 }
 
 @Composable
@@ -985,7 +999,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
                 onClick = {
                     recorder.sendTextToBackend(aslInput.joinToString(""))
                     Toast.makeText(context,"Message Sent!", Toast.LENGTH_SHORT).show()
-                          },
+                },
                 modifier = Modifier.height(80.dp).width(200.dp).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -1053,31 +1067,31 @@ fun ASLInputScreen(returnToChat: () -> Unit){
 
         Box(
             modifier = Modifier.fillMaxWidth()
-            .height(400.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF2A2A38))
-            .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
+                .height(400.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF2A2A38))
+                .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center
 
 
 
         ){
-                CameraDet()
-                if (GlobalState.aslHandsError.value){
-                    Warning(msg="Multiple hands detected on screen!\nDetection may behave unexpectedly.\nPlease only use one hand.",colour=Color.Red){
-                        GlobalState.aslHandsError.value = false
-                    }
+            CameraDet()
+            if (GlobalState.aslHandsError.value){
+                Warning(msg="Multiple hands detected on screen!\nDetection may behave unexpectedly.\nPlease only use one hand.",colour=Color.Red){
+                    GlobalState.aslHandsError.value = false
                 }
-                if (GlobalState.spaceAdded.value){
-                    Warning("Space Added",Color.Yellow){
-                        GlobalState.spaceAdded.value = false
-                    }
+            }
+            if (GlobalState.spaceAdded.value){
+                Warning("Space Added",Color.Yellow){
+                    GlobalState.spaceAdded.value = false
                 }
-                if (GlobalState.letterDeleted.value){
-                    Warning("Letter Deleted",Color.Yellow){
-                        GlobalState.letterDeleted.value = false
-                    }
+            }
+            if (GlobalState.letterDeleted.value){
+                Warning("Letter Deleted",Color.Yellow){
+                    GlobalState.letterDeleted.value = false
                 }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

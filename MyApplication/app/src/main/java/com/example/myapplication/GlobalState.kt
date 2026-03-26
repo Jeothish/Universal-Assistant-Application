@@ -62,5 +62,6 @@ object GlobalState {
     var spaceAdded = mutableStateOf(false)
     var letterDeleted = mutableStateOf(false)
 
+    val chatMessages = mutableStateListOf<ChatMessage>()
 
 }

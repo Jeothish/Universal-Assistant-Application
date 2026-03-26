@@ -79,32 +79,33 @@ class InputProcessing(private val context: Context) {
 
 
     fun getIntent(prompt: String): String {
-        val py  = Python.getInstance()
+        val py = Python.getInstance()
         val mod = py.getModule("intent")
         return mod.callAttr("get_intent", prompt).toString()
     }
 
-    fun weather(prompt: String, default: String = GlobalState.userCity.value): String
-    {
-        val py  = Python.getInstance()
+    fun weather(prompt: String, default: String = GlobalState.userCity.value): String {
+        val py = Python.getInstance()
         val mod = py.getModule("intent")
-        return mod.callAttr("getWeather", prompt,default).toString()
+        return mod.callAttr("getWeather", prompt, default).toString()
 
     }
-    fun news(prompt: String): String
-    {
-        val py  = Python.getInstance()
+
+    fun news(prompt: String): String {
+        val py = Python.getInstance()
         val mod = py.getModule("intent")
         return mod.callAttr("getNews", prompt).toString()
 
     }
 
-    fun sendTextToBackend(prompt: String){
+    fun sendTextToBackend(prompt: String) {
         val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        GlobalState.userTimes.add(messageTime)
-        GlobalState.userPrompts.add(prompt)
-        GlobalState.vc_prompt.value = prompt
+        val newMessage =
+            ChatMessage(prompt = prompt, time = messageTime, response = null, intent = null)
+        GlobalState.chatMessages.add(newMessage)
+        val messageIndex = GlobalState.chatMessages.lastIndex
         GlobalState.thinking.value = true
+
         val llm = GlobalState.localLLM
         CoroutineScope(Dispatchers.IO).launch {
             while (!GlobalState.llmReady.value) {
@@ -129,19 +130,30 @@ class InputProcessing(private val context: Context) {
                     GlobalState.localLLM!!.generateStream(prompt).collect { token ->
                         fullResponse.append(token)
                         withContext(Dispatchers.Main) {
+                            if (messageIndex <= GlobalState.chatMessages.lastIndex) {
+                                GlobalState.chatMessages[messageIndex] =
+                                    GlobalState.chatMessages[messageIndex].copy(
+                                        response = fullResponse.toString()
+                                    )
+                            }
                             GlobalState.llmResponse.value = fullResponse.toString()
                         }
                     }
-                    jsonString = Gson().toJson(mapOf(
-                        "intent" to "chat",
-                        "prompt" to prompt,
-                        "result" to fullResponse.toString()
-                    ))
+                    jsonString = Gson().toJson(
+                        mapOf(
+                            "intent" to "chat",
+                            "prompt" to prompt,
+                            "result" to fullResponse.toString()
+                        )
+                    )
                     Log.d("LLM_RESPONSE", jsonString)
                 }
 
                 val jsonObject = Gson().fromJson(jsonString, JsonObject::class.java)
-                handleResponse(jsonObject)
+
+                withContext(Dispatchers.Main) {
+                    handleResponse(jsonObject, messageIndex)
+                }
 
             } catch (e: Exception) {
                 Log.e("TEXT_ERROR", e.toString())
@@ -151,20 +163,14 @@ class InputProcessing(private val context: Context) {
 
     }
 
-    fun handleResponse(response: JsonObject?){
-        val jsonObject = Gson().fromJson(response, JsonObject::class.java)
+    fun handleResponse(jsonObject: JsonObject, messageIndex: Int) {
+        //val jsonObject = Gson().fromJson(response, JsonObject::class.java)
 
-        val intent = jsonObject.get("intent")?.asString ?: ""
+        val intent = jsonObject.get("intent")?.asString ?: "chat"
         //val prompt = jsonObject.get("prompt")?.asString ?: ""
         var result = ""
 
-        var city=""
         if (intent == "weather") {
-
-
-
-            city = jsonObject.get("city")?.asString ?: ""
-
 
             val resultObj = jsonObject.getAsJsonObject("result")
             val city = jsonObject.get("city")?.asString ?: "Unknown"
@@ -172,9 +178,14 @@ class InputProcessing(private val context: Context) {
                 resultObj,
                 WeatherItem::class.java
             ).copy(city = city)
-            GlobalState.weatherHistory.add(weather)
-        }
-        else if (intent == "news"){
+
+            GlobalState.chatMessages[messageIndex] = GlobalState.chatMessages[messageIndex].copy(
+                intent = "weather",
+                weatherData = weather,
+                response = "Weather loaded"
+            )
+
+        } else if (intent == "news") {
             val newsArray = jsonObject.getAsJsonArray("result")
             val newsList = Gson().fromJson(
                 newsArray,
@@ -182,30 +193,36 @@ class InputProcessing(private val context: Context) {
             ).toList()
 
             GlobalState.newsList.value = newsList
+            if (messageIndex <= GlobalState.chatMessages.lastIndex) {
+                GlobalState.chatMessages[messageIndex] =
+                    GlobalState.chatMessages[messageIndex].copy(
+                        intent = "news",
+                        newsData = newsList,
+                        response = "News loaded"
+                    )
+            }
 
 
-        }
-        else{
+        } else {
             result = jsonObject.get("result")?.asString ?: ""
         }
 
 
         android.os.Handler(android.os.Looper.getMainLooper()).post {//update main thread
-            val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-            GlobalState.vc_result.value = result
-            GlobalState.vc_intent.value = intent
-            //GlobalState.vc_prompt.value = prompt
 
-            GlobalState.assistantResponses.add(result)
-            GlobalState.assistantIntents.add(intent)
-            GlobalState.assistantTimes.add(messageTime)
-            if(intent == "weather") {
-                GlobalState.city.value = city
+            if (messageIndex <= GlobalState.chatMessages.lastIndex) {
+
+                if (intent == "chat") {
+                    if (messageIndex <= GlobalState.chatMessages.lastIndex) {
+                        GlobalState.chatMessages[messageIndex] =
+                            GlobalState.chatMessages[messageIndex].copy(
+                                response = result,
+                                intent = intent,
+                            )
+                    }
+                }
+                GlobalState.thinking.value = false
             }
-            GlobalState.thinking.value = false
-
-
         }
     }
-
 }
