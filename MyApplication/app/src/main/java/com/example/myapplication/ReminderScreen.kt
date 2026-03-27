@@ -655,7 +655,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                         recording=false
                     }
                 },
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor =  Color(0xFFFDDC05),
@@ -672,7 +672,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                     )
                     Text(
                         text = "Speak Title",
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
@@ -680,7 +680,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
 
             Button(
                 onClick = {},
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE7D112),
@@ -697,7 +697,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                     )
                     Text(
                         text = "ASL Title",
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
@@ -752,7 +752,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                         recording=false
                     }
                 },
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE7D112),
@@ -767,17 +767,18 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                         contentDescription = null,
                         modifier = Modifier.size(36.dp)
                     )
+
                     Text(
                         text ="Speak Description",
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
+                        fontSize = 14.sp,
+
                     )
                 }
             }
 
             Button(
                 onClick = {},
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE7D112),
@@ -794,8 +795,8 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                     )
                     Text(
                         text = "ASL Description",
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
+                        fontSize = 14.sp,
+                        //modifier = Modifier.padding(top = 8.dp)
                     )
                 }
             }
@@ -831,7 +832,8 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                     Text(
                         text = "Select Date (YYYY-MM-DD)",
                         modifier = Modifier.padding(top = 8.dp),
-                        fontSize = 20.sp
+                        fontSize = 20.sp,
+                        color=Color(0xFF686560)
 
                     )
                 },
@@ -873,7 +875,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                         recording=false
                     }
                 },
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE7D112),
@@ -896,31 +898,39 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                 }
             }
 
-            Button(
-                onClick = {},
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE7D112),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-
-            {
-                Row() {
-                    Icon(
-                        imageVector = Icons.Default.FrontHand,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Text(
-                        text = "ASL Date",
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
+//            Button(
+//                onClick = {},
+//                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
+//                shape = RoundedCornerShape(18.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFFE7D112),
+//                    contentColor = Color(0xFFFFFFFF),
+//                )
+//            )
+//
+//            {
+//                Row() {
+//                    Icon(
+//                        imageVector = Icons.Default.FrontHand,
+//                        contentDescription = null,
+//                        modifier = Modifier.size(36.dp)
+//                    )
+//                    Text(
+//                        text = "ASL Date",
+//                        fontSize = 16.sp,
+//                        modifier = Modifier.padding(top = 8.dp)
+//                    )
+//                }
+//            }
         }
+
+        Text(text= "Time *",
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color=Color(0xFFFFC107),
+            modifier = Modifier.padding(8.dp)
+        )
+
         val timePicker = TimePickerDialog(
 
             context,
@@ -940,7 +950,8 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                     Text(
                         text = "Select Time (HH:MM:SS)",
                         modifier = Modifier.padding(top = 8.dp),
-                        fontSize = 20.sp
+                        fontSize = 20.sp,
+                        color=Color(0xFF686560)
 
                     )
                 },
@@ -981,7 +992,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                         recording=false
                     }
                 },
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE7D112),
@@ -1004,30 +1015,30 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                 }
             }
 
-            Button(
-                onClick = {},
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE7D112),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-
-            {
-                Row() {
-                    Icon(
-                        imageVector = Icons.Default.FrontHand,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Text(
-                        text = "ASL Time",
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
+//            Button(
+//                onClick = {},
+//                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
+//                shape = RoundedCornerShape(18.dp),
+//                colors = ButtonDefaults.buttonColors(
+//                    containerColor = Color(0xFFE7D112),
+//                    contentColor = Color(0xFFFFFFFF),
+//                )
+//            )
+//
+//            {
+//                Row() {
+//                    Icon(
+//                        imageVector = Icons.Default.FrontHand,
+//                        contentDescription = null,
+//                        modifier = Modifier.size(36.dp)
+//                    )
+//                    Text(
+//                        text = "ASL Time",
+//                        fontSize = 16.sp,
+//                        modifier = Modifier.padding(top = 8.dp)
+//                    )
+//                }
+//            }
 
 
 
@@ -1083,7 +1094,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                         recording=false
                     }
                 },
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE7D112),
@@ -1100,15 +1111,15 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                     )
                     Text(
                         text = "Speak Repeating",
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
+                        fontSize = 14.sp,
+
                     )
                 }
             }
 
             Button(
                 onClick = {},
-                modifier = Modifier.height(100.dp).width(200.dp).padding(16.dp),
+                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFE7D112),
@@ -1125,8 +1136,8 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                     )
                     Text(
                         text = "ASL Repeating",
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(top = 8.dp)
+                        fontSize = 14.sp,
+
                     )
                 }
             }

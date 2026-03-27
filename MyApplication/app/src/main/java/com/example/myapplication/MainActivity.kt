@@ -69,7 +69,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.KeyboardReturn
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.SignLanguage
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -117,6 +119,8 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
+                GlobalState.ttsSpeechRate.value = AppPreferences.loadSpeechSpeed(applicationContext)
+                GlobalState.ttsPitch.value = AppPreferences.loadSpeechPitch(applicationContext)
                 val llm = LocalLLM()
                 llm.initialize(context = applicationContext)
                 GlobalState.localLLM = llm
@@ -221,7 +225,9 @@ fun MyApplicationApp() {
 fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var timer by remember { mutableStateOf(GlobalState.aslTimer.value.toString()) }
+    var speechSpeed by remember { mutableStateOf(GlobalState.ttsSpeechRate.value) }
+    var speechPitch by remember { mutableStateOf(GlobalState.ttsPitch.value) }
+    var timer by remember { mutableStateOf(GlobalState.aslTimer.value.toFloat()) }
     var saved by remember { mutableStateOf(false) }
     val ttsManager = remember { TTSManager(context) }
     var expanded by remember { mutableStateOf(false) }
@@ -229,23 +235,40 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     val selectedLanguage = GlobalState.ttsLanguage.value
     val scrollState = rememberScrollState()
 
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(scrollState)
+        .padding(16.dp)){
+
+    Button(onClick = returnToChat, modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
+        containerColor = Color(0xFFDE0F0F),
+        contentColor = Color(0xFFFFFFFF),
+    ))
+
+    {
+        Row() {
+            Icon(imageVector = Icons.Default.KeyboardReturn , contentDescription = null,modifier = Modifier.size(36.dp))
+            Text(text="Return to Home", fontSize = 25.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxWidth()
 
-            .height(600.dp)
+            .wrapContentHeight()
             .clip(RoundedCornerShape(24.dp))
             .background(Color(0xFF2A2A38))
             .border(2.dp, Color(0xFF2196F3), RoundedCornerShape(24.dp))
             .padding(26.dp),
 
-
-
     ) {
 
-
-        Column(){
-
-            Row() {
+        Column()
+        {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
                         .width(60.dp)
@@ -263,7 +286,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                 }
                 Text(
                     text = "Voice & Speech",
-                    fontSize = 35.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(19.dp),
                     color = Color(0xFFFFC63A)
@@ -285,7 +308,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = "${"%.2f".format(GlobalState.ttsSpeechRate.value)}x",
+                    text = "${"%.2f".format(speechSpeed)}x",
                     fontSize = 25.sp,
                     fontWeight = FontWeight.Bold,
                     //modifier = Modifier.padding(19.dp),
@@ -296,14 +319,15 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
             }
 
             Slider(
-                value = GlobalState.ttsSpeechRate.value,
-                onValueChange = { GlobalState.ttsSpeechRate.value = it },
+                value = speechSpeed,
+                onValueChange = {speechSpeed = it;GlobalState.ttsSpeechRate.value = it },
+                onValueChangeFinished = {scope.launch {AppPreferences.saveSpeechSpeed(context, speechSpeed)}},
                 valueRange = 0.5f..2.0f,
                 steps = 5,
                 colors = SliderDefaults.colors(
                     thumbColor = Color(0xFF2196F3),
                     activeTrackColor = Color(0xFFFFC63A),
-                    inactiveTrackColor =  Color(0xFF6F6F6D)
+                    inactiveTrackColor = Color(0xFF6F6F6D)
                 )
             )
 
@@ -324,7 +348,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                     text = "Normal",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    color =  Color(0xFF6F6F6D)
+                    color = Color(0xFF6F6F6D)
                 )
 
                 Text(
@@ -361,14 +385,15 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
             }
 
             Slider(
-                value = GlobalState.ttsPitch.value,
-                onValueChange = { GlobalState.ttsPitch.value = it },
+                value = speechPitch,
+                onValueChange = {speechPitch = it;GlobalState.ttsPitch.value = it },
+                onValueChangeFinished = {scope.launch {AppPreferences.saveSpeechPitch(context, GlobalState.ttsPitch.value)}},
                 valueRange = 0.7f..1.5f,
                 steps = 7,
                 colors = SliderDefaults.colors(
                     thumbColor = Color(0xFF2196F3),
                     activeTrackColor = Color(0xFFFFC63A),
-                    inactiveTrackColor =  Color(0xFF6F6F6D)
+                    inactiveTrackColor = Color(0xFF6F6F6D)
                 )
             )
 
@@ -389,7 +414,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                     text = "Normal",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    color =  Color(0xFF6F6F6D)
+                    color = Color(0xFF6F6F6D)
                 )
 
                 Text(
@@ -400,10 +425,22 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                 )
             }
 
+            Spacer(modifier = Modifier.height(15.dp))
+
+            Text(
+                text = "Speech Accent",
+                fontSize = 25.sp,
+                fontWeight = FontWeight.Bold,
+                //modifier = Modifier.padding(19.dp),
+                color = Color(0xFFFFFFFF)
+            )
+
+            Spacer(modifier = Modifier.height(15.dp))
+
             Box {
                 Button(
                     onClick = { expanded = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
                 ) {
                     Text(selectedLanguage.displayLanguage)
                 }
@@ -412,13 +449,13 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .widthIn(200.dp)
                         .heightIn(max = 200.dp)
-                        .background(Color(0xFF2A2A38), RoundedCornerShape(12.dp))
+                        .background(Color(0xFF38383B), RoundedCornerShape(12.dp))
                 ) {
                     languages.forEach { locale ->
                         DropdownMenuItem(
-                            text = { Text(locale.displayLanguage)},
+                            text = { Text(locale.displayLanguage) },
                             onClick = {
                                 GlobalState.ttsLanguage.value = locale
                                 ttsManager.stop() // optional but clean
@@ -432,10 +469,130 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 
 
 
+        }
+    }
 
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Box(
+            modifier = Modifier.fillMaxWidth()
+
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF2A2A38))
+                .border(2.dp, Color(0xFF673AB7), RoundedCornerShape(24.dp))
+                .padding(26.dp),
+
+            ) {
+
+            Column() {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF673AB7))
+                            .padding(16.dp)
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(106.dp),
+                            imageVector = Icons.Default.SignLanguage,
+                            contentDescription = null,
+
+                            )
+                    }
+                    Text(
+                        text = "ASL Settings",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(19.dp),
+                        color = Color(0xFFFFC63A)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(15.dp))
+
+                Row() {
+
+                    Text(
+                        text = "ASL Letter Delay",
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.Bold,
+                        //modifier = Modifier.padding(19.dp),
+                        color = Color(0xFFFFFFFF)
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Text(
+                        text = "${timer.toInt()}s",
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.Bold,
+                        //modifier = Modifier.padding(19.dp),
+                        color = Color(0xFFFFC63A),
+                        textAlign = TextAlign.End
+
+                    )
+                }
+
+
+                Slider(
+                    value = timer,
+                    onValueChange = {timer = it;GlobalState.aslTimer.value = timer.toInt() },
+                    onValueChangeFinished = {
+                        scope.launch {
+                            AppPreferences.saveTimer(context, timer.toInt())
+                        }
+                    },
+                    valueRange = 1f..10f,
+                    steps = 8,
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color(0xFF673AB7),
+                        activeTrackColor = Color(0xFFFFC107),
+                        inactiveTrackColor = Color(0xFF6F6F6D)
+                    ),
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                ) {
+
+                    Text(
+                        text = "Quick",
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Start,
+                        color = Color(0xFF6F6F6D)
+                    )
+
+                    Text(
+                        text = "Normal",
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF6F6F6D)
+                    )
+
+                    Text(
+                        text = "Slow",
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.End,
+                        color = Color(0xFF6F6F6D)
+                    )
+                }
+
+                //Spacer(modifier = Modifier.height(15.dp))
+
+                }
+            }
         }
 
-        }
+    }
 
 
 
@@ -472,7 +629,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 //            Text(if (saved) "Saved" else "Save")
 //        }
 //    }
-}
+
 
 @Composable
 fun ProfileScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {

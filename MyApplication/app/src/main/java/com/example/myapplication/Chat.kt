@@ -89,6 +89,7 @@ import androidx.compose.ui.layout.ContentScale
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
@@ -143,7 +144,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
             ) {
                 Button(
                     onClick = returnToChat,
-                    modifier = Modifier.height(100.dp).width(200.dp).padding(8.dp),
+                    modifier = Modifier.weight(1f).height(100.dp).padding(8.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFDE0F0F),
@@ -174,7 +175,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         GlobalState.thinking.value = false
                         GlobalState.llmResponse.value = ""
                     },
-                    modifier = Modifier.height(100.dp).width(200.dp).padding(8.dp),
+                    modifier = Modifier.weight(1f).height(100.dp).padding(8.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFF5722),
@@ -300,11 +301,11 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         Icon(
                             imageVector = Icons.Default.TextFields,
                             contentDescription = null,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                         Text(
                             text = "Text",
-                            fontSize = 16.sp,
+                            fontSize = 14.sp,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
@@ -329,11 +330,11 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         Icon(
                             imageVector = Icons.Default.KeyboardVoice,
                             contentDescription = null,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                         Text(
                             text = "Voice",
-                            fontSize = 16.sp,
+                            fontSize = 14.sp,
                             modifier = Modifier.padding(top = 8.dp),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -360,11 +361,11 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         Icon(
                             imageVector = Icons.Default.FrontHand,
                             contentDescription = null,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                         Text(
                             text = "ASL",
-                            fontSize = 16.sp,
+                            fontSize = 14.sp,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
@@ -549,7 +550,7 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
                         if(GlobalState.ttsReading.value) ttsManager.speak(text)
                         else ttsManager.stop()
                     },
-                    modifier = Modifier.height(80.dp),
+                    modifier = Modifier.weight(1f).height(80.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
@@ -592,7 +593,7 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
                         GlobalState.aslTokens.value = tokens
                         GlobalState.hideResponse.value = true
                     },
-                    modifier = Modifier.height(80.dp),
+                    modifier = Modifier.weight(1f).height(80.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFB80AE8),
@@ -862,7 +863,7 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
                 {
                     Row() {
                         Icon(
-                            imageVector =  if(GlobalState.ttsReading.value) Icons.Default.Stop else Icons.Default.RecordVoiceOver,
+                            imageVector =  if(GlobalState.ttsReading.value) Icons.Default.StopCircle else Icons.Default.RecordVoiceOver,
                             contentDescription = null,
                             modifier = Modifier.size(36.dp)
                         )
@@ -1000,7 +1001,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
                     recorder.sendTextToBackend(aslInput.joinToString(""))
                     Toast.makeText(context,"Message Sent!", Toast.LENGTH_SHORT).show()
                 },
-                modifier = Modifier.height(80.dp).width(200.dp).padding(8.dp),
+                modifier = Modifier.weight(1f).height(80.dp).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFFF9800),
