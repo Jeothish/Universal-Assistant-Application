@@ -112,6 +112,7 @@ data class ChatMessage(
 @Composable
 fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     val context = LocalContext.current
+    val ttsManager = remember { TTSManager(context) }
     val recorder = remember { InputProcessing(context) }
     var inputText by remember { mutableStateOf("") }
     val speechRecognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
@@ -122,10 +123,18 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     var voiceClick by remember { mutableStateOf(false) }
     var aslClick by remember { mutableStateOf(false) }
     var recording by remember { mutableStateOf(false) }
+    val messages = GlobalState.chatMessages
+    val lastMessage = messages.lastOrNull()
 
     LaunchedEffect(messageCount) {
         if (messageCount > 0) {
             listState.animateScrollToItem(messageCount - 1)
+        }
+    }
+
+    LaunchedEffect(GlobalState.thinking.value) {
+        if (!GlobalState.thinking.value && lastMessage != null && !lastMessage.response.isNullOrBlank()) {
+            ttsManager.speak(lastMessage.response)
         }
     }
 
@@ -516,6 +525,7 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
     val context = LocalContext.current
     val ttsManager = remember { TTSManager(context) }
     val thinking = GlobalState.thinking.value
+    val isReading = GlobalState.ttsReading.value
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if(isUser) Alignment.End else Alignment.Start
@@ -546,9 +556,11 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
             Row(modifier = Modifier.padding(6.dp)) {
                 Button(
                     onClick = {
-                        GlobalState.ttsReading.value = !GlobalState.ttsReading.value
-                        if(GlobalState.ttsReading.value) ttsManager.speak(text)
-                        else ttsManager.stop()
+                        if(isReading){
+                            ttsManager.stop()
+                        }
+                        else
+                            ttsManager.speak(text)
                     },
                     modifier = Modifier.weight(1f).height(80.dp),
                     shape = RoundedCornerShape(18.dp),
@@ -718,11 +730,13 @@ fun weatherBubble(weather: WeatherItem,time:String){
             Button(
                 onClick = {
                     GlobalState.ttsReading.value = !GlobalState.ttsReading.value
-                    if(GlobalState.ttsReading.value)
-                    {ttsManager.speak(weather.forecast)}
+                    if(GlobalState.ttsReading.value){
+                        val speechText = "The weather in ${weather.city} is ${weather.temperature} degrees and ${weather.forecast}"
+                        ttsManager.speak(speechText)
+                    }
                     else ttsManager.stop()
                 },
-                modifier = Modifier.height(80.dp),
+                modifier = Modifier.weight(1f).height(80.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
@@ -765,7 +779,7 @@ fun weatherBubble(weather: WeatherItem,time:String){
                     GlobalState.aslTokens.value = tokens
                     GlobalState.hideResponse.value = true
                 },
-                modifier = Modifier.height(80.dp),
+                modifier = Modifier.weight(1f).height(80.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFB80AE8),
@@ -851,7 +865,7 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
                         }
                         else ttsManager.stop()
                     },
-                    modifier = Modifier.height(80.dp).padding(top=16.dp),
+                    modifier = Modifier.weight(1f).height(80.dp).padding(top=16.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
@@ -900,7 +914,7 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
                         GlobalState.aslTokens.value = tokens
                         GlobalState.hideResponse.value = true
                     },
-                    modifier = Modifier.height(80.dp).padding(top=16.dp),
+                    modifier = Modifier.weight(1f).height(80.dp).padding(top=16.dp),
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFB80AE8),

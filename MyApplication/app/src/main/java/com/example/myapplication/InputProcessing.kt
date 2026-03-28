@@ -120,7 +120,11 @@ class InputProcessing(private val context: Context) {
 
                 val jsonString: String
                 if (intent == "weather") {
+
+                    Log.d("WEATHER_TEST", "START: Fetching weather for $prompt")
                     jsonString = withContext(Dispatchers.Main) { weather(prompt) }
+                    Log.d("WEATHER_TEST", "FINISH: Weather received")
+
                     Log.d("LLM_RESPONSE", jsonString)
                 } else if (intent == "news") {
                     jsonString = withContext(Dispatchers.Main) { news(prompt) }
@@ -136,9 +140,14 @@ class InputProcessing(private val context: Context) {
                                         response = fullResponse.toString()
                                     )
                             }
-                            GlobalState.llmResponse.value = fullResponse.toString()
+                            //GlobalState.llmResponse.value = fullResponse.toString()
                         }
                     }
+
+                    withContext(Dispatchers.Main) {
+                        GlobalState.thinking.value = false
+                    }
+
                     jsonString = Gson().toJson(
                         mapOf(
                             "intent" to "chat",
@@ -179,10 +188,11 @@ class InputProcessing(private val context: Context) {
                 WeatherItem::class.java
             ).copy(city = city)
 
+            val speechText = "The weather in ${weather.city} is ${weather.temperature} degrees and ${weather.forecast}"
             GlobalState.chatMessages[messageIndex] = GlobalState.chatMessages[messageIndex].copy(
                 intent = "weather",
                 weatherData = weather,
-                response = "Weather loaded"
+                response = speechText
             )
 
         } else if (intent == "news") {
@@ -191,14 +201,22 @@ class InputProcessing(private val context: Context) {
                 newsArray,
                 Array<NewsItem>::class.java
             ).toList()
-
             GlobalState.newsList.value = newsList
+            val newsCount = newsList.size
+            val firstHeadline = newsList.firstOrNull()?.Title ?: ""
+            val newsSpeech = if(newsCount > 0){
+                "I found $newsCount news stories for you. The top headline is: $firstHeadline"
+            } else {
+                "I couldn't find any news stories right now."
+            }
+
             if (messageIndex <= GlobalState.chatMessages.lastIndex) {
                 GlobalState.chatMessages[messageIndex] =
                     GlobalState.chatMessages[messageIndex].copy(
                         intent = "news",
                         newsData = newsList,
-                        response = "News loaded"
+                        response = newsSpeech
+
                     )
             }
 

@@ -1,8 +1,10 @@
 package com.example.myapplication
 
 import android.content.Context
+import android.os.Bundle
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.compose.runtime.mutableStateListOf
 import java.util.Locale
 
@@ -21,6 +23,22 @@ class TTSManager(context: Context) {
                 tts?.setPitch(GlobalState.ttsPitch.value)
                 tts?.setSpeechRate(GlobalState.ttsSpeechRate.value)
 
+
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+
+                    override fun onStart(utteranceId: String?) {
+                        GlobalState.ttsReading.value = true
+                    }
+
+                    override  fun onDone(utternaceId: String?){
+                        GlobalState.ttsReading.value = false
+                    }
+
+                    override fun onError(utteranceId: String?) {
+                        GlobalState.ttsReading.value = false
+                    }
+                })
+
                 supportedLanguages.clear()
                 supportedLanguages.addAll(Locale.getAvailableLocales().filter { tts?.isLanguageAvailable(it) == TextToSpeech.LANG_AVAILABLE}
                     .distinctBy { it.language }
@@ -31,11 +49,18 @@ class TTSManager(context: Context) {
 
         }
     }
-    fun speak(text: String){
+    fun speak(text: String?){
+
+        if (text.isNullOrBlank()) return
+
         tts?.language = GlobalState.ttsLanguage.value
         tts?.setPitch(GlobalState.ttsPitch.value)
         tts?.setSpeechRate(GlobalState.ttsSpeechRate.value)
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+
+        val params = Bundle()
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "CHAT_ID")
+
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "CHAT_ID")
     }
 
     fun stop(){

@@ -21,3 +21,16 @@ interface ReminderDao {
     @Delete
     suspend fun deleteReminder(reminder: Reminder)
 }
+
+@Dao
+interface WikiDao {
+    @Query("SELECT * FROM WikiCache WHERE topic = :topic LIMIT 1")
+    suspend fun getWikiByTopic(topic: String): WikiCache?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWiki(wiki: WikiCache)
+
+    @Query("DELETE FROM WikiCache WHERE (timestamp + :expiry) < :now")
+    suspend fun deleteOldCache(expiry: Long, now: Long = System.currentTimeMillis())
+}
+

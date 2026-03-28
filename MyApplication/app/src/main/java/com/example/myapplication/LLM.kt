@@ -23,7 +23,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.withTimeout
 
-class LocalLLM() {
+class LocalLLM(private val wikiRepo: WikiRepository) {
 
 
     private var conversation: Conversation? = null
@@ -47,7 +47,7 @@ class LocalLLM() {
 
         val engineConfig = EngineConfig(
             modelPath = modelFile.absolutePath,
-            backend = Backend.GPU,
+            backend = Backend.CPU,
             cacheDir = context.cacheDir.path,
             maxNumTokens = 1024
         )
@@ -93,19 +93,13 @@ class LocalLLM() {
 
 
 
-    suspend fun callWiki(query: String): String {
+    suspend fun callWiki(query: String, wikiRepo: WikiRepository): String {
         val topic = getTopic(query)
         Log.d("LLM", "Extracted topic: $topic")
 
-        val wikiResult = WikiSearch.search(topic)
-        if (wikiResult == null) return "No Wikipedia results found for $topic. Use your own knowledge."
+        val wikiText = wikiRepo.getWikiData(topic)
 
-        val title = wikiResult.optString("title")
-        val summary = wikiResult.optString("summary")
-        val url = wikiResult.optString("url")
-
-        Log.d("LLM", "Wikipedia result: $title")
-        return "Article: $title\n\n$summary"
+        return wikiText
     }
 
     suspend fun generateStream(prompt: String): Flow<String> {
@@ -114,7 +108,7 @@ class LocalLLM() {
             conversation?.close()
             msg = 0
         }
-        val context = callWiki(prompt)
+        val context = callWiki(prompt,wikiRepo)
         val conv = engine!!.createConversation(
             ConversationConfig(
                 systemInstruction = Contents.of("""

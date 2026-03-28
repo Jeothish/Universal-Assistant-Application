@@ -121,7 +121,9 @@ class MainActivity : ComponentActivity() {
                 GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
                 GlobalState.ttsSpeechRate.value = AppPreferences.loadSpeechSpeed(applicationContext)
                 GlobalState.ttsPitch.value = AppPreferences.loadSpeechPitch(applicationContext)
-                val llm = LocalLLM()
+                val db = DatabaseProvider.getDatabase(applicationContext)
+                val wikiRepo = WikiRepository(db.wikiDao())
+                val llm = LocalLLM(wikiRepo)
                 llm.initialize(context = applicationContext)
                 GlobalState.localLLM = llm
                 GlobalState.llmReady.value = true

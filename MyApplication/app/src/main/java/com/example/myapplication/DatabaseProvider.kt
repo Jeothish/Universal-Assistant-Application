@@ -17,9 +17,11 @@ import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
 
-@Database(entities = [Reminder::class], version = 1, exportSchema = false)
+@Database(entities = [Reminder::class, WikiCache::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
+    abstract fun wikiDao(): WikiDao
+    //abstract fun weatherDao(): WeatherDao
 }
 
 object DatabaseProvider {
