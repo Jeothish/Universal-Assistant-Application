@@ -88,6 +88,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.CircularProgressIndicator
@@ -97,16 +98,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.delay
 
-
-
-data class ChatMessage(
-    val prompt: String,
-    val response: String? = null,
-    val time: String,
-    val intent: String? = null,
-    val weatherData: WeatherItem? = null,
-    val newsData: List<NewsItem>? = null
-)
 
 
 @Composable
@@ -302,7 +293,8 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (textClick) Color(0xFFFFC107) else Color(0xFF403E37),
                         contentColor = Color(0xFFFFFFFF),
-                    )
+                    ),
+                    contentPadding = PaddingValues.Zero
                 )
 
                 {
@@ -315,7 +307,8 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                         Text(
                             text = "Text",
                             fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.padding(top = 8.dp),
+                            maxLines = 1
                         )
                     }
                 }
@@ -331,7 +324,8 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (voiceClick) Color(0xFFFFC107) else Color(0xFF3E3D36),
                         contentColor = Color(0xFFFFFFFF),
-                    )
+                    ),
+                    contentPadding = PaddingValues.Zero
                 )
 
                 {
@@ -362,7 +356,8 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (aslClick) Color(0xFFFFC107) else Color(0xFF44433C),
                         contentColor = Color(0xFFFFFFFF),
-                    )
+                    ),
+                    contentPadding = PaddingValues.Zero
                 )
 
                 {
@@ -518,6 +513,16 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     }
 
 }
+
+
+data class ChatMessage(
+    val prompt: String,
+    val response: String? = null,
+    val time: String,
+    val intent: String? = null,
+    val weatherData: WeatherItem? = null,
+    val newsData: List<NewsItem>? = null
+)
 
 
 @Composable

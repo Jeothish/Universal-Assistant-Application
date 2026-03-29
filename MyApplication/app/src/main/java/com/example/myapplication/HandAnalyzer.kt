@@ -32,7 +32,7 @@ class HandAnalyzer(
     private var prevCall=0
     private var delay = 10
 
-    private var timer =0
+    private var timer: Long =0
     private val lock = Any()
 
     private val classifierL = ASLProcessing(context, "asl_mediapipe_model_finalL.tflite", "asl_labels_finalL.txt")
@@ -95,7 +95,7 @@ class HandAnalyzer(
                 } else {
                     overlayView.post { overlayView.clear() }
                     GlobalState.letter.value = ""
-                    timer = 0
+                    timer = System.currentTimeMillis()
                     prevCall = 0
 
                 }
@@ -184,12 +184,12 @@ class HandAnalyzer(
 
                     if (prevLetter == "") { // asl senetnce construction using delay
                         prevLetter = letter
-                        timer = 0
+                        timer = System.currentTimeMillis()
                     }
                     if (letter == prevLetter) {
 
 
-                        if (timer >= GlobalState.aslTimer.value) {
+                        if ((System.currentTimeMillis() - timer)/1000 >= GlobalState.aslTimer.value) {
 
                             if (letter == "del" && aslPrompt.value.isNotEmpty()) {
                                 aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
@@ -202,14 +202,12 @@ class HandAnalyzer(
                                 aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
                             }
 
-                            timer = 0
-                        } else {
-                            timer++
-
+                            timer = System.currentTimeMillis()
                         }
+//
                     } else {
                         prevCall = 0
-                        timer = 0
+                        timer = System.currentTimeMillis()
                     }
                     prevLetter = letter
                 }

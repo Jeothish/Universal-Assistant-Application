@@ -47,7 +47,7 @@ class LocalLLM(private val wikiRepo: WikiRepository) {
 
         val engineConfig = EngineConfig(
             modelPath = modelFile.absolutePath,
-            backend = Backend.CPU,
+            backend = Backend.GPU,
             cacheDir = context.cacheDir.path,
             maxNumTokens = 1024
         )
