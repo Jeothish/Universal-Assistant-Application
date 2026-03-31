@@ -40,6 +40,9 @@ object GlobalState {
 
     var serverIP = mutableStateOf("192.168.1.135")
 
+    var stopRequested = mutableStateOf(false)
+
+
     var ttsReading = mutableStateOf(false)
 
     var localLLM: LocalLLM? = null
@@ -54,7 +57,7 @@ object GlobalState {
 
     val ttsSpeechRate = mutableStateOf(1.0f)
 
-    val ttsLanguage = mutableStateOf(Locale.UK)
+    //val ttsLanguage = mutableStateOf(Locale.UK)
     //val ttsPitch = mutableStateOf("")
     var aslHands = mutableStateOf(0)
     var aslHandsError = mutableStateOf(false)
@@ -63,5 +66,8 @@ object GlobalState {
     var letterDeleted = mutableStateOf(false)
 
     val chatMessages = mutableStateListOf<ChatMessage>()
+
+    val aslResult = mutableStateOf("")
+    val aslTargetField = mutableStateOf("")
 
 }

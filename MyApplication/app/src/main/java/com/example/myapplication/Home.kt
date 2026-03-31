@@ -79,6 +79,7 @@ fun HomePage(modifier: Modifier = Modifier){
         composable(HomeRoutes.ADD_REMINDERS){
             AddReminderScreen(
                 repository,
+                navController = navController,
                 returnToChat = {
                 navController.popBackStack()
                 reminderToEdit = null },
@@ -102,7 +103,7 @@ fun HomePage(modifier: Modifier = Modifier){
         }
 
         composable(HomeRoutes.ASL_INPUT_SCREEN){
-            ASLInputScreen(returnToChat = {navController.popBackStack()})
+            ASLInputScreen(returnToChat = {navController.popBackStack()},navController = navController)
         }
 
         composable(HomeRoutes.ASL_OUTPUT_SCREEN){

@@ -123,6 +123,7 @@ class MainActivity : ComponentActivity() {
                 GlobalState.ttsPitch.value = AppPreferences.loadSpeechPitch(applicationContext)
                 val db = DatabaseProvider.getDatabase(applicationContext)
                 val wikiRepo = WikiRepository(db.wikiDao())
+                val weatherRepo = WeatherRepository(db.weatherDao())
                 val llm = LocalLLM(wikiRepo)
                 llm.initialize(context = applicationContext)
                 GlobalState.localLLM = llm
@@ -233,8 +234,8 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     var saved by remember { mutableStateOf(false) }
     val ttsManager = remember { TTSManager(context) }
     var expanded by remember { mutableStateOf(false) }
-    val languages = ttsManager.supportedLanguages
-    val selectedLanguage = GlobalState.ttsLanguage.value
+//    val languages = ttsManager.supportedLanguages
+//    val selectedLanguage = GlobalState.ttsLanguage.value
     val scrollState = rememberScrollState()
 
     Column(modifier = Modifier
@@ -437,36 +438,36 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                 color = Color(0xFFFFFFFF)
             )
 
-            Spacer(modifier = Modifier.height(15.dp))
-
-            Box {
-                Button(
-                    onClick = { expanded = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
-                ) {
-                    Text(selectedLanguage.displayLanguage)
-                }
-
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    modifier = Modifier
-                        .widthIn(200.dp)
-                        .heightIn(max = 200.dp)
-                        .background(Color(0xFF38383B), RoundedCornerShape(12.dp))
-                ) {
-                    languages.forEach { locale ->
-                        DropdownMenuItem(
-                            text = { Text(locale.displayLanguage) },
-                            onClick = {
-                                GlobalState.ttsLanguage.value = locale
-                                ttsManager.stop() // optional but clean
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
+//            Spacer(modifier = Modifier.height(15.dp))
+//
+//            Box {
+//                Button(
+//                    onClick = { expanded = true },
+//                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+//                ) {
+//                    Text(selectedLanguage.displayLanguage)
+//                }
+//
+//                DropdownMenu(
+//                    expanded = expanded,
+//                    onDismissRequest = { expanded = false },
+//                    modifier = Modifier
+//                        .widthIn(200.dp)
+//                        .heightIn(max = 200.dp)
+//                        .background(Color(0xFF38383B), RoundedCornerShape(12.dp))
+//                ) {
+//                    languages.forEach { locale ->
+//                        DropdownMenuItem(
+//                            text = { Text(locale.displayLanguage) },
+//                            onClick = {
+//                                GlobalState.ttsLanguage.value = locale
+//                                ttsManager.stop() // optional but clean
+//                                expanded = false
+//                            }
+//                        )
+//                    }
+//                }
+//            }
 
 
 

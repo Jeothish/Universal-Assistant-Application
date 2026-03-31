@@ -94,7 +94,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.navigation.NavController
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -570,12 +573,12 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
     }
 
 @Composable
-fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,existingReminder: Reminder? = null){
-    var title by remember { mutableStateOf(existingReminder?.reminder_title ?:"") }
-    var description by remember { mutableStateOf(existingReminder?.reminder_description ?:"") }
-    var date by remember { mutableStateOf(existingReminder?.reminder_date ?:"") }
-    var time by remember { mutableStateOf(existingReminder?.reminder_time ?:"") }
-    var type by remember { mutableStateOf(existingReminder?.recurrence_type ?:"") }
+fun AddReminderScreen(repository: ReminderRepository, navController: NavController, returnToChat: () -> Unit, existingReminder: Reminder? = null){
+    var title by rememberSaveable { mutableStateOf(existingReminder?.reminder_title ?:"") }
+    var description by rememberSaveable { mutableStateOf(existingReminder?.reminder_description ?:"") }
+    var date by rememberSaveable { mutableStateOf(existingReminder?.reminder_date ?:"") }
+    var time by rememberSaveable { mutableStateOf(existingReminder?.reminder_time ?:"") }
+    var type by rememberSaveable { mutableStateOf(existingReminder?.recurrence_type ?:"") }
     val scrollState = rememberScrollState()
     val couroutineScope = rememberCoroutineScope()
     val calendar = Calendar.getInstance()
@@ -587,9 +590,27 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
     val speechRecognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
     var voiceClick by remember { mutableStateOf(false) }
     var aslClick by remember { mutableStateOf(false) }
+    var targetField by rememberSaveable{ mutableStateOf("")}
+
+    val aslResult by GlobalState.aslResult
+    val aslTarget by GlobalState.aslTargetField
+
+    LaunchedEffect(aslResult,aslTarget) {
 
 
+        if(aslResult.isNotBlank()){
+            when(aslTarget){
+                "title" -> title = aslResult
+                "description" -> description = aslResult
+                "repeating" -> type = aslResult
+            }
 
+            GlobalState.aslResult.value = ""
+            GlobalState.aslTargetField.value = ""
+
+        }
+
+    }
 
     Column(modifier = Modifier.padding(12.dp).verticalScroll(scrollState))
     {
@@ -631,7 +652,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                 unfocusedContainerColor =  Color(0xFFFFFFFF),
                 focusedTextColor =  Color(0xFF000000),
                 focusedBorderColor =  Color(0xFFDBBE0E),
-                unfocusedBorderColor =  Color(0xFF423B3B),
+                unfocusedBorderColor =  Color(0xFF050404),
                 unfocusedPlaceholderColor =  Color(0xFF716E6E)
             )
         )
@@ -639,20 +660,35 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
             Button(
                 onClick = {
                     if (!recording) {
+                        targetField = "title"
                         speechRecognizer.value = startSTT(context) {spokenText ->
                             recording = false
                             speechRecognizer.value?.destroy()
                             speechRecognizer.value = null
+
                             if (spokenText.isNotBlank()) {
-                                GlobalState.thinking.value = true
-                                GlobalState.vc_prompt.value = spokenText
-                                recorder.sendTextToBackend(spokenText)
-                            }}
+
+                                if(targetField.isNotBlank()){
+                                    when (targetField) {
+                                        "title" -> title = spokenText
+                                        "description" -> description = spokenText
+                                    }
+                                    targetField=""
+                                }
+                                else{
+                                    GlobalState.thinking.value = true
+                                    GlobalState.vc_prompt.value = spokenText
+                                    recorder.sendTextToBackend(spokenText)
+                                }
+
+                            }
+                        }
                         recording = true
                     }
                     else {
                         speechRecognizer.value?.stopListening()
                         recording=false
+
                     }
                 },
                 modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
@@ -679,7 +715,10 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
             }
 
             Button(
-                onClick = {},
+                onClick = {
+                    GlobalState.aslTargetField.value = "title"
+                    navController.navigate(HomeRoutes.ASL_INPUT_SCREEN)
+                },
                 modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -736,20 +775,36 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
             Button(
                 onClick = {
                     if (!recording) {
+
+                        targetField = "description"
                         speechRecognizer.value = startSTT(context) {spokenText ->
                             recording = false
                             speechRecognizer.value?.destroy()
                             speechRecognizer.value = null
+
                             if (spokenText.isNotBlank()) {
-                                GlobalState.thinking.value = true
-                                GlobalState.vc_prompt.value = spokenText
-                                recorder.sendTextToBackend(spokenText)
-                            }}
+
+                                if(targetField.isNotBlank()){
+                                    when (targetField) {
+                                        "title" -> title = spokenText
+                                        "description" -> description = spokenText
+                                    }
+                                    targetField=""
+                                }
+                                else{
+                                    GlobalState.thinking.value = true
+                                    GlobalState.vc_prompt.value = spokenText
+                                    recorder.sendTextToBackend(spokenText)
+                                }
+
+                            }
+                        }
                         recording = true
                     }
                     else {
                         speechRecognizer.value?.stopListening()
                         recording=false
+
                     }
                 },
                 modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
@@ -777,7 +832,10 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
             }
 
             Button(
-                onClick = {},
+                onClick = {
+                    GlobalState.aslTargetField.value = "description"
+                    navController.navigate(HomeRoutes.ASL_INPUT_SCREEN)
+                },
                 modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -898,30 +956,7 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                 }
             }
 
-//            Button(
-//                onClick = {},
-//                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
-//                shape = RoundedCornerShape(18.dp),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFFE7D112),
-//                    contentColor = Color(0xFFFFFFFF),
-//                )
-//            )
-//
-//            {
-//                Row() {
-//                    Icon(
-//                        imageVector = Icons.Default.FrontHand,
-//                        contentDescription = null,
-//                        modifier = Modifier.size(36.dp)
-//                    )
-//                    Text(
-//                        text = "ASL Date",
-//                        fontSize = 16.sp,
-//                        modifier = Modifier.padding(top = 8.dp)
-//                    )
-//                }
-//            }
+
         }
 
         Text(text= "Time *",
@@ -1015,31 +1050,6 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
                 }
             }
 
-//            Button(
-//                onClick = {},
-//                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
-//                shape = RoundedCornerShape(18.dp),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFFE7D112),
-//                    contentColor = Color(0xFFFFFFFF),
-//                )
-//            )
-//
-//            {
-//                Row() {
-//                    Icon(
-//                        imageVector = Icons.Default.FrontHand,
-//                        contentDescription = null,
-//                        modifier = Modifier.size(36.dp)
-//                    )
-//                    Text(
-//                        text = "ASL Time",
-//                        fontSize = 16.sp,
-//                        modifier = Modifier.padding(top = 8.dp)
-//                    )
-//                }
-//            }
-
 
 
         }
@@ -1118,7 +1128,10 @@ fun AddReminderScreen(repository: ReminderRepository,returnToChat: () -> Unit,ex
             }
 
             Button(
-                onClick = {},
+                onClick = {
+                    GlobalState.aslTargetField.value = "repeating"
+                    navController.navigate(HomeRoutes.ASL_INPUT_SCREEN)
+                },
                 modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(

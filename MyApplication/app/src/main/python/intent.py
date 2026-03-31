@@ -211,6 +211,8 @@ def getWeather(prompt, default):
         "intent": "weather",
         "prompt": prompt,
         "city": city,
+        "days_ahead": days_ahead,
+        "hour": hour,
         "result": result.get("weather", result)
     })
 
@@ -252,6 +254,12 @@ def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None):
             #full day forecast
             target_day = datetime.now() + timedelta(days=days_ahead)
             weather = get_forecast_weather_day(latitude, longitude, target_day)
+            
+            if isinstance(weather, list) and len(weather) >= 19:
+                weather = [weather[12], weather[15], weather[18]]
+            else:
+                weather = weather[:3]
+                
         else:
             # specific hour forecast
             target_datetime = datetime.now() + timedelta(days=days_ahead)
@@ -259,8 +267,8 @@ def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None):
             weather = get_forecast_weather_specific_time(latitude, longitude, target_datetime)
 
     # handle list responses
-    if isinstance(weather, list):
-        weather = weather[0] if len(weather) > 0 else weather
+    #if isinstance(weather, list):
+        #weather = weather[0] if len(weather) > 0 else weather
 
     return {
         "city": city,

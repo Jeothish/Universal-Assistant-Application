@@ -34,3 +34,14 @@ interface WikiDao {
     suspend fun deleteOldCache(expiry: Long, now: Long = System.currentTimeMillis())
 }
 
+@Dao
+interface WeatherDao {
+    @Query("SELECT * FROM weather_cache WHERE weatherRequest = :key LIMIT 1")
+    suspend fun getWeather(key: String): WeatherCache?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWeather(weather: WeatherCache)
+
+    @Query("DELETE FROM weather_cache WHERE (timestamp + :expiry) < :now")
+    suspend fun deleteOldCache(expiry: Long, now: Long = System.currentTimeMillis())
+}

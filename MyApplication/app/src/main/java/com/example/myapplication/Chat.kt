@@ -81,6 +81,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.RecognitionListener
 import android.os.Bundle
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -96,8 +97,21 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
 
+
+
+data class ChatMessage(
+    val prompt: String,
+    val response: String? = null,
+    val time: String,
+    val intent: String? = null,
+    val weatherData: WeatherItem? = null,
+    val weatherForecast: List<WeatherItem>? = null,
+    val newsData: List<NewsItem>? = null
+)
 
 
 @Composable
@@ -117,17 +131,27 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     val messages = GlobalState.chatMessages
     val lastMessage = messages.lastOrNull()
 
+
+
     LaunchedEffect(messageCount) {
         if (messageCount > 0) {
             listState.animateScrollToItem(messageCount - 1)
         }
     }
 
-    LaunchedEffect(GlobalState.thinking.value) {
-        if (!GlobalState.thinking.value && lastMessage != null && !lastMessage.response.isNullOrBlank()) {
-            ttsManager.speak(lastMessage.response)
-        }
-    }
+//    LaunchedEffect(lastMessage) {
+//        if (lastMessage != null) {
+//            Log.d("TTS_DEBUG", "Autoplay begun")
+//
+//            GlobalState.stopRequested.value = false
+//
+//            delay(400)
+//
+//            if (!GlobalState.stopRequested.value && !GlobalState.ttsReading.value) {
+//                ttsManager.speak(lastMessage.response)
+//            }
+//        }
+//    }
 
     if (GlobalState.hideResponse.value){
         ASLOutputScreen(returnToChat = { GlobalState.hideResponse.value = false })
@@ -226,6 +250,12 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                             "weather" -> {
                                 message.weatherData?.let { data ->
                                     weatherBubble(data, message.time)
+                                }
+
+                                message.weatherForecast?.let {list ->
+                                    list.forEach{item ->
+                                        weatherBubble(item,message.time)
+                                    }
                                 }
                             }
                             "news" -> {
@@ -561,11 +591,14 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
             Row(modifier = Modifier.padding(6.dp)) {
                 Button(
                     onClick = {
-                        if(isReading){
+                        if(GlobalState.ttsReading.value){
+                            GlobalState.stopRequested.value = true
                             ttsManager.stop()
                         }
-                        else
+                        else {
+                            GlobalState.stopRequested.value = false
                             ttsManager.speak(text)
+                        }
                     },
                     modifier = Modifier.weight(1f).height(80.dp),
                     shape = RoundedCornerShape(18.dp),
@@ -723,6 +756,29 @@ fun weatherBubble(weather: WeatherItem,time:String){
                         fontSize = 36.sp
                     )
                     Text(weather.forecast, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .background(
+                                Color(0xFF8B8585),
+                                shape = RoundedCornerShape(50)
+                            )
+                            .padding(6.dp)
+                    ) {
+                        Text(
+                            text = "${weather.time ?: "No date or time"}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+
+                        )
+                    }
+
                 }
 
                 Spacer(modifier = Modifier.width(36.dp))
@@ -974,9 +1030,8 @@ fun Warning(msg: String, colour: Color,onDismiss: () -> Unit) {
 }
 
 @Composable
-fun ASLInputScreen(returnToChat: () -> Unit){
+fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
     val scrollState = rememberScrollState()
-
     val letter by GlobalState.letter
     val aslInput by GlobalState.aslPrompt
     val context = LocalContext.current
@@ -1017,8 +1072,23 @@ fun ASLInputScreen(returnToChat: () -> Unit){
 
             Button(
                 onClick = {
-                    recorder.sendTextToBackend(aslInput.joinToString(""))
-                    Toast.makeText(context,"Message Sent!", Toast.LENGTH_SHORT).show()
+
+                    val finalMessage = aslInput.joinToString("")
+                    val previousEntry = navController.previousBackStackEntry
+
+                    if(previousEntry != null && previousEntry.destination.route == HomeRoutes.ADD_REMINDERS){
+
+                        GlobalState.aslResult.value = finalMessage
+                        navController.popBackStack()
+                    }
+                    else{
+                        recorder.sendTextToBackend(finalMessage)
+                        Toast.makeText(context,"Message Sent to Chat!", Toast.LENGTH_SHORT).show()
+                        returnToChat()
+                    }
+
+                    GlobalState.aslPrompt.value = emptyList()
+
                 },
                 modifier = Modifier.weight(1f).height(80.dp).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -1147,38 +1217,7 @@ fun ASLInputScreen(returnToChat: () -> Unit){
             }
         }
 
-//            Button(
-//                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value + letter},
-//                modifier = Modifier.height(80.dp).fillMaxWidth().padding(top=16.dp),
-//                shape = RoundedCornerShape(18.dp),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFF27C212),
-//                    contentColor = Color(0xFFFFFFFF),
-//                )
-//            )
-//
-//            {
-//                Row(modifier = Modifier.padding()){
-//
-//                    Icon(
-//                        imageVector = Icons.Default.Add,
-//                        contentDescription = null,
-//                        modifier = Modifier.size(40.dp)
-//
-//                    )
-//
-//                    Text(
-//                        text ="Add Letter",
-//                        fontSize = 20.sp,
-//                        fontWeight = FontWeight.Bold,
-//                        modifier = Modifier.padding(top=8.dp)
-//                    )
-//
-//
-//            }
-//        }
 
-        //Spacer(modifier = Modifier.height(15.dp))
 
         Text(
             text = "Your Message",
@@ -1206,87 +1245,10 @@ fun ASLInputScreen(returnToChat: () -> Unit){
             )
         }
 
-//        Row(modifier = Modifier.padding()){
-//
-//            Button(
-//                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value + " "},
-//                modifier = Modifier.height(80.dp).width(200.dp).padding(top=16.dp),
-//                shape = RoundedCornerShape(18.dp),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFF494944),
-//                    contentColor = Color(0xFFFFFFFF),
-//                )
-//            )
-//
-//            {
-//                Text(
-//                    text ="Add space",
-//                    fontSize = 20.sp,
-//                    fontWeight = FontWeight.Bold,
-//
-//                )
-//            }
-//
-//            Spacer(modifier = Modifier.width(10.dp))
-//
-//            Button(
-//                onClick = { GlobalState.aslPrompt.value = GlobalState.aslPrompt.value.dropLast(1)},
-//                modifier = Modifier.height(80.dp).width(200.dp).padding(top=16.dp),
-//                shape = RoundedCornerShape(18.dp),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFFC23607),
-//                    contentColor = Color(0xFFFFFFFF),
-//                )
-//            )
-//
-//            {
-//                Text(
-//                    text ="Delete Last",
-//                    fontSize = 20.sp,
-//                    fontWeight = FontWeight.Bold,
-//                )
-//            }
-//        }
 
         Spacer(modifier = Modifier.height(15.dp))
 
-//        Row() {
-//
-//
-//            Button(
-//                onClick = {
-//                    recorder.sendTextToBackend(aslInput.joinToString(""))
-//                    Toast.makeText(context,"Message Sent!", Toast.LENGTH_SHORT).show()
-//                          },
-//                modifier = Modifier.height(120.dp).width(400.dp).padding(top = 16.dp),
-//                shape = RoundedCornerShape(18.dp),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = Color(0xFFFFC107),
-//                    contentColor = Color(0xFFFFFFFF),
-//                )
-//            )
-//
-//
-//            {
-//
-//                Icon(
-//                    imageVector = Icons.Default.Send,
-//                    contentDescription = null,
-//                    modifier = Modifier.size(56.dp)
-//
-//                )
-//
-//                Spacer(modifier = Modifier.width(10.dp))
-//
-//                Text(
-//                    text = "Send message",
-//                    fontSize = 35.sp,
-//                    fontWeight = FontWeight.Bold,
-//                    modifier = Modifier.padding(top = 8.dp)
-//                )
-//            }
-//
-//        }
+
         if (showHelp) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -1397,7 +1359,9 @@ fun startSTT(context: Context, onResult: (String) -> Unit): SpeechRecognizer {
             onResult(text)
         }
         override fun onError(error: Int) {
+           Log.e("STT_DEBUG", "Error Code: $error")
             onResult("")
+            speechRecognizer.destroy()
         }
         override fun onPartialResults(partialResults: Bundle?) {}
         override fun onReadyForSpeech(params: Bundle?) {}

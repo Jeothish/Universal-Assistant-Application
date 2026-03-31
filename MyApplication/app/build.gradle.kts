@@ -62,7 +62,7 @@ android {
 }
 configure<com.chaquo.python.ChaquopyExtension> {
     defaultConfig {
-        buildPython("C:/Users/HP/AppData/Local/Programs/Python/Python311/python.exe")
+        buildPython("C:/Users/sjeot/AppData/Local/Programs/Python/Python311/python.exe")
         version = "3.11"
         pip {
             install("pycountry")
@@ -168,5 +168,7 @@ dependencies {
 
     implementation("net.zetetic:android-database-sqlcipher:4.5.4")
     implementation("androidx.sqlite:sqlite-ktx:2.4.0")
+
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.0")
 
 }

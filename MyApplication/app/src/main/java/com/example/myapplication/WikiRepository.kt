@@ -5,11 +5,11 @@ import android.util.Log
 class WikiRepository(private val wikiDao: WikiDao) {
 
     suspend fun getWikiData(topic: String): String{
-        val sevenDaysInMillis = 7L * 24 * 60 * 60 * 1000
-        wikiDao.deleteOldCache(sevenDaysInMillis)
+        val cacheExpiry = 7L * 24 * 60 * 60 * 1000
+        wikiDao.deleteOldCache(cacheExpiry)
 
         val processedTopic = topic.lowercase().trim()
-        val cacheExpiry = 7 * 24 * 60 * 60 * 1000
+
         val cached = wikiDao.getWikiByTopic(processedTopic)
 
         if(cached != null && (System.currentTimeMillis() - cached.timestamp) < cacheExpiry){

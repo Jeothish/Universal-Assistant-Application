@@ -11,3 +11,9 @@ data class WikiCache(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "weather_cache")
+data class WeatherCache(
+    @PrimaryKey val weatherRequest: String,
+    val jsonResponse: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
