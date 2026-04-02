@@ -25,8 +25,7 @@ class HandAnalyzer(
     private val TAG = "HandAnalyzer"
     private val inputs = arrayOf("","","","")
     private val aslPrompt = GlobalState.aslPrompt
-    private var deleted = false
-    private var confirmed = false
+
     private var prevLetter = ""
 
     private var prevCall=0
@@ -219,127 +218,6 @@ class HandAnalyzer(
             .start()
 
 
-    }
-
-    private fun sendLandmarksToBackend(features: FloatArray, detHand: String) {
-        Thread {
-            try {
-                val url = java.net.URL("http://${GlobalState.serverIP.value}:8000/predict")
-
-
-                val conn = url.openConnection() as java.net.HttpURLConnection
-
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.doOutput = true
-                conn.connectTimeout = 5000
-                conn.readTimeout = 5000
-
-                val json = mapOf("features" to features.toList(), "hand" to detHand)//json object to send to backend
-                val body = Gson().toJson(json)
-
-                conn.outputStream.use {
-                    it.write(body.toByteArray())
-                }
-
-                val responseCode = conn.responseCode
-                if (responseCode == 200) {
-                    val response = conn.inputStream.bufferedReader().readText()
-
-                    val jsonObject = Gson().fromJson(response, JsonObject::class.java)
-                    var letter = jsonObject.get("letter")?.asString ?: ""
-                    val confidence = jsonObject.get("confidence")?.asFloat ?: 0f
-
-                    Log.d(TAG, "Predicted: $letter (confidence: $confidence)")
-                    GlobalState.letter.value = letter
-                    letter = letter.lowercase()
-
-
-                    println(timer)
-                    synchronized(lock) {
-                        if (prevLetter == "") { // asl senetnce construction using delay
-                            prevLetter = letter
-                            timer = 0
-                        }
-                        if (letter == prevLetter) {
-
-                            if (timer >= 13) {
-
-                                if (letter == "del" && aslPrompt.value.isNotEmpty()) {
-                                    aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
-                                } else if (letter == "space") {
-                                    aslPrompt.value = (aslPrompt.value + " ").toMutableList()
-                                } else if (letter != "del" && prevLetter != "del") {
-
-                                    aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
-                                }
-
-                                timer = -13
-                            } else {
-                                timer++
-
-                            }
-                        } else {
-                            prevCall = 0
-                            timer = 0
-                        }
-                        prevLetter = letter
-                    }
-
-                    //asl word construction using "space" as confirm sign
-
-//                    if (prevLetter == "" && letter != "space" && letter!="del"){ //1st time condition
-//                        prevLetter = letter
-//                    }
-//
-//                    if (letter != "space" && letter != "del"){ //
-//                        confirmed = false
-//                        deleted = false
-//
-//                    }
-//                    else if (letter == "space" && !deleted && prevAction == "del"){
-//                        aslPrompt.removeAt(aslPrompt.lastIndex)
-//                        deleted = true
-//                        confirmed =true
-//                    }
-//
-//                    if (letter == "space" && !confirmed && prevLetter != ""){
-//
-//                        aslPrompt.add(prevLetter)
-//                        confirmed = true
-//
-//                        if (prevAction == "del") {
-//                            deleted = false
-//                        }
-//
-//                    }
-//
-//                    if (letter!="space" && letter!= "del") {
-//                        prevLetter = letter
-//                    }
-//                    else{
-//                        if (prevAction == "space"){
-//                            deleted = false
-//                        }
-//                        prevAction = letter
-//
-//                    }
-
-                    println(prevLetter)
-                    println(letter)
-                    println(aslPrompt)
-
-                } else {
-                    val errorBody = conn.errorStream?.bufferedReader()?.readText() ?: "Unknown"
-                    Log.e(TAG, "HTTP Error $responseCode: $errorBody")
-                }
-
-                conn.disconnect()
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Backend Error: ${e.message}", e)
-            }
-        }.start()
     }
 
     private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {

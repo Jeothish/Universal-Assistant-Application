@@ -25,15 +25,12 @@ import kotlinx.coroutines.withTimeout
 
 class LocalLLM(private val wikiRepo: WikiRepository) {
 
+    private var engine: Engine? = null //llm inference engine
 
-    private var conversation: Conversation? = null
-    private var engine: Engine? = null
-    private var msg = 0
-    private var max=3
     private var appContext: Context? = null
 
     suspend fun initialize(context: Context) {
-        appContext = context.applicationContext
+        appContext = context.applicationContext //give application level context
         val modelFile = File(context.filesDir, "Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm")//model must be transferred from assets to local phone storage
 
         if (!modelFile.exists()){//trasnfer model if its not alr there
@@ -47,31 +44,19 @@ class LocalLLM(private val wikiRepo: WikiRepository) {
 
         val engineConfig = EngineConfig(
             modelPath = modelFile.absolutePath,
-            backend = Backend.GPU,
-            cacheDir = context.cacheDir.path,
-            maxNumTokens = 1024
+            backend = Backend.GPU, //can be switched to cpu for lower end devices
+            cacheDir = context.cacheDir.path, //store model cache, used for faster laoding of llm
+            maxNumTokens = 512 //lower = less hallucination and shorter responses
         )
         engine = Engine(engineConfig)
         engine!!.initialize()
 
     }
 
-    suspend fun restart() {
+    //used for extracting query topic to be sent to wikipedia (RAG)
+    private fun getTopic(query:String): String { //pass in user query, return topic (string)
 
-        try {
-            engine?.close()
-        } catch (e: Exception) {
-            Log.e("LLM", "Error closing engine: $e")
-        }
-        engine = null
-        conversation = null
-        msg = 0
-        initialize(appContext!!)
-        Log.d("LLM", "LLM restarted")
-    }
-    private fun getTopic(query:String): String {
-
-                val conv = engine!!.createConversation(
+                val conv = engine!!.createConversation( //create new conversation everytime as topic extraction doesnt need context
                     ConversationConfig(
                         systemInstruction = Contents.of("""
                     Extract the main search topic from the user's query.
@@ -81,48 +66,41 @@ class LocalLLM(private val wikiRepo: WikiRepository) {
                     "who is Elon Musk" → "Elon Musk"
                     "what is the Eiffel Tower" → "Eiffel Tower"
                 """.trimIndent()),
-                        samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0)
+                        samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0) //sampler params to ensure predicatbility and reliabilty
                     )
                 )
                 val topic = conv.sendMessage(query).toString().trim()
-                conv.close()
+                conv.close()//close conversation to free up resources
                 return topic
             }
 
 
-
-
-
-    suspend fun callWiki(query: String, wikiRepo: WikiRepository): String {
-        val topic = getTopic(query)
+    suspend fun callWiki(query: String, wikiRepo: WikiRepository): String { //send extracted topic to wikipedia
+        val topic = getTopic(query) //call topic extraction
         Log.d("LLM", "Extracted topic: $topic")
 
-        val wikiText = wikiRepo.getWikiData(topic)
+        val wikiText = wikiRepo.getWikiData(topic) //send to wiki
 
         return wikiText
     }
 
-    suspend fun generateStream(prompt: String): Flow<String> {
-        msg++
-        if (msg > max) {
-            conversation?.close()
-            msg = 0
-        }
-        val context = callWiki(prompt,wikiRepo)
-        val conv = engine!!.createConversation(
+    suspend fun generateStream(prompt: String): Flow<String> { //generate response stream (output tokens to user one by one)
+
+        val context = callWiki(prompt,wikiRepo) //get query context from wikipedia
+        val conv = engine!!.createConversation( //start a new conversatiom
             ConversationConfig(
                 systemInstruction = Contents.of("""
                     You are a helpful assistant. Answer using ONLY this Wikipedia context:
                     
                     $context
                 """.trimIndent()),
-                samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.8)
+                samplerConfig = SamplerConfig(topK = 5, topP = 0.95, temperature = 0.8) //topk = 5 reduces math and enhances performance, temp decides how much creativity is allowed
             )
         )
 
-        return conv.sendMessageAsync(prompt)
+        return conv.sendMessageAsync(prompt) //send prompt to llm async
             .map { it.toString() }
-            .onCompletion { conv.close() }
+            .onCompletion { conv.close() }//once full response is recieved by user close conversation to free up resources
     }
 }
 

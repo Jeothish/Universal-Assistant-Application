@@ -149,11 +149,10 @@ fun ASLOutputScreen(returnToChat: () -> Unit){
 
 
     //ASLRenderer(tokens = GlobalState.aslTokens.value,onReturn = {GlobalState.hideResponse.value = false})
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier = Modifier.fillMaxSize()) {
 
         Box(
-            modifier = Modifier.fillMaxWidth().padding(11.dp)
-                .height(650.dp)
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(11.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFF000000))
                 .border(4.dp, Color(0xFFE7B212), RoundedCornerShape(24.dp)),
@@ -189,17 +188,18 @@ fun ASLOutputScreen(returnToChat: () -> Unit){
         )
 
 
-        Row(modifier = Modifier.fillMaxWidth().padding(6.dp),Arrangement.spacedBy(6.dp)){
+        Row(modifier = Modifier.fillMaxWidth().padding(6.dp).height(IntrinsicSize.Min),Arrangement.spacedBy(6.dp)){
 
 
             Button(
                 onClick = {isPlaying = !isPlaying },
-                modifier = Modifier.weight(1f).height(95.dp),
+                modifier = Modifier.weight(1f).aspectRatio(1.2f),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if(isPlaying) Color(0xFFEA0A0A) else Color(0xFF0CE021),
                     contentColor = Color(0xFFFFFEFE)
-                )
+                ),
+                contentPadding = PaddingValues.Zero
             )
 
             {
@@ -225,12 +225,13 @@ fun ASLOutputScreen(returnToChat: () -> Unit){
 
             Button(
                 onClick = {isPlaying = true;replayTrigger++},
-                modifier = Modifier.weight(1f).height(95.dp),
+                modifier = Modifier.weight(1f).aspectRatio(1.2f),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF673AB7),
                     contentColor = Color(0xFFFFFFFF),
-                )
+                ),
+                contentPadding = PaddingValues.Zero
             )
 
             {
@@ -254,12 +255,13 @@ fun ASLOutputScreen(returnToChat: () -> Unit){
 
             Button(
                 onClick = {returnToChat()},
-                modifier = Modifier.weight(1f).height(95.dp),
+                modifier = Modifier.weight(1f).aspectRatio(1.2f),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFFF5722),
                     contentColor = Color(0xFFFFFFFF),
-                )
+                ),
+                contentPadding = PaddingValues.Zero
             )
 
             {

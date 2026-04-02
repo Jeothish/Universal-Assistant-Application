@@ -285,9 +285,11 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     if (GlobalState.thinking.value){
                         if (GlobalState.llmResponse.value.isBlank()){
                             CircularProgressIndicator(
-                                color = Color(0xFFFFC63A),
-                                modifier = Modifier.size(32.dp),
+                                modifier = Modifier.padding(start = 10.dp).size(32.dp),
+                                color = if (GlobalState.llmReady.value){ Color(0xFFFFC107)
+                                } else Color(0xFF10CEE7),
                                 strokeWidth = 4.dp
+                                
                             )
                         }
                         else{
@@ -545,14 +547,14 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 }
 
 
-data class ChatMessage(
-    val prompt: String,
-    val response: String? = null,
-    val time: String,
-    val intent: String? = null,
-    val weatherData: WeatherItem? = null,
-    val newsData: List<NewsItem>? = null
-)
+//data class ChatMessage(
+//    val prompt: String,
+//    val response: String? = null,
+//    val time: String,
+//    val intent: String? = null,
+//    val weatherData: WeatherItem? = null,
+//    val newsData: List<NewsItem>? = null
+//)
 
 
 @Composable
