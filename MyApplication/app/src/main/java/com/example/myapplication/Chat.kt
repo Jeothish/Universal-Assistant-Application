@@ -1118,13 +1118,34 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
         }
 
         Row() {
-            Text(
-                text = "Camera View",
-                fontSize = 25.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(19.dp),
-                color = Color(0xFFFFC63A)
+
+
+            Button(
+                onClick = {
+                    GlobalState.aslPrompt.value = emptyList()
+                },
+                modifier = Modifier.height(60.dp).width(175.dp).padding(8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Magenta,
+                    contentColor = Color(0xFFFFFFFF),
+                )
             )
+            {
+                Row() {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp)
+                    )
+
+                    Text(
+                        text = "Clear",
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
 
             Button(
                 onClick = {

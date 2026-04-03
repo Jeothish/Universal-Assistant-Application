@@ -15,7 +15,7 @@
  */
 
 // This is Open source Google Mediapipe code for the hand detection skeleton from:
-//https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/hand_landmarker/android
+//https://github.com/google-ai-edge/mediapipe-samples/blob/main/examples/hand_landmarker/android/app/src/main/java/com/google/mediapipe/examples/handlandmarker/OverlayView.kt
 
 import android.content.Context
 import android.graphics.Canvas

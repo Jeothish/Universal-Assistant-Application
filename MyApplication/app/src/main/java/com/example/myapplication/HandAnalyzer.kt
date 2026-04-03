@@ -16,50 +16,49 @@ import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import kotlin.math.sqrt
 import OverlayView
 
-class HandAnalyzer(
-    context: Context,
-    private val overlayView: OverlayView
-) : ImageAnalysis.Analyzer {
+class HandAnalyzer(context: Context, private val overlayView: OverlayView) : ImageAnalysis.Analyzer {
 
-    private val handLandmarker: HandLandmarker
-    private val TAG = "HandAnalyzer"
-    private val inputs = arrayOf("","","","")
-    private val aslPrompt = GlobalState.aslPrompt
+    private val handLandmarker: HandLandmarker //landmarker object
+    private val TAG = "HandAnalyzer" //tag for logs
 
-    private var prevLetter = ""
+    private val aslPrompt = GlobalState.aslPrompt //user prompt built via asl
 
-    private var prevCall=0
-    private var delay = 10
+    private var prevLetter = "" // last detected sign
 
-    private var timer: Long =0
-    private val lock = Any()
+    private var prevCall=0 //time before last time model is called
+    private var delay = 10 // delay between asl model detection
 
+    private var timer: Long =0 // time between when letter is added to message
+    private val lock = Any() //lock to prevent race conditions
+
+    //left hand model
     private val classifierL = ASLProcessing(context, "asl_mediapipe_model_finalL.tflite", "asl_labels_finalL.txt")
+    //right hand model
     private val classifierR = ASLProcessing(context, "asl_mediapipe_model_finalR.tflite", "asl_labels_finalR.txt")
 
     init {
-        val options = HandLandmarker.HandLandmarkerOptions.builder()
+        val options = HandLandmarker.HandLandmarkerOptions.builder() //hand landmarker options
             .setBaseOptions(
                 BaseOptions.builder()
-                    .setModelAssetPath("hand_landmarker.task")
+                    .setModelAssetPath("hand_landmarker.task")//load mediapipe model
                     .build()
             )
-            .setNumHands(2)
+            .setNumHands(2)//max hands mp can detect in a frame
             .setMinHandDetectionConfidence(0.7f)
-            .setMinHandPresenceConfidence(0.7f)
+            .setMinHandPresenceConfidence(0.7f)//min confidence 70%
             .setMinTrackingConfidence(0.7f)
-            .setRunningMode(RunningMode.LIVE_STREAM)
+            .setRunningMode(RunningMode.LIVE_STREAM)//live stream mode for live video input
             .setResultListener { result, input ->
                 if (result.landmarks().isNotEmpty()) {
-                    GlobalState.aslHands.value = result.landmarks().size
+                    GlobalState.aslHands.value = result.landmarks().size//check how many hands the user is shwoing
                     if (GlobalState.aslHands.value >=2){
-                        GlobalState.aslHandsError.value = true
+                        GlobalState.aslHandsError.value = true//if >2 show warning
                     }
                     else{
                         GlobalState.aslHandsError.value = false
                     }
 
-                    overlayView.post {
+                    overlayView.post {//purple hand overlay skeleton
                         overlayView.setResults(
                             result,
                             input.height,
@@ -68,7 +67,7 @@ class HandAnalyzer(
                         )
                     }
 
-                    val landmarks = result.landmarks()[0]
+                    val landmarks = result.landmarks()[0]//landmarks
 
                     //if right hand flip landmarks (front cam flips anyways so it sees left as right)
                     val handedness = result.handedness()[0][0]
@@ -79,10 +78,10 @@ class HandAnalyzer(
 
 
 
-                    val normalizedFeatures = normalizeLandmarks(landmarks)
-                    if (prevCall > delay-1) {
-                       //sendLandmarksToBackend(normalizedFeatures, detectedHand)
-                        localPredict(normalizedFeatures, detectedHand)
+                    val normalizedFeatures = normalizeLandmarks(landmarks)//normalize
+                    if (prevCall > delay-1) {//ensure enough time has elapsed since model was last called
+
+                        localPredict(normalizedFeatures, detectedHand)//call model
                         prevCall=0
 
                     }
@@ -91,8 +90,8 @@ class HandAnalyzer(
                     }
 
 
-                } else {
-                    overlayView.post { overlayView.clear() }
+                } else {//if no hands on screen reset all timers
+                    overlayView.post { overlayView.clear() }//clear hand skeleton
                     GlobalState.letter.value = ""
                     timer = System.currentTimeMillis()
                     prevCall = 0
@@ -104,24 +103,28 @@ class HandAnalyzer(
             }
             .build()
 
-        handLandmarker = HandLandmarker.createFromOptions(context, options)
+        handLandmarker = HandLandmarker.createFromOptions(context, options)//intiialize landmarker
     }
 
-    override fun analyze(imageProxy: ImageProxy) {
+    override fun analyze(imageProxy: ImageProxy) {//called by cameraX every frame
+        //image proxy =  raw camra data of a image  (frame)
+
         val bitmap = imageProxy.toBitmap()
-        val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+        val rotationDegrees = imageProxy.imageInfo.rotationDegrees//how many degress to be upright (raw image not always upright)
         val rotatedBitmap = rotateBitmap(bitmap, rotationDegrees)
-        val flippedBitmap = flipBitmap(rotatedBitmap)
+        val flippedBitmap = flipBitmap(rotatedBitmap)//flip image (front cams are inverted)
 
-        val mpImage = BitmapImageBuilder(flippedBitmap).build()
+        val mpImage = BitmapImageBuilder(flippedBitmap).build()//wrap for mediapipe processing
         val frameTime = System.currentTimeMillis()
-        handLandmarker.detectAsync(mpImage, frameTime)
+        handLandmarker.detectAsync(mpImage, frameTime)//send image to mp for lm extractuion
 
-        imageProxy.close()
+        imageProxy.close()//close to prevent mem leaks
     }
 
-    private fun normalizeLandmarks(landmarks: List<NormalizedLandmark>): FloatArray {
-        var points = landmarks.map {
+    private fun normalizeLandmarks(landmarks: List<NormalizedLandmark>): FloatArray { //normalize landmarks to wrist to prevent issues with where hand is on scren
+        //21 lms(w/ x,y,z coords) from mediapipe in list
+
+        var points = landmarks.map { //convert each lm to flat xyz float array
             floatArrayOf(it.x(), it.y(), it.z())
         }.toTypedArray()
 
@@ -129,21 +132,21 @@ class HandAnalyzer(
         val wrist = points[0]
         val normalized = points.map { point ->
             floatArrayOf(
-                point[0] - wrist[0],
-                point[1] - wrist[1],
-                point[2] - wrist[2]
+                point[0] - wrist[0], //x
+                point[1] - wrist[1], //y
+                point[2] - wrist[2] //z
             )
         }.toTypedArray()
 
-        val middleFingerMCP = normalized[9]
+        val middleFingerMCP = normalized[9] //use middle finger knuckle (mcp) as reference for scaling and distance
         val scale = sqrt(
             middleFingerMCP[0] * middleFingerMCP[0] +
                     middleFingerMCP[1] * middleFingerMCP[1] +
                     middleFingerMCP[2] * middleFingerMCP[2]
-        )
+        )//dist from mcp to wrist to get size(scale) of hand
 
 
-        val scaled = if (scale > 0f) {
+        val scaled = if (scale > 0f) {//divide every coord by scale to ensure distance from camera makes no diff
             normalized.map { point ->
                 floatArrayOf(
                     point[0] / scale,
@@ -155,23 +158,24 @@ class HandAnalyzer(
             normalized.toList()
         }
 
-        return scaled.flatMap { it.toList() }.toFloatArray()
+        return scaled.flatMap { it.toList() }.toFloatArray()//21 xyz arrays to 1 floatt array of 63 fp
     }
 
-    private fun localPredict(features: FloatArray, detHand: String){
+    private fun localPredict(features: FloatArray, detHand: String){ //call asl model
         Thread {
             try {
 
-                var prediction: Pair<String, Float>
+                var prediction: Pair<String, Float>//prediction from model string = letter, float = confidence
+
                 if (detHand.lowercase() == "right") {
-                    //use left since mediapipe inverts
+                    //call left hand model since mediapipe inverts
                     prediction = classifierL.predict(features)
                     GlobalState.letter.value = prediction.first.lowercase()
                     Log.d(TAG, "Predicted: $prediction ")
                     println(prediction)
 
                 } else if (detHand.lowercase() == "left") {
-                    //use roght
+                    //call roght hand model
                     prediction = classifierR.predict(features)
                     GlobalState.letter.value = prediction.first.lowercase()
                     Log.d("PRED", "Predicted: $prediction ")
@@ -179,24 +183,26 @@ class HandAnalyzer(
                 }
                 val letter = GlobalState.letter.value
                 println(timer)
-                synchronized(lock) {
+                synchronized(lock) { //prevent race cond by only allowing 1 thread at atime
 
-                    if (prevLetter == "") { // asl senetnce construction using delay
+                    // asl senetnce construction using delay
+                    if (prevLetter == "") {  //init
                         prevLetter = letter
                         timer = System.currentTimeMillis()
                     }
-                    if (letter == prevLetter) {
+                    if (letter == prevLetter) {//if sign hasnt changed
 
+                        if ((System.currentTimeMillis() - timer)/1000 >= GlobalState.aslTimer.value) { //if sign held up for long enough add tro message
 
-                        if ((System.currentTimeMillis() - timer)/1000 >= GlobalState.aslTimer.value) {
-
-                            if (letter == "del" && aslPrompt.value.isNotEmpty()) {
+                            if (letter == "del" && aslPrompt.value.isNotEmpty()) { //delete a letter from the message
                                 aslPrompt.value = aslPrompt.value.dropLast(1).toMutableList()
                                 GlobalState.letterDeleted.value = true
-                            } else if (letter == "space") {
+
+                            } else if (letter == "space") {//add space to msg
                                 aslPrompt.value = (aslPrompt.value + " ").toMutableList()
                                 GlobalState.spaceAdded.value = true
-                            } else if (letter != "del" && prevLetter != "del") {
+
+                            } else if (letter != "del" && prevLetter != "del") {//add letter to msg
 
                                 aslPrompt.value = (aslPrompt.value + prevLetter).toMutableList()
                             }
@@ -204,7 +210,7 @@ class HandAnalyzer(
                             timer = System.currentTimeMillis()
                         }
 //
-                    } else {
+                    } else {//if sign changed reset timer
                         prevCall = 0
                         timer = System.currentTimeMillis()
                     }
@@ -220,17 +226,18 @@ class HandAnalyzer(
 
     }
 
-    private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {
+    private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Int): Bitmap {//helper to roatate bitmap
         if (rotationDegrees == 0) return bitmap
-        val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }//make transform matrix to rotate
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)//new rotated bitmap using trans. matrix
     }
 
-    private fun flipBitmap(bitmap: Bitmap): Bitmap {
+    private fun flipBitmap(bitmap: Bitmap): Bitmap {//helper to flip bitmap (front cams are inverted)
         val matrix = Matrix().apply {
-            postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)
+            postScale(-1f, 1f, bitmap.width / 2f, bitmap.height / 2f)//make matrix that scales x by -1, horz mirror
+            //px & py = pivot point to flip from center
         }
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)//new flipped bitmap
     }
 
     fun close() {
@@ -238,25 +245,25 @@ class HandAnalyzer(
     }
 }
 
-private fun ImageProxy.toBitmap(): Bitmap {
-    val yBuffer = planes[0].buffer
-    val uBuffer = planes[1].buffer
-    val vBuffer = planes[2].buffer
+private fun ImageProxy.toBitmap(): Bitmap { //helper to convert image proxy to bitmap (conv camX raw img to bitmap)
+    val yBuffer = planes[0].buffer //bright ness read as buffer
+    val uBuffer = planes[1].buffer //colour
+    val vBuffer = planes[2].buffer //colour
 
-    val ySize = yBuffer.remaining()
+    val ySize = yBuffer.remaining() //size of each plane
     val uSize = uBuffer.remaining()
     val vSize = vBuffer.remaining()
 
-    val nv21 = ByteArray(ySize + uSize + vSize)
+    val nv21 = ByteArray(ySize + uSize + vSize) //1 byte array to hold all 3 planes (nv21 format)
 
-    yBuffer.get(nv21, 0, ySize)
+    yBuffer.get(nv21, 0, ySize) //copy planes into array
     vBuffer.get(nv21, ySize, vSize)
     uBuffer.get(nv21, ySize + vSize, uSize)
 
-    val yuvImage = YuvImage(nv21, ImageFormat.NV21, width, height, null)
+    val yuvImage = YuvImage(nv21, ImageFormat.NV21, width, height, null)//wrap in androids yuv imageclass
     val out = ByteArrayOutputStream()
-    yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
+    yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)//convert to jpeg
     val imageBytes = out.toByteArray()
 
-    return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)//conv jpeg to bitmap
 }

@@ -430,47 +430,6 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            Text(
-                text = "Speech Accent",
-                fontSize = 25.sp,
-                fontWeight = FontWeight.Bold,
-                //modifier = Modifier.padding(19.dp),
-                color = Color(0xFFFFFFFF)
-            )
-
-//            Spacer(modifier = Modifier.height(15.dp))
-//
-//            Box {
-//                Button(
-//                    onClick = { expanded = true },
-//                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
-//                ) {
-//                    Text(selectedLanguage.displayLanguage)
-//                }
-//
-//                DropdownMenu(
-//                    expanded = expanded,
-//                    onDismissRequest = { expanded = false },
-//                    modifier = Modifier
-//                        .widthIn(200.dp)
-//                        .heightIn(max = 200.dp)
-//                        .background(Color(0xFF38383B), RoundedCornerShape(12.dp))
-//                ) {
-//                    languages.forEach { locale ->
-//                        DropdownMenuItem(
-//                            text = { Text(locale.displayLanguage) },
-//                            onClick = {
-//                                GlobalState.ttsLanguage.value = locale
-//                                ttsManager.stop() // optional but clean
-//                                expanded = false
-//                            }
-//                        )
-//                    }
-//                }
-//            }
-
-
-
 
         }
     }
@@ -596,42 +555,6 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
         }
 
     }
-
-
-
-//    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-//
-//
-//        //Text(text="Settings",modifier=modifier.padding(bottom=500.dp), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(222, 172, 255))
-//        OutlinedTextField(
-//            value = timer,
-//            onValueChange = {
-//                timer = it
-//                saved = false
-//
-//            },
-//            label = { Text("Time it takes to add a letter to the ASL message. (Enter a number between 1 and 10)") },
-//            placeholder = { Text(timer) },
-//            singleLine = true,
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//        Button(
-//            onClick = {
-//                GlobalState.aslTimer.value = timer.toIntOrNull()?.coerceIn(1, 10) ?: 2 //bounds input to 1-10
-//
-//                saved = true
-//                scope.launch {
-//                    AppPreferences.saveTimer(context, GlobalState.aslTimer.value)
-//
-//                }
-//            },
-//            colors = ButtonDefaults.buttonColors(containerColor = Color(222, 172, 255)),
-//            shape = RoundedCornerShape(12.dp),
-//            modifier = modifier.padding(end = 0.dp, top = 90.dp)
-//        ) {
-//            Text(if (saved) "Saved" else "Save")
-//        }
-//    }
 
 
 @Composable
@@ -760,76 +683,13 @@ fun Greeting(time: String) {
         contentAlignment = Alignment.TopCenter
     ){
         Text(text = "Good $time,\n\nhow can I help?",
-            color= Color(222,172,255),
+            color= Color(255, 193, 7, 255),
             fontSize = 32.sp,
             modifier = Modifier.padding(top = 64.dp)
         )
     }
 }
 
-
-@Composable
-fun Button(text : String,  contentAlignment: Alignment, onSend: (String) -> Unit) {
-    var asl by GlobalState.asl
-    val aslInput by GlobalState.aslPrompt
-    val thinking by GlobalState.thinking
-    Box(
-        modifier = Modifier
-            .fillMaxSize(),
-        contentAlignment = contentAlignment
-    ) {
-        Button(
-
-            onClick =  {
-                if (!thinking){
-                    if (aslInput.joinToString("").isNotBlank()) {
-                        if (asl) {
-                            onSend(text)
-                            GlobalState.aslPrompt.value = mutableListOf<String>()
-
-                        }
-
-                    }
-                    asl = !asl
-                }
-
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(222,172,255),
-                contentColor = Color.Black
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .padding(16.dp) // distance from screen edges
-                .height(100.dp)
-                .width(160.dp)
-        ) {
-            Text(if (!thinking) {text} else {"Please wait until assistant is finished thinking."})
-        }
-    }
-}
-
-@Composable
-fun FutureButton(text:String,contentAlignment: Alignment,onClick: () -> Unit,modifier: Modifier = Modifier){
-    Box(modifier = Modifier.fillMaxSize().then(modifier),contentAlignment = contentAlignment)
-    {
-        Button(
-            onClick = onClick,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(222,172,255),
-                contentColor = Color.Black
-            ),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .padding(16.dp) // distance from screen edges
-                .height(100.dp)
-                .width(150.dp)
-        )
-        {
-            Text(text)
-        }
-    }
-}
 
 
 
