@@ -45,32 +45,41 @@ import androidx.compose.material.icons.filled.Warning
 
 
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.launch
 import kotlin.text.forEach
 
-
+/**
+ * Activity displayed when an alarm is triggered
+ *
+ * Handles UI, alarm sound, vibration, and user actions
+ */
 class AlarmActivity : ComponentActivity() {
     private var ringtone: Ringtone? = null
     private var vibrator: Vibrator? = null
     private var reminderId: Int = -1
 
+    //Called when the activity starts
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Ensures the alarm screen appears over the lock screen and wakes the phone
         window.addFlags(
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or //Allows activity to appear even if phone is locked
+                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or //Removes lock screen
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or //Prevents screen from going off
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON //Turns screen on if its off
         )
 
+        //Get reminder data passed from service
         val title = intent.getStringExtra("title") ?: ""
         val description = intent.getStringExtra("description") ?: ""
         val date = intent.getStringExtra("date") ?: ""
         val time = intent.getStringExtra("time") ?: ""
         reminderId = intent.getIntExtra("reminder_id", -1)
+
 
         startAlarmSound()
 
@@ -91,11 +100,11 @@ class AlarmActivity : ComponentActivity() {
 
     }
 
-
+    //Starts the alarm ringtone and vibration pattern
     private fun startAlarmSound() {
         try {
             val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ringtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
+            ringtone = RingtoneManager.getRingtone(applicationContext, alarmUri) //Converts default alarm URI into a playable ringtone object
             ringtone?.play()
 
             vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -106,11 +115,24 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+
+    //Stops the currently playing alarm sound and vibration
     private fun stopAlarmSound() {
         ringtone?.stop()
         vibrator?.cancel()
     }
 
+    /**
+     * @Snoozes the current alarm by 15 minutes
+     *
+     * Reschedules the alarm using AlarmManager with the same reminder data
+     *
+     * @param reminderId Unique identifier of the reminder
+     * @param title Reminder title
+     * @param description Reminder description
+     * @param date Reminder date
+     * @param time Reminder time
+     */
     private fun snoozeAlarm(reminderId: Int, title: String, description: String,date: String,time: String) {
         val snoozeTime = System.currentTimeMillis() + (15 * 60 * 1000)
         val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
@@ -120,21 +142,21 @@ class AlarmActivity : ComponentActivity() {
             putExtra("date", date)
             putExtra("time", time)
         }
-
+        //Wraps the intent so Android can execute it later
         val pendingIntent = PendingIntent.getBroadcast(
            this,
             reminderId,
             snoozeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
+        //Schedules new alarm
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, snoozeTime, pendingIntent)
         stopAlarmSound()
         finish()
     }
 
-
+    //Displays an animated pulsing alarm icon f
     @Composable
     fun pulsingIcon() {
 
@@ -161,9 +183,21 @@ class AlarmActivity : ComponentActivity() {
     }
 
 
+    /**
+     * Main UI screen displayed when an alarm is triggered
+     * Provides user actions (TTS,ASL translation, snooze,dismiss)
+     *
+     * @param title Reminder title
+     * @param description Reminder description
+     * @param date Reminder date
+     * @param time Reminder time
+     * @param onDismiss Callback invoked when alarm is dismissed
+     */
 
     @Composable
     fun AlarmScreen(title: String, description: String, date: String, time: String,onDismiss: () -> Unit) {
+        val context = LocalContext.current
+        val ttsManager = remember { TTSManager(context) }
 
         if (!GlobalState.hideResponse.value) {
             Column(
@@ -262,11 +296,17 @@ class AlarmActivity : ComponentActivity() {
                     ) {
 
                     Button(
-                        onClick = {},
+                        onClick = {
+                            GlobalState.ttsReading.value = !GlobalState.ttsReading.value
+                            if(GlobalState.ttsReading.value) ttsManager.speak(title)
+                            else ttsManager.stop()
+                        },
                         modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF3DD712),
+                            containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
+                                0xFF0C31EC
+                            ),
                             contentColor = Color(0xFFFFFFFF),
                         )
                     )
@@ -279,7 +319,7 @@ class AlarmActivity : ComponentActivity() {
                                 modifier = Modifier.size(36.dp)
                             )
                             Text(
-                                text = "Read Aloud",
+                                if(GlobalState.ttsReading.value) "Stop reading" else "Read Aloud",
                                 fontSize = 25.sp,
                                 modifier = Modifier.padding(top = 4.dp)
                             )

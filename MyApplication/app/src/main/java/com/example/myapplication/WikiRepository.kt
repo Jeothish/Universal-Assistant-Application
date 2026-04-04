@@ -2,6 +2,16 @@ package com.example.myapplication
 
 import android.util.Log
 
+/**
+ * Repository handling Wikipedia data retrieval and caching
+ */
+
+/**
+ * Retrieves Wikipedia article for a topic, using cache if available.
+ *
+ * @param topic Article topic
+ * @return Formatted article string or fallback message
+ */
 class WikiRepository(private val wikiDao: WikiDao) {
 
     suspend fun getWikiData(topic: String): String{

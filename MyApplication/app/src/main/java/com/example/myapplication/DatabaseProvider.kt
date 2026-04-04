@@ -16,24 +16,38 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
-
+//Room database for the application storing reminders, wiki cache, and weather cache
 @Database(entities = [Reminder::class, WikiCache::class, WeatherCache::class], version = 4, exportSchema = false)
+
+//AppDatabase inherits RoomDatabase and gives access to DAO methods
 abstract class AppDatabase : RoomDatabase() {
+
+
     abstract fun reminderDao(): ReminderDao
     abstract fun wikiDao(): WikiDao
     abstract fun weatherDao(): WeatherDao
 }
 
+/**
+ * Creates a secure instance of AppDatabase
+ *
+ * Handles:
+ * - Master key generation in Android Keystore
+ * - Secure database passphrase storage in SharedPreferences
+ * - Encryption/Decryption of database keys using AES-GCM
+ */
 object DatabaseProvider {
 
-    private const val KEYSTORE_ALIAS = "SecureReminderKey"
-    private const val ANDROID_KEYSTORE = "AndroidKeyStore"
-    private const val PREFERENCES_NAME = "secure_preferences"
-    private const val PREFERENCE_KEY = "db_passphrase"
-    private var INSTANCE: AppDatabase? = null
+    private const val KEYSTORE_ALIAS = "SecureReminderKey" //Unique key name for Android Keystore
+    private const val ANDROID_KEYSTORE = "AndroidKeyStore" //The keystore provider
+    private const val PREFERENCES_NAME = "secure_preferences" //Shared preferences file to store encrypted DB passphrase
+    private const val PREFERENCE_KEY = "db_passphrase" //Key name for stored preferences
+    private var INSTANCE: AppDatabase? = null //Cached instance of Room database to prevent multiple openings
 
     /**
-     * Creates or retirves a Master Key stored in hardware-backed Android Keystore
+     * Creates or retrieves a Master Key stored in hardware-backed Android Keystore
+     *
+     * @return SecretKey used for encrypting database passphrase
      */
     private fun getOrCreateSecretKey(): SecretKey{
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
@@ -54,7 +68,11 @@ object DatabaseProvider {
     }
 
     /**
-     * Encrypts raw databse passphrase using the Keystore Master Key so it can be stored in SharedPreferences safely
+     * Encrypts raw database passphrase using the Keystore Master Key so it can be stored in SharedPreferences safely
+     *
+     * @param key Raw database passphrase
+     * @param keystoreKey Master key from Keystore
+     * @return Base64-encoded encrypted key with IV prepended
      */
     private fun wrapKey(key: ByteArray,keystoreKey: SecretKey): String{
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -67,6 +85,9 @@ object DatabaseProvider {
 
     /**
      * Decrypts saved database passphrase using the Keystore Master Key
+     * @param encoded Base64-encoded encrypted key
+     * @param keyStoreKey Master key from Keystore
+     * @return Raw decrypted database key
      */
     private fun unwrapKey(encoded:String, keyStoreKey: SecretKey): ByteArray{
         val combined = Base64.decode(encoded, Base64.DEFAULT)
@@ -78,7 +99,10 @@ object DatabaseProvider {
     }
 
     /**
-     * Gets databse passphrase
+     * Retrieves or generates the database passphrase for SQLCipher.
+     *
+     * @param context Application context
+     * @return Byte array used as database passphrase
      */
     private fun getDatabaseKey(context: Context): ByteArray {
         val keystoreKey = getOrCreateSecretKey()
@@ -96,6 +120,12 @@ object DatabaseProvider {
         }
     }
 
+    /**
+     * Returns a single instance of AppDatabse
+     *
+     * @param context Application context
+     * @return Secure Room database instance
+     */
     fun getDatabase(context: Context): AppDatabase {
         return INSTANCE ?: synchronized(this){
 

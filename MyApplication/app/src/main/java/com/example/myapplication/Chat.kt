@@ -100,9 +100,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.yield
 
 
-
+//Data class to store the expected structure for a chat message
 data class ChatMessage(
     val prompt: String,
     val response: String? = null,
@@ -113,7 +114,13 @@ data class ChatMessage(
     val newsData: List<NewsItem>? = null
 )
 
-
+/**
+ * UI for the chat
+ * Screen manages text,voice,ASL and dynamically renders difference chat "bubbles" based on detected intent
+ *
+ * @param returnToChat Callback to navigate back to the Home.
+ * @param onOpenASLInput Callback to trigger the ASL gesture recognition camera.
+ */
 @Composable
 fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     val context = LocalContext.current
@@ -136,10 +143,10 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 
     LaunchedEffect(messageCount) {
         if (messageCount > 0) {
+            yield()
             listState.animateScrollToItem(messageCount - 1)
         }
     }
-
 
     if (GlobalState.hideResponse.value){
         ASLOutputScreen(returnToChat = { GlobalState.hideResponse.value = false })
@@ -259,7 +266,6 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                                 }
                             }
                             else -> {
-
                                 chatBubble(
                                     text = responseText,
                                     isUser = false,
@@ -270,13 +276,6 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
                     }
                 }
                 item {
-//                    if (GlobalState.thinking.value && GlobalState.llmResponse.value.isNotBlank()) {
-//                        chatBubble(
-//                            text = GlobalState.llmResponse.value,
-//                            isUser = false,
-//                            time = ""
-//                        )
-//                    }
                     if (GlobalState.thinking.value){
                         if (GlobalState.llmResponse.value.isBlank()){
                             CircularProgressIndicator(
@@ -541,17 +540,13 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 
 }
 
-
-//data class ChatMessage(
-//    val prompt: String,
-//    val response: String? = null,
-//    val time: String,
-//    val intent: String? = null,
-//    val weatherData: WeatherItem? = null,
-//    val newsData: List<NewsItem>? = null
-//)
-
-
+/**
+ * Message container for regular messages
+ *
+ * @param text The message content to display
+ * @param isUser True if message sent by user,false otherwise
+ * @param time Timestamp of the message
+ */
 @Composable
 fun chatBubble(text: String, isUser: Boolean,time:String){
     val context = LocalContext.current
@@ -680,7 +675,12 @@ fun chatBubble(text: String, isUser: Boolean,time:String){
 
 }
 
-
+/**
+ * Helper function to get the weather category for weather chat cards
+ *
+ * @param forecast The raw forecast string.
+ * @return The category corresponding to the forecast
+ */
 fun getWeatherCategory(forecast: String): String{
     return when{
         forecast.contains("snow", ignoreCase = true) -> "snow"
@@ -693,6 +693,12 @@ fun getWeatherCategory(forecast: String): String{
     }
 }
 
+/**
+ * Helper function to get the weather colour for weather chat cards
+ *
+ * @param forecast The raw forecast string.
+ * @return The colour corresponding to the forecasr
+ */
 fun getWeatherColour(category: String): Color{
     return when(category.lowercase()){
         "snow" -> Color(0xFFB3E5FC)
@@ -706,6 +712,12 @@ fun getWeatherColour(category: String): Color{
     }
 }
 
+/**
+ * Helper function to get the weather icon for weather chat cards
+ *
+ * @param category The forecast category.
+ * @return The icon corresponding to the forecast
+ */
 fun getWeatherIcon(category: String): ImageVector{
     return when(category.lowercase()){
         "snow" -> Icons.Default.AcUnit
@@ -719,6 +731,12 @@ fun getWeatherIcon(category: String): ImageVector{
     }
 }
 
+/**
+ * Specialised UI card for displaying weather data
+ *
+ * @param weather The WeatherItem data object
+ * @param time The timestamp when the weather was generated.
+ */
 @Composable
 fun weatherBubble(weather: WeatherItem,time:String){
     val context = LocalContext.current
@@ -875,7 +893,12 @@ fun weatherBubble(weather: WeatherItem,time:String){
     }
 }
 
-
+/**
+ * Specialised UI container for displaying a list of news articles
+ *
+ * @param newsList he collection of NewsItem objects to display.
+ * @param time The timestamp when the news was generated.
+ */
 @Composable
 fun newsBubble(newsList: List<NewsItem>,time:String) {
     val context = LocalContext.current
@@ -1010,6 +1033,13 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
     }
 }
 
+/**
+ * Warning for user feedback
+ *
+ * @param msg The text in the warning
+ * @param colour The background color of the warning.
+ * @param onDismiss Callback triggered when the warning is dismissed .
+ */
 @Composable
 fun Warning(msg: String, colour: Color,onDismiss: () -> Unit) {
 
@@ -1026,6 +1056,12 @@ fun Warning(msg: String, colour: Color,onDismiss: () -> Unit) {
 
 }
 
+/**
+ * Dedicated UI for making message using ASL.
+ *
+ * @param returnToChat Callback to navigate back to  previous screen.
+ * @param navController Used to check the backstack to determine where to send the final message.
+ */
 @Composable
 fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
     val scrollState = rememberScrollState()
@@ -1120,7 +1156,7 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
                 onClick = {
                     GlobalState.aslPrompt.value = emptyList()
                 },
-                modifier = Modifier.height(60.dp).width(175.dp).padding(8.dp),
+                modifier = Modifier.height(60.dp).weight(1f).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Magenta,
@@ -1150,7 +1186,7 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
                         scrollState.animateScrollTo(scrollState.maxValue)
                     }
                 },
-                modifier = Modifier.height(60.dp).width(200.dp).padding(8.dp),
+                modifier = Modifier.height(60.dp).weight(1f).padding(8.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Green,
@@ -1369,6 +1405,16 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
     }
 
 }
+
+
+/**
+ * Initialises and starts one STT instance
+ *
+ * @param context The context needed to initialise the SpeechRecogniser
+ * @param onResult A lambda that receives the text
+ * @return The SpeechRecognizer instance so the caller can manually stop or destroy it..
+ */
+
 fun startSTT(context: Context, onResult: (String) -> Unit): SpeechRecognizer {
     val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
 

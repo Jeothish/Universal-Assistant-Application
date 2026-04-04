@@ -106,23 +106,34 @@ import kotlin.String
 import kotlin.text.forEach
 
 
+/**
+ * Main screen for displaying and managing reminders
+
+ * @param returnToChat Callback to navigate back to the home interface.
+ * @param openRemindersScreen Callback to navigate to the add reminders screen
+ */
 @Composable
 fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existingReminder: Reminder?) -> Unit) {
     val context = LocalContext.current
 
+    // Initialize Database and Repository instances
     val database = remember { DatabaseProvider.getDatabase(context) }
-
     val repository = remember {
         ReminderRepository(database.reminderDao())
     }
 
+    // Observe reminders as a State to trigger recomposition on DB changes
     val reminders by repository.allReminders.collectAsState(initial = emptyList())
+
     var searchQuery by remember { mutableStateOf("") }
+    val courotineScope = rememberCoroutineScope()
+
+
     val totalReminders by remember { derivedStateOf{reminders.size} }
     val completedReminders by remember { derivedStateOf{reminders.count{reminder -> reminder.is_complete == true}} }
     val remainingReminders by remember { derivedStateOf{reminders.count{reminder -> reminder.is_complete == false}} }
-    val courotineScope = rememberCoroutineScope()
 
+    //Filters reminders based on search bar
     val filteredReminders by remember {derivedStateOf {
         if(searchQuery.isBlank()) reminders
         else reminders.filter{
@@ -131,6 +142,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
         }
     } }
 
+    // Logic to toggle between the List View and the ASL Output View
     if(!GlobalState.hideResponse.value) {
         Column {
 
@@ -195,6 +207,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
             )
             {
                 Spacer(modifier = Modifier.height(80.dp))
+
                 statsBox(
                     icon = Icons.Default.Storage,
                     iconColour = Color(0xFF1046D0),
@@ -226,7 +239,6 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
                     modifier = Modifier.weight(1f)
                 )
             }
-
 
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -291,46 +303,17 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
         ASLOutputScreen(returnToChat = { GlobalState.hideResponse.value = false })
     }
 }
-@Composable
-fun customPopup(
-    snackbarHostState: SnackbarHostState,
-    message: String
-){
-    val courotineScope = rememberCoroutineScope()
 
-    Box(modifier = Modifier.fillMaxSize()){
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.Center)
-        ){
-            data -> Snackbar(containerColor = Color(0xFFD01515)){
-                Row(verticalAlignment = Alignment.CenterVertically){
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = Color(0xFFFFFFFF),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = data.visuals.message,
-                        fontSize = 20.sp,
-                        color = Color.White
-                    )
-                }
-             }
-        }
+/**
+ * Individual cards to display reminders neatly
+ * Allows for safe editing,deletion,TTS,.ASL translation
 
-        LaunchedEffect(message) {
-            courotineScope.launch{
-                snackbarHostState.showSnackbar(
-                    message = message,
-                    duration = SnackbarDuration.Short
-                )
-            }
-        }
-    }
-}
+ * @param repository The ReminderRepository used for direct DB updates.
+ * @param reminder The reminder data object to display.
+ * @param onEdit Callback triggered too navigate to the add/edit reminders screen.
+ * @param onDelete Callback triggered to remove the reminder by its ID.
+ * @param onToggleComplete Callback triggered to update the completion status in the DB.
+ */
 @Composable
 fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Reminder) -> Unit, onDelete: (Int) -> Unit,onToggleComplete: (Int,Boolean) -> Unit){
 
@@ -338,9 +321,6 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
     val courotineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val ttsManager = remember { TTSManager(context) }
-
-
-
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -416,27 +396,6 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
 
                             )
                         }
-
-
-//                    Row(modifier = Modifier.fillMaxWidth()) {
-//                        Icon(
-//                            imageVector = if (reminder.recurrence_type == "none") Icons.Default.Cancel else Icons.Default.EventRepeat,
-//                            contentDescription = null,
-//                            tint = if (isComplete) Color(0xFF666666) else Color(0xFFFFFFFF),
-//                            modifier = Modifier.size(24.dp)
-//                        )
-//
-////                        Text(
-////                            text = if (reminder.recurrence_type == "none") "Does not repeat" else " Repeats ${reminder.recurrence_type}",
-////                            fontSize = 15.sp,
-////                            textAlign = TextAlign.Center,
-////                            fontWeight = FontWeight.Bold,
-////                            color = if (isComplete) Color(0xFF666666) else Color(0xFFFFFFFF),
-////                            textDecoration = if (isComplete) TextDecoration.LineThrough else TextDecoration.None,
-////                        )
-//                    }
-
-
                 }
             }
             Row(modifier = Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp ),
@@ -525,7 +484,9 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                 }
             }
 
-
+            /**
+             * Gets letters from title and description to create a sequence of tokens for the ASLOutputScreen
+             */
             Button(
                 onClick = {
                     val tokens = mutableListOf<String>()
@@ -572,6 +533,15 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
         }
     }
 
+/**
+ * Screen used to create a reminder or edit an existing one
+ * Supports multi-modal input
+ *
+ * @param repository The repository for adding/updating the reminder.
+ * @param navController Navigation controller for managing back-stack.
+ * @param returnToChat Callback to return to the reminder screen.
+ * @param existingReminder If given, the screen is filled with the reminders data you wish to edit
+ */
 @Composable
 fun AddReminderScreen(repository: ReminderRepository, navController: NavController, returnToChat: () -> Unit, existingReminder: Reminder? = null){
     var title by rememberSaveable { mutableStateOf(existingReminder?.reminder_title ?:"") }
@@ -595,9 +565,10 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
     val aslResult by GlobalState.aslResult
     val aslTarget by GlobalState.aslTargetField
 
+    /**
+     * When the user provides input for a specific reminder field through ASL this ensures the correct field is updated
+     */
     LaunchedEffect(aslResult,aslTarget) {
-
-
         if(aslResult.isNotBlank()){
             when(aslTarget){
                 "title" -> title = aslResult
@@ -869,6 +840,8 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
             color=Color(0xFFFFC107),
             modifier = Modifier.padding(8.dp)
         )
+
+
 
         val datePicker = DatePickerDialog(
 
@@ -1230,8 +1203,16 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
 }
 
 
-
-
+/**
+ * Used to display key metrics on reminders
+ *
+ * @param icon The ImageVector to be displayed at the top of the card.
+ * @param iconColour The color applied to the icon.
+ * @param value The data to display.
+ * @param label Label for the box.
+ * @param circleBackground The background color container holding the icon.
+ * @param modifier Modifier used for styling
+ */
 @Composable
 fun statsBox(icon:ImageVector, iconColour:Color = Color.DarkGray , value:Int , label:String, circleBackground: Color = Color.Gray,modifier: Modifier = Modifier ){
     Column(

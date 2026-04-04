@@ -216,6 +216,16 @@ def getWeather(prompt, default):
         "result": result.get("weather", result)
     })
 
+def get_weather_params(prompt, default):
+    prompt = prompt.lower().strip()
+    city = get_city(prompt, default)
+    days_ahead = days(prompt)
+    hour = extract_hour(prompt)
+    return json.dumps({
+        "city": city,
+        "days_ahead": days_ahead,
+        "hour": hour
+    })
 
 cache_coords = {
     "dublin": (53.33306, -6.24889),

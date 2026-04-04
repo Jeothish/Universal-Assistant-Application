@@ -34,6 +34,15 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
+/**
+ * Video renderer that translates text to ASL
+ *
+ * @param tokens List of letters to be animated
+ * @param isPlaying Boolean toggle to pause or resume the playback
+ * @param currentTokenIndex The current position in the token list
+ * @param replayTrigger Used to force a restart to the start of the video
+ * @param onTokenChange Callback when a letter finishes playing
+ */
 @Composable
 fun ASLRenderer(
     tokens: List<String>,
@@ -44,14 +53,12 @@ fun ASLRenderer(
 ) {
 
     val context = LocalContext.current
-    var pausedPositionMs by remember { mutableLongStateOf(0L) }
-    var isLetterPlaying by remember { mutableStateOf(false) }
 
-
+    //Load video file
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
             val uri = RawResourceDataSource.buildRawResourceUri(
-                R.raw.aslanimationcentered
+                R.raw.aslanimationfinal
             )
             setMediaItem(MediaItem.fromUri(uri))
             prepare()
@@ -70,53 +77,53 @@ fun ASLRenderer(
         modifier = Modifier.fillMaxSize()
     )
 
-    //Pause and Play
+
+    //Handles seek + play/pause when the slider is moved + playback buttons
     LaunchedEffect(isPlaying,currentTokenIndex) {
         if (currentTokenIndex >= tokens.size) return@LaunchedEffect
         val startMs = tokens.getOrNull(currentTokenIndex)?.firstOrNull()?.let { (it - 'A') * 1000L} ?: 0L
-        pausedPositionMs = startMs
         exoPlayer.seekTo(startMs)
         if (isPlaying) exoPlayer.play() else exoPlayer.pause()
     }
 
-    //ASL sequence playback
+    //Iterates through each letter and plays it corresponding animation
     LaunchedEffect(tokens,isPlaying,currentTokenIndex) {
         if (tokens.isEmpty() || currentTokenIndex >= tokens.size) return@LaunchedEffect
 
         var index = currentTokenIndex
         while (index < tokens.size) {
             val letter = tokens[index]
-            val startMs = (letter.first() - 'A') * 1000L
-            var elapsed = 0L
-            val letterDuration = 1000L
-            val interval = 200L
-            isLetterPlaying = true
 
+            //Find the start time of this letter in the video
+            val startMs = (letter.first() - 'A') * 1000L
+
+            var elapsed = 0L
+            val letterDuration = 1000L //How long each letter is shown for
+            val interval = 200L
+
+
+            //Jump to the correct position in the video that corresponds to this letter
             exoPlayer.seekTo(startMs)
 
+            //Plays the letter is small time segments to allow for responsive pause/resume
             while (elapsed < letterDuration) {
                 if (isPlaying) {
                     exoPlayer.play()
                     delay(interval)
                     elapsed += interval
                 } else {
+                    //Pause while preserving the current letter being played
                     exoPlayer.pause()
-                    pausedPositionMs = exoPlayer.currentPosition
                     delay(interval)
                 }
             }
 
+            //Stop playback at the end of the letter and move to the next letter
             exoPlayer.pause()
-            pausedPositionMs = exoPlayer.currentPosition
             index++
             onTokenChange(index)
-            isLetterPlaying = false
             delay(200)  // Pause between letters
         }
-
-
-
-
     }
 
 
@@ -126,10 +133,9 @@ fun ASLRenderer(
         val firstToken = tokens.firstOrNull() ?: return@LaunchedEffect
         val startMs = (firstToken.first() - 'A') * 1000L
         onTokenChange(0)
-        pausedPositionMs =  startMs
         exoPlayer.seekTo(startMs)
         exoPlayer.pause()
-        //isPlaying = true
+
     }
 
     //Cleanup ExoPlayer
@@ -140,6 +146,11 @@ fun ASLRenderer(
     }
 }
 
+/**
+ * UI for displaying ASL translation
+ *
+ * @param returnToChat Callback to navigate back to chat
+ */
 @Composable
 fun ASLOutputScreen(returnToChat: () -> Unit){
     val tokens = GlobalState.aslTokens.value
@@ -147,8 +158,6 @@ fun ASLOutputScreen(returnToChat: () -> Unit){
     var currentTokenIndex by remember { mutableStateOf(0) }
     var replayTrigger by remember { mutableStateOf(0) }
 
-
-    //ASLRenderer(tokens = GlobalState.aslTokens.value,onReturn = {GlobalState.hideResponse.value = false})
     Column(modifier = Modifier.fillMaxSize()) {
 
         Box(
@@ -175,7 +184,7 @@ fun ASLOutputScreen(returnToChat: () -> Unit){
         Slider(
             value = currentTokenIndex.toFloat(),
             onValueChange = {currentTokenIndex = it.roundToInt()},
-            onValueChangeFinished = {replayTrigger++},
+            onValueChangeFinished = {},
             valueRange = 0f..(tokens.size - 1).toFloat(),
             steps = maxOf(tokens.size - 2,0),
             modifier = Modifier.padding(6.dp),

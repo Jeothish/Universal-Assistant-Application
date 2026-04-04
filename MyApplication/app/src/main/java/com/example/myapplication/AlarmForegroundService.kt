@@ -7,9 +7,18 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 
 
-
+/**
+ * Foreground service responsible for handling alarm execution
+ *
+ * Ensures the alarm can:
+ * - Run in the background
+ * - Displays a high-priority notification
+ * - Launches the alarm activity in full screen
+ */
 class AlarmForegroundService : Service() {
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int { //Runs when service starts
+        //Get reminder data from intent
         val title = intent?.getStringExtra("title") ?: ""
         val description = intent?.getStringExtra("description") ?: ""
         val date = intent?.getStringExtra("date") ?: ""
@@ -18,6 +27,7 @@ class AlarmForegroundService : Service() {
 
         createNotificationChannel()
 
+        //Intent used to launch alarm UI
         val alarmIntent = Intent(this, AlarmActivity::class.java).apply {
             putExtra("reminder_id", reminderId)
             putExtra("title", title)
@@ -27,11 +37,13 @@ class AlarmForegroundService : Service() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NO_USER_ACTION)
         }
 
+        //Allows the notification to launch activity
         val pendingIntent = PendingIntent.getActivity(
             this, reminderId, alarmIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        //Builds high-priority alarm notification
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("⏰ $title")
             .setContentText(description)
@@ -50,6 +62,8 @@ class AlarmForegroundService : Service() {
 
         return START_NOT_STICKY
     }
+
+
 
     private fun createNotificationChannel(){
         val channel = NotificationChannel(CHANNEL_ID,"Alarm Notifications", NotificationManager.IMPORTANCE_MAX)

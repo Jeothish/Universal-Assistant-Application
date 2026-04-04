@@ -10,6 +10,18 @@ import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.*
 
+
+/**
+ * Schedules an alarm at a specific date and time.
+ *
+ * @param context Application context
+ * @param reminderId Unique identifier for the reminder
+ * @param title Reminder title
+ * @param description Reminder description
+ * @param date Date in format yyyy-MM-dd
+ * @param time Time in format HH:mm:ss
+ */
+
 object AlarmScheuduler {
 
     fun scheduleAlarm(

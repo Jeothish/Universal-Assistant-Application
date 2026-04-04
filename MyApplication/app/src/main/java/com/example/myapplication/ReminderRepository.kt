@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+/**
+ * Repository providing a higher-level interface for Reminder operations.
+ *
+ * Handles validation and business logic before going to ReminderDao.
+ */
+
 class ReminderRepository(private val dao: ReminderDao) {
 
     val allReminders: Flow<List<Reminder>> = dao.getAllReminders()
