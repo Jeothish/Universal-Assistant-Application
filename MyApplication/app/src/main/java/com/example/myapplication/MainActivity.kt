@@ -79,22 +79,25 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
+import android.os.Handler
+import android.os.Looper
+import androidx.compose.material.icons.filled.MonitorHeart
 
 class MainActivity : ComponentActivity() {
 
-    private val cameraPermission = Manifest.permission.CAMERA
+    private val cameraPermission = Manifest.permission.CAMERA //permissions
     private val micPermission = Manifest.permission.RECORD_AUDIO
     private val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
 
 
-    private val requestPermissionLauncher =
+    private val requestPermissionLauncher = //ask user for perms
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             val cameraGranted = permissions[Manifest.permission.CAMERA] == true
             val micGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
             val notificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] == true
-            val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+            val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true //location for weather
             if (cameraGranted && micGranted && notificationGranted) {
-                if (locationGranted) fetchUserCity()
+                if (locationGranted) fetchUserCity()//get user city if perm granted
 
 
 
@@ -109,14 +112,14 @@ class MainActivity : ComponentActivity() {
         }
 
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) { //init code that runs on app start
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (!Python.isStarted()) {
+        if (!Python.isStarted()) {//start python
             Python.start(AndroidPlatform(this))
         }
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.IO) { //init llm, db + stored user settings
             try {
                 GlobalState.aslTimer.value = AppPreferences.loadTimer(applicationContext)
                 GlobalState.ttsSpeechRate.value = AppPreferences.loadSpeechSpeed(applicationContext)
@@ -134,7 +137,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-            val cameraGranted = ContextCompat.checkSelfPermission(
+            val cameraGranted = ContextCompat.checkSelfPermission( //check perms
             this,
             Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
@@ -144,7 +147,7 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
 
-        val notificationGranted = if (android.os.Build.VERSION.SDK_INT >= 33){
+        val notificationGranted = if (android.os.Build.VERSION.SDK_INT >= 33){ //push notifs
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.POST_NOTIFICATIONS
@@ -179,9 +182,19 @@ class MainActivity : ComponentActivity() {
                 )
             )
         }
+
+        val handler = Handler(Looper.getMainLooper()) //for ram monitoring
+        val memoryRunnable = object : Runnable {
+            override fun run() {
+                GlobalState.ram.value = getMemoryUsage()
+                handler.postDelayed(this, 1000)
+            }
+        }
+        handler.post(memoryRunnable)
+
     }
 
-    private fun requestOverlayPermission() {
+    private fun requestOverlayPermission() { //ask for overlay permission for alarm screen
         if (!Settings.canDrawOverlays(this)) {
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -191,14 +204,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun fetchUserCity() {
+    private fun fetchUserCity() { //get user city from coords
         val fusedClient = LocationServices.getFusedLocationProviderClient(this)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return//ensure permission is granted
 
         fusedClient.lastLocation.addOnSuccessListener { location ->
             if (location != null) {
-                val geocoder = Geocoder(this, Locale.getDefault()) //convert coords to city
+                val geocoder = Geocoder(this, Locale.getDefault()) //convert coords to city name
                 val city = geocoder.getFromLocation(location.latitude, location.longitude, 1)
                     ?.firstOrNull()?.locality
                 if (city != null) {
@@ -207,6 +220,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun getMemoryUsage(): String { //get ram usage
+        val debug = android.os.Debug.MemoryInfo()
+        android.os.Debug.getMemoryInfo(debug)
+
+        val total = debug.totalPss / 1024
+
+        return total.toString()
     }
 
 }
@@ -223,12 +245,12 @@ fun MyApplicationApp() {
 
 }
 
-
+//settings
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var speechSpeed by remember { mutableStateOf(GlobalState.ttsSpeechRate.value) }
+    var speechSpeed by remember { mutableStateOf(GlobalState.ttsSpeechRate.value) } //values to be canged in settings
     var speechPitch by remember { mutableStateOf(GlobalState.ttsPitch.value) }
     var timer by remember { mutableStateOf(GlobalState.aslTimer.value.toFloat()) }
     var saved by remember { mutableStateOf(false) }
@@ -243,6 +265,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
         .verticalScroll(scrollState)
         .padding(16.dp)){
 
+        //return button
     Button(onClick = returnToChat, modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(
         containerColor = Color(0xFFDE0F0F),
         contentColor = Color(0xFFFFFFFF),
@@ -268,7 +291,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 
         Column()
         {
-            Row(
+            Row( //tts settings
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -298,7 +321,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            Row() {
+            Row() { //speech speed
 
                 Text(
                     text = "Speech Speed",
@@ -321,7 +344,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                 )
             }
 
-            Slider(
+            Slider( //slider for speech speed
                 value = speechSpeed,
                 onValueChange = {speechSpeed = it;GlobalState.ttsSpeechRate.value = it },
                 onValueChangeFinished = {scope.launch {AppPreferences.saveSpeechSpeed(context, speechSpeed)}},
@@ -364,7 +387,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 
             Spacer(modifier = Modifier.height(15.dp))
 
-            Row() {
+            Row() { //speech pitch
 
                 Text(
                     text = "Speech Pitch",
@@ -387,7 +410,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                 )
             }
 
-            Slider(
+            Slider( //slider for speech pitch
                 value = speechPitch,
                 onValueChange = {speechPitch = it;GlobalState.ttsPitch.value = it },
                 onValueChangeFinished = {scope.launch {AppPreferences.saveSpeechPitch(context, GlobalState.ttsPitch.value)}},
@@ -436,6 +459,7 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        //asl settings
         Box(
             modifier = Modifier.fillMaxWidth()
 
@@ -479,11 +503,11 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(15.dp))
 
-                Row() {
+                Row() { //addd letter to message delay
 
                     Text(
-                        text = "ASL Letter Delay",
-                        fontSize = 25.sp,
+                        text = "Add Letter to Message Delay",
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         //modifier = Modifier.padding(19.dp),
                         color = Color(0xFFFFFFFF)
@@ -534,25 +558,96 @@ fun SettingsScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
                     )
 
                     Text(
-                        text = "Normal",
+                        text = "Slow",
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center,
                         color = Color(0xFF6F6F6D)
                     )
 
                     Text(
-                        text = "Slow",
+                        text = "Slower",
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.End,
                         color = Color(0xFF6F6F6D)
                     )
                 }
 
-                //Spacer(modifier = Modifier.height(15.dp))
-
                 }
             }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        //resoucre monitoring settings
+        Box(
+            modifier = Modifier.fillMaxWidth()
+
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFF2A2A38))
+                .border(2.dp, Color(0xFFF44336), RoundedCornerShape(24.dp))
+                .padding(26.dp),
+
+            ) {
+
+            Column() {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF44336))
+                            .padding(16.dp)
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(106.dp),
+                            imageVector = Icons.Default.MonitorHeart,
+                            contentDescription = null,
+
+                            )
+                    }
+                    Text(
+                        text = "Resource Monitoring",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(19.dp),
+                        color = Color(0xFFFFC63A)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(15.dp))
+
+                Row() {
+
+                    Text(
+                        text = "Show app RAM usage on chat screen.",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFFFFF)
+                    )
+                }
+
+                //turn off on ram monitoring
+
+                Button(onClick = {GlobalState.showRam.value = !GlobalState.showRam.value},
+                    content = {if (GlobalState.showRam.value) Text(text = "Hide", fontSize = 25.sp) else Text(text = "Show", fontSize = 25.sp)},
+                    modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),shape = RoundedCornerShape(12.dp)
+                    , colors = if (GlobalState.showRam.value) {ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF0707),
+                    contentColor = Color(0xFFFFFFFF)
+                    )} else{ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00FF02),
+                        contentColor = Color(0xFFFFFFFF)
+                    )}
+                )
+            }
         }
+        }
+
 
     }
 
@@ -564,32 +659,8 @@ fun ProfileScreen(modifier: Modifier = Modifier,returnToChat: () -> Unit) {
     }
 }
 
-@Composable
-fun textBar(onSend: (String) -> Unit){
-    var text by remember { mutableStateOf("") }
-    val thinking by GlobalState.thinking
-    var ask by remember { mutableStateOf("Ask Anything...") }
-    if (thinking){
-        ask = "Thinking..."
-    }
-    else{
-        ask = "Ask Anything..."
-    }
 
-    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 560.dp), verticalAlignment = Alignment.CenterVertically)
-    {
-        OutlinedTextField(value = text, onValueChange = {text=it},modifier=Modifier.weight(1f), placeholder = {Text(text=ask,color = if (thinking) Color.Magenta else Color.Gray)}, singleLine = true)
-        Spacer(modifier = Modifier.width(8.dp))
-        Button(onClick = {
-                    if (text.isNotBlank()) {
-                        onSend(text)
-                        text=""
-                    }})
-        {Text("send")}
-    }
-}
-
-
+//launch camera for asl input
 @Composable
 fun CameraDet() {
     val context = LocalContext.current
@@ -600,7 +671,7 @@ fun CameraDet() {
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }
     }
-    val overlayView = remember { OverlayView(context, null) }
+    val overlayView = remember { OverlayView(context, null) } //purple skelton overlay for asl
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -614,7 +685,7 @@ fun CameraDet() {
         )
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) { //launch cam
         startCamera(
             context = context,
             lifecycleOwner = lifecycleOwner,
@@ -624,6 +695,7 @@ fun CameraDet() {
     }
 }
 
+//start cam analyzing for asl/mp
 fun startCamera(
     context: Context,
     lifecycleOwner: LifecycleOwner,
@@ -636,15 +708,15 @@ fun startCamera(
         val cameraProvider = cameraProviderFuture.get()
 
         val preview = Preview.Builder().build().apply {
-            setSurfaceProvider(previewView.surfaceProvider)
+            setSurfaceProvider(previewView.surfaceProvider)//camera feed
         }
 
-        val imageAnalysis = ImageAnalysis.Builder()
+        val imageAnalysis = ImageAnalysis.Builder() //for mp
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888) //yuv format to be conv to jpeg->bitmap for mp
             .build()
 
-        val analyzer = HandAnalyzer(context, overlayView)
+        val analyzer = HandAnalyzer(context, overlayView)//instantiate hand analyzer class for mp
         imageAnalysis.setAnalyzer(
             Executors.newSingleThreadExecutor(),
             analyzer
@@ -654,7 +726,7 @@ fun startCamera(
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(
                 lifecycleOwner,
-                CameraSelector.DEFAULT_FRONT_CAMERA,
+                CameraSelector.DEFAULT_FRONT_CAMERA, //use front cam
                 preview,
                 imageAnalysis
             )
@@ -676,7 +748,7 @@ enum class AppDestinations(
     PROFILE("Profile", Icons.Default.AccountBox),
 }
 
-@Composable
+@Composable //greeting text on home screen
 fun Greeting(time: String) {
     Box(
         modifier = Modifier.fillMaxSize(),

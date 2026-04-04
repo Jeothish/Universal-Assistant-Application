@@ -130,6 +130,7 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
     var recording by remember { mutableStateOf(false) }
     val messages = GlobalState.chatMessages
     val lastMessage = messages.lastOrNull()
+    val ram  = GlobalState.ram.value
 
 
 
@@ -139,19 +140,6 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
         }
     }
 
-//    LaunchedEffect(lastMessage) {
-//        if (lastMessage != null) {
-//            Log.d("TTS_DEBUG", "Autoplay begun")
-//
-//            GlobalState.stopRequested.value = false
-//
-//            delay(400)
-//
-//            if (!GlobalState.stopRequested.value && !GlobalState.ttsReading.value) {
-//                ttsManager.speak(lastMessage.response)
-//            }
-//        }
-//    }
 
     if (GlobalState.hideResponse.value){
         ASLOutputScreen(returnToChat = { GlobalState.hideResponse.value = false })
@@ -226,7 +214,14 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 
 
             }
-
+            if (GlobalState.showRam.value) {
+                Text(
+                    text = "RAM: ${ram}MB",
+                    modifier = Modifier.padding(end = 10.dp, start = 235.dp),
+                    color = Color.White,
+                    maxLines = 1
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
 
             LazyColumn(
@@ -1042,6 +1037,7 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
     val scope = rememberCoroutineScope()
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    val ram by GlobalState.ram
 
     Column(
         modifier = Modifier.padding(8.dp).verticalScroll(scrollState)
@@ -1190,6 +1186,13 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
 
         ){
             CameraDet()
+            if (GlobalState.showRam.value) {
+                Text(
+                    text = "RAM: ${ram}MB",
+                    modifier = Modifier.padding(end = 10.dp, start = 250.dp, top = 300.dp),
+                    color = Color.Black
+                )
+            }
             if (GlobalState.aslHandsError.value){
                 Warning(msg="Multiple hands detected on screen!\nDetection may behave unexpectedly.\nPlease only use one hand.",colour=Color.Red){
                     GlobalState.aslHandsError.value = false

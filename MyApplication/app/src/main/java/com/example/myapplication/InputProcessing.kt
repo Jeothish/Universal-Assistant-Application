@@ -57,33 +57,8 @@ class InputProcessing(private val context: Context) {
     private val db by lazy { DatabaseProvider.getDatabase(context) }
     private val weatherRepo by lazy { WeatherRepository(db.weatherDao()) }
 
-    private var recorder: MediaRecorder? = null
-    private var outputFile: File? = null
-
-    fun startRec() {
-        outputFile = File(context.cacheDir, "voice_input.m4a")
-
-        recorder = MediaRecorder().apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            setOutputFile(outputFile!!.absolutePath)
-            prepare()
-            start()
-        }
-    }
-
-    fun stopRec(): File? {
-        recorder?.apply {
-            stop()
-            release()
-        }
-        recorder = null
-        return outputFile
-    }
-
-
-    fun getIntent(prompt: String): String {
+    //call python via chaquopy
+    fun getIntent(prompt: String): String { //call KW intent detection
         val py = Python.getInstance()
         val mod = py.getModule("intent")
         return mod.callAttr("get_intent", prompt).toString()
@@ -96,7 +71,7 @@ class InputProcessing(private val context: Context) {
 
     }
 
-    fun news(prompt: String): String {
+    fun news(prompt: String): String {// call python for news
         val py = Python.getInstance()
         val mod = py.getModule("intent")
         return mod.callAttr("getNews", prompt).toString()
@@ -134,40 +109,46 @@ class InputProcessing(private val context: Context) {
 //
 //    }
 
+    //send user query to LLM (backend)
     fun sendTextToBackend(prompt: String) {
-        val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        val messageTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())//time of query
+
         val newMessage =
             ChatMessage(prompt = prompt, time = messageTime, response = null, intent = null)
-        GlobalState.chatMessages.add(newMessage)
+
+        GlobalState.chatMessages.add(newMessage)//add message to chat history
+
         val messageIndex = GlobalState.chatMessages.lastIndex
-        GlobalState.thinking.value = true
+
+        GlobalState.thinking.value = true //set llm processing state to true
 
         val llm = GlobalState.localLLM
-        CoroutineScope(Dispatchers.IO).launch {
-            while (!GlobalState.llmReady.value) {
+
+        CoroutineScope(Dispatchers.IO).launch { //run on coroutine to prevent freezing main thread while waiting for response
+            while (!GlobalState.llmReady.value) { //if llm init hasnt finished
                 Log.d("LLM", "Wait, LLM is Loading...")
                 kotlinx.coroutines.delay(100)
             }
             Log.d("LLM", "LLM ready, Sending prompt: $prompt")
 
             try {
-                val intent = withContext(Dispatchers.Main) { getIntent(prompt) }
+                val intent = withContext(Dispatchers.Main) { getIntent(prompt) }//call python intent detection
                 Log.d("LLM", "Intent: $intent")
 
                 val jsonString: String
                 if (intent == "weather") {
                     Log.d("WEATHER_PERFORMANCE", "Processing Weather Request")
-                    jsonString = weatherRepo.getWeatherData(prompt, GlobalState.userCity.value)
+                    jsonString = weatherRepo.getWeatherData(prompt, GlobalState.userCity.value) //get weather forecast through cache/api
                     Log.d("WEATHER_PERFORMANCE", "Fetched weather data")
                 }
                 else if (intent == "news") {
-                    jsonString = withContext(Dispatchers.Main) { news(prompt) }
+                    jsonString = withContext(Dispatchers.Main) { news(prompt) }//get news articles
                     Log.d("LLM_RESPONSE", jsonString)
                 }
-                else {
-                   val fullResponse = StringBuilder()
+                else { //call llm if chat intent
+                   val fullResponse = StringBuilder()//streaming mode
                     GlobalState.localLLM!!.generateStream(prompt).collect { token ->
-                        fullResponse.append(token)
+                        fullResponse.append(token)//add token to llm message
                         withContext(Dispatchers.Main) {
                             if (messageIndex <= GlobalState.chatMessages.lastIndex) {
                                 GlobalState.chatMessages[messageIndex] =
@@ -180,10 +161,10 @@ class InputProcessing(private val context: Context) {
                     }
 
                     withContext(Dispatchers.Main) {
-                        GlobalState.thinking.value = false
+                        GlobalState.thinking.value = false //once llm responds set thinking to false
                     }
 
-                    jsonString = Gson().toJson(
+                    jsonString = Gson().toJson( //json obj for hadnling response
                         mapOf(
                             "intent" to "chat",
                             "prompt" to prompt,
@@ -210,25 +191,25 @@ class InputProcessing(private val context: Context) {
     fun handleResponse(jsonObject: JsonObject, messageIndex: Int) {
         //val jsonObject = Gson().fromJson(response, JsonObject::class.java)
 
-        val intent = jsonObject.get("intent")?.asString ?: "chat"
+        val intent = jsonObject.get("intent")?.asString ?: "chat" //extract intent from json, iof empty set to chat
         //val prompt = jsonObject.get("prompt")?.asString ?: ""
         var result = ""
 
-        if (intent == "weather") {
+        if (intent == "weather") {//if user asks for weather
 
-            val resultObj = jsonObject.get("result")
-            val city = jsonObject.get("city")?.asString ?: "Unknown"
+            val resultObj = jsonObject.get("result")//extract forecast
+            val city = jsonObject.get("city")?.asString ?: "Unknown"//extract city
 
             if (resultObj.isJsonArray) {
                 val forecastList =
                     Gson().fromJson(resultObj.asJsonArray, Array<WeatherItem>::class.java).toList()
                         .map { it.copy(city = city) }
 
-                GlobalState.chatMessages[messageIndex] =
+                GlobalState.chatMessages[messageIndex] = //update chat message
                     GlobalState.chatMessages[messageIndex].copy(
                         intent = "weather",
                         weatherForecast = forecastList,
-                        response = "Here is the forecast for ${city}"
+                        response = "Here is the forecast for ${city}" //for tts
                     )
             }
             else{
@@ -244,11 +225,6 @@ class InputProcessing(private val context: Context) {
                 )
 
             }
-
-
-
-
-
 
 
         } else if (intent == "news") {

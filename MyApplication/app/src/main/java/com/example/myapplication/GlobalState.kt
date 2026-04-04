@@ -36,12 +36,9 @@ object GlobalState {
 
     val hideResponse = mutableStateOf(false)
 
-    val userCity = mutableStateOf("Dublin")
-
-    var serverIP = mutableStateOf("192.168.1.135")
+    val userCity = mutableStateOf("Galway")
 
     var stopRequested = mutableStateOf(false)
-
 
     var ttsReading = mutableStateOf(false)
 
@@ -69,5 +66,9 @@ object GlobalState {
 
     val aslResult = mutableStateOf("")
     val aslTargetField = mutableStateOf("")
+    val ram = mutableStateOf("")
+
+    var showRam = mutableStateOf(false)
+
 
 }

@@ -16,28 +16,28 @@ from sklearn.utils.class_weight import compute_class_weight
 # mediapipe landmarks dataset from
 # https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
 
-df = pd.read_csv("asl_mediapipe_keypoints_dataset.csv")
+df = pd.read_csv("asl_mediapipe_keypoints_dataset.csv")#load data
 
-X = df.drop(columns=["label"]).values
+X = df.drop(columns=["label"]).values#prep data
 y = df["label"].values
 
-encoder = LabelEncoder()
+encoder = LabelEncoder()#encode data (letters to ints)
 y_encode = encoder.fit_transform(y)
 print("Classes:", encoder.classes_)
 np.save("asl_labels.npy", encoder.classes_)
 
 #test data
 X_trainval, X_test, y_trainval, y_test = train_test_split(
-    X, y_encode, test_size=0.15, random_state=42, stratify=y_encode
-)
+    X, y_encode, test_size=0.15, random_state=42, stratify=y_encode#15% as test data
+)#strat = ensure equal % of each letter
 
 
 def build_model(input_dim, num_classes):
-    model = Sequential([
-        Dense(128, activation="relu", input_shape=(input_dim,)),
-        Dropout(0.2),
+    model = Sequential([#seq = layer by layer build
+        Dense(128, activation="relu", input_shape=(input_dim,)),#rectified linear unit, input shape =63
+        Dropout(0.1),
         Dense(64, activation="relu"),
-        Dense(num_classes, activation="softmax")
+        Dense(num_classes, activation="softmax")#num classes = 28, softmax = o.p. prob.
     ])
     model.compile(
         optimizer=tf.keras.optimizers.Adam(0.0005),

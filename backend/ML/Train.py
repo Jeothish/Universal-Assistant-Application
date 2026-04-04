@@ -40,7 +40,7 @@ class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y
 class_weight_dict = dict(enumerate(class_weights))
 
 #train model
-model = Sequential([BatchNormalization(), Dense(128, activation="relu", input_shape=(X.shape[1],)), Dropout(0.3), Dense(64, activation="relu"),Dropout(0.2), Dense(len(np.unique(y_encode)), activation="softmax")])
+model = Sequential([BatchNormalization(), Dense(128, activation="relu", input_shape=(X.shape[1],)), Dropout(0.1), Dense(64, activation="relu"), Dense(len(np.unique(y_encode)), activation="softmax")])
 
 model.compile(optimizer=tf.keras.optimizers.Adam(0.0005), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 

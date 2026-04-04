@@ -254,7 +254,7 @@ private fun ImageProxy.toBitmap(): Bitmap { //helper to convert image proxy to b
     val uSize = uBuffer.remaining()
     val vSize = vBuffer.remaining()
 
-    val nv21 = ByteArray(ySize + uSize + vSize) //1 byte array to hold all 3 planes (nv21 format)
+    val nv21 = ByteArray(ySize + uSize + vSize) //single byte array to hold all 3 planes (nv21 format)
 
     yBuffer.get(nv21, 0, ySize) //copy planes into array
     vBuffer.get(nv21, ySize, vSize)
