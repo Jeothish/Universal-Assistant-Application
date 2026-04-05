@@ -171,4 +171,6 @@ dependencies {
 
     implementation("androidx.compose.runtime:runtime-livedata:1.7.0")
 
+    implementation("com.joestelmach:natty:0.13")
+
 }

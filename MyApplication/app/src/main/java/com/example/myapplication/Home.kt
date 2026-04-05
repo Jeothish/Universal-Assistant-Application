@@ -29,6 +29,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
+
+/**
+ * Main entry points for the applications UI and navigation
+ *
+ *@param modifier Modifier for the navigation container
+ */
 @Composable
 fun HomePage(modifier: Modifier = Modifier){
 
@@ -39,6 +45,7 @@ fun HomePage(modifier: Modifier = Modifier){
     }
     val navController = rememberNavController() //Keeps track of which screen is being displayed
     var reminderToEdit by remember { mutableStateOf<Reminder?>(null)}
+
     //Connects screen tracker with the screens
     NavHost(
         navController = navController,
@@ -57,12 +64,9 @@ fun HomePage(modifier: Modifier = Modifier){
                 onOpenSettings = {
                     navController.navigate(HomeRoutes.SETTINGS)
                 },
-                onOpenProfile = {
-                    navController.navigate(HomeRoutes.PROFILE)
+                onOpenASLInput = {
+                    navController.navigate(HomeRoutes.ASL_INPUT_SCREEN)
                 },
-                onOpenAslOutput = {
-                    navController.navigate(HomeRoutes.ASL_OUTPUT_SCREEN)
-                }
             )
         }
         //Defines the reminders screen
@@ -103,7 +107,7 @@ fun HomePage(modifier: Modifier = Modifier){
         }
 
         composable(HomeRoutes.ASL_INPUT_SCREEN){
-            ASLInputScreen(returnToChat = {navController.popBackStack()},navController = navController)
+            ASLInputScreen( returnToChat = {navController.popBackStack()}, navController = navController)
         }
 
         composable(HomeRoutes.ASL_OUTPUT_SCREEN){

@@ -754,7 +754,7 @@ fun Greeting(time: String) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
     ){
-        Text(text = "Good $time,\n\nhow can I help?",
+        Text(text = "Good $time \uD83D\uDC4B\n\nhow can I help?",
             color= Color(255, 193, 7, 255),
             fontSize = 32.sp,
             modifier = Modifier.padding(top = 64.dp)

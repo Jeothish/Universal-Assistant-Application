@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SignLanguage
 import androidx.compose.material3.Icon
 
 import androidx.compose.ui.text.style.TextAlign
@@ -104,7 +105,7 @@ fun homeButtons(icon: ImageVector, iconColour:Color = Color.DarkGray, title:Stri
 }
 
 @Composable
-fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSettings:() -> Unit,onOpenProfile: () -> Unit,onOpenAslOutput:() -> Unit) {
+fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSettings:() -> Unit,onOpenASLInput: () -> Unit) {
 
             val hour = LocalTime.now().hour
             var time = ""
@@ -158,6 +159,8 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                                 description = "Customise your app preferences",
                                 onClick = {onOpenSettings()})
                         }
+
+
                     }
                 }
 }

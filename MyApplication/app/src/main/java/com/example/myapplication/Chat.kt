@@ -1128,6 +1128,7 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
                         GlobalState.aslResult.value = finalMessage
                         navController.popBackStack()
                     }
+
                     else{
                         recorder.sendTextToBackend(finalMessage)
                         Toast.makeText(context,"Message Sent to Chat!", Toast.LENGTH_SHORT).show()

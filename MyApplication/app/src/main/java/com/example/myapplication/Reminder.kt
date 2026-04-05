@@ -7,11 +7,9 @@ import androidx.room.PrimaryKey
 data class Reminder(
     @PrimaryKey(autoGenerate = true)
     val reminder_id: Int = 0,
-
     val reminder_title: String,
     val reminder_date: String,
     val reminder_description: String?,
     val is_complete: Boolean = false,
-    val recurrence_type: String = "none",
     val reminder_time: String?
 )

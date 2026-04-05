@@ -548,7 +548,6 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
     var description by rememberSaveable { mutableStateOf(existingReminder?.reminder_description ?:"") }
     var date by rememberSaveable { mutableStateOf(existingReminder?.reminder_date ?:"") }
     var time by rememberSaveable { mutableStateOf(existingReminder?.reminder_time ?:"") }
-    var type by rememberSaveable { mutableStateOf(existingReminder?.recurrence_type ?:"") }
     val scrollState = rememberScrollState()
     val couroutineScope = rememberCoroutineScope()
     val calendar = Calendar.getInstance()
@@ -561,6 +560,7 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
     var voiceClick by remember { mutableStateOf(false) }
     var aslClick by remember { mutableStateOf(false) }
     var targetField by rememberSaveable{ mutableStateOf("")}
+    val currentMillis = System.currentTimeMillis()
 
     val aslResult by GlobalState.aslResult
     val aslTarget by GlobalState.aslTargetField
@@ -573,7 +573,6 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
             when(aslTarget){
                 "title" -> title = aslResult
                 "description" -> description = aslResult
-                "repeating" -> type = aslResult
             }
 
             GlobalState.aslResult.value = ""
@@ -894,10 +893,16 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
                             recording = false
                             speechRecognizer.value?.destroy()
                             speechRecognizer.value = null
+
                             if (spokenText.isNotBlank()) {
+                                val parsedDate = NattyParsing.extractDate(spokenText)
+                                Log.d("STT_PARSING","PARSED TIME $parsedDate")
+                                if(parsedDate != null){
+                                    date = parsedDate
+                                }
                                 GlobalState.thinking.value = true
                                 GlobalState.vc_prompt.value = spokenText
-                                recorder.sendTextToBackend(spokenText)
+
                             }}
                         recording = true
                     }
@@ -988,10 +993,16 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
                             recording = false
                             speechRecognizer.value?.destroy()
                             speechRecognizer.value = null
+
                             if (spokenText.isNotBlank()) {
+                                val parsedTime = NattyParsing.extractTime(spokenText)
+                                Log.d("STT_PARSING","PARSED TIME $parsedTime")
+                                if(parsedTime != null){
+                                    time = parsedTime
+                                }
                                 GlobalState.thinking.value = true
                                 GlobalState.vc_prompt.value = spokenText
-                                recorder.sendTextToBackend(spokenText)
+
                             }}
                         recording = true
                     }
@@ -1027,110 +1038,9 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
 
         }
 
-
-
-        Text(text= "Repeating ",
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-            color=Color(0xFFFFC107),
-            modifier = Modifier.padding(8.dp)
-        )
-
-        OutlinedTextField(
-            value = type,
-            onValueChange = {type= it},
-            placeholder = {
-                Text(
-                    text="Would you like this to repeat?",
-                    modifier = Modifier.padding(top = 8.dp),
-                    fontSize = 20.sp
-
-                )},
-            modifier = Modifier.fillMaxWidth().height(90.dp).padding(8.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor =  Color(0xFFFFFFFF),
-                unfocusedContainerColor =  Color(0xFFFFFFFF),
-                focusedTextColor =  Color(0xFF000000),
-                focusedBorderColor =  Color(0xFFDBBE0E),
-                unfocusedBorderColor =  Color(0xFF423B3B),
-                unfocusedPlaceholderColor =  Color(0xFF716E6E)
-            )
-        )
-        Row() {
-            Button(
-                onClick = {
-                    if (!recording) {
-                        speechRecognizer.value = startSTT(context) {spokenText ->
-                            recording = false
-                            speechRecognizer.value?.destroy()
-                            speechRecognizer.value = null
-                            if (spokenText.isNotBlank()) {
-                                GlobalState.thinking.value = true
-                                GlobalState.vc_prompt.value = spokenText
-                                recorder.sendTextToBackend(spokenText)
-                            }}
-                        recording = true
-                    }
-                    else {
-                        speechRecognizer.value?.stopListening()
-                        recording=false
-                    }
-                },
-                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE7D112),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-
-            {
-                Row() {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardVoice,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Text(
-                        text = "Speak Repeating",
-                        fontSize = 14.sp,
-
-                    )
-                }
-            }
-
-            Button(
-                onClick = {
-                    GlobalState.aslTargetField.value = "repeating"
-                    navController.navigate(HomeRoutes.ASL_INPUT_SCREEN)
-                },
-                modifier = Modifier.weight(1f).height(100.dp).padding(16.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE7D112),
-                    contentColor = Color(0xFFFFFFFF),
-                )
-            )
-
-            {
-                Row() {
-                    Icon(
-                        imageVector = Icons.Default.FrontHand,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Text(
-                        text = "ASL Repeating",
-                        fontSize = 14.sp,
-
-                    )
-                }
-            }
-
-        }
-
         Button(onClick = {
+            val currentDate = java.time.LocalDate.now().toString()
+            val currentTime = java.time.LocalTime.now().toString().substring(0, 8)
 
             if(title.isBlank()){
                 Toast.makeText(context,"Enter a title!", Toast.LENGTH_SHORT).show()
@@ -1147,6 +1057,16 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
                 return@Button
             }
 
+            if (date < currentDate) {
+                Toast.makeText(context, "Date is in the past! Select a valid date", Toast.LENGTH_LONG).show()
+                return@Button
+            }
+
+            if (date == currentDate && time < currentTime) {
+                Toast.makeText(context, "Time is in the past!", Toast.LENGTH_SHORT).show()
+                return@Button
+            }
+
             couroutineScope.launch {
                 try {
                     val reminder = Reminder(
@@ -1155,7 +1075,6 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
                         reminder_date = date,
                         reminder_description = description,
                         is_complete = false,
-                        recurrence_type = type,
                         reminder_time = time
                     )
 

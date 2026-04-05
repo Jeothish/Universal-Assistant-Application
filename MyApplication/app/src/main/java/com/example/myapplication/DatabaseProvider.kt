@@ -17,7 +17,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.spec.GCMParameterSpec
 
 //Room database for the application storing reminders, wiki cache, and weather cache
-@Database(entities = [Reminder::class, WikiCache::class, WeatherCache::class], version = 4, exportSchema = false)
+@Database(entities = [Reminder::class, WikiCache::class, WeatherCache::class], version = 5, exportSchema = false)
 
 //AppDatabase inherits RoomDatabase and gives access to DAO methods
 abstract class AppDatabase : RoomDatabase() {
