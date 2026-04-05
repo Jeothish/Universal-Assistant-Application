@@ -436,21 +436,34 @@ fun ChatScreen(returnToChat: () -> Unit,onOpenASLInput: () -> Unit) {
 
                     Button(
                         onClick = {
-                            if (inputText.isNotBlank()) {
-                                recorder.sendTextToBackend(inputText)
-                                inputText = ""
+                            if (!GlobalState.thinking.value || (!GlobalState.llmReady.value )) {
+                                if (inputText.isNotBlank()) {
+                                    recorder.sendTextToBackend(inputText)
+                                    inputText = ""
+                                }
+                            }
+                            else{
+                                if(GlobalState.llmReady.value ) {
+                                    GlobalState.localLLM!!.stopGen()
+                                    GlobalState.thinking.value = false
+                                }
                             }
                         },
                         modifier = Modifier.height(70.dp).width(100.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
+                        colors = if (!GlobalState.thinking.value || (!GlobalState.llmReady.value )) {ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFE7B912),
                             contentColor = Color(0xFFFFFFFF),
-                        )
+                        )}
+                        else {
+                            ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF0000),
+                            contentColor = Color(0xFFFFFFFF),
+                        )}
                     )
                     {
                         Icon(
-                            imageVector = Icons.Default.Send,
+                            imageVector = if (!GlobalState.thinking.value || (!GlobalState.llmReady.value )) Icons.Default.Send else Icons.Default.StopCircle,
                             contentDescription = null,
                             modifier = Modifier.size(36.dp)
                         )

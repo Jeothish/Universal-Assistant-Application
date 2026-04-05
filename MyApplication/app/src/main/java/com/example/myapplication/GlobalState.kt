@@ -44,7 +44,7 @@ object GlobalState {
 
     var localLLM: LocalLLM? = null
 
-    var llmReady = mutableStateOf(true)
+    var llmReady = mutableStateOf(false)
 
     val llmResponse = mutableStateOf("")
 

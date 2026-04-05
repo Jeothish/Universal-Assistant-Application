@@ -26,6 +26,9 @@ import kotlinx.coroutines.withTimeout
 class LocalLLM(private val wikiRepo: WikiRepository) {
 
     private var engine: Engine? = null //llm inference engine
+    private var cancelled = false
+
+    private var actConv: Conversation? = null //current conversation
 
     private var appContext: Context? = null
 
@@ -42,10 +45,24 @@ class LocalLLM(private val wikiRepo: WikiRepository) {
             }
         }
 
+        val totalRam = with(context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager) {
+            val info = android.app.ActivityManager.MemoryInfo()
+            getMemoryInfo(info)
+            info.totalMem
+        }
+
+        var backend = Backend.CPU
+
+        if (totalRam > 6L *1024 * 1024 * 1024) {
+            backend = Backend.GPU
+        }
+
+        Log.d("LLM", "Total RAM: ${totalRam / (1024 * 1024 * 1024)}GB, using ${if (backend == Backend.CPU) "CPU" else "GPU"}")
+
         val engineConfig = EngineConfig(
             modelPath = modelFile.absolutePath,
-            backend = Backend.GPU, //can be switched to cpu for lower end devices
-            cacheDir = context.cacheDir.path, //store model cache, used for faster laoding of llm
+            backend = backend, //can be switched to cpu for lower end devices
+            cacheDir = context.filesDir.path, //store model in local storage, used for faster subsequent laoding of llm
             maxNumTokens = 512 //lower = less hallucination and shorter responses
         )
         engine = Engine(engineConfig)
@@ -86,7 +103,12 @@ class LocalLLM(private val wikiRepo: WikiRepository) {
 
     suspend fun generateStream(prompt: String): Flow<String> { //generate response stream (output tokens to user one by one)
 
+        cancelled = false
+
         val context = callWiki(prompt,wikiRepo) //get query context from wikipedia
+
+        if (cancelled) return kotlinx.coroutines.flow.emptyFlow() //return empty flow if cancelled
+
         val conv = engine!!.createConversation( //start a new conversatiom
             ConversationConfig(
                 systemInstruction = Contents.of("""
@@ -98,9 +120,25 @@ class LocalLLM(private val wikiRepo: WikiRepository) {
             )
         )
 
+        actConv = conv
+
         return conv.sendMessageAsync(prompt) //send prompt to llm async
             .map { it.toString() }
             .onCompletion { conv.close() }//once full response is recieved by user close conversation to free up resources
+    }
+
+    fun stopGen(){
+        cancelled =true
+
+        if (actConv != null){
+            try{
+                actConv?.cancelProcess()
+            }
+            catch (e: IllegalStateException) {
+                Log.d("LLM", "gen cancelled")
+            }
+
+        }
     }
 }
 
