@@ -84,7 +84,7 @@ def get_intent(text):
 
     return "chat"
 
-gc = geonamescache.GeonamesCache()
+gc = geonamescache.GeonamesCache() #list of city names
 cities = gc.get_cities()
 city_names = [cities[city]['name'].lower() for city in cities]
 
@@ -109,18 +109,12 @@ def get_city(text, default):
         if word in single_word:
             return word.title()
 
-    # fuzzy for misspelling
-    # for word in words:
-    #     if len(word) < 5:
-    #         continue
-    #     matches = difflib.get_close_matches(word, single_word, n=1, cutoff=FUZZY_THRESHOLD)
-    #     if matches:
-    #         return matches[0].title()
+
 
     return default
 
 
-def days(text):
+def days(text): #get number of days ahead for weather
 
     today = datetime.now().weekday()
 
@@ -154,13 +148,13 @@ def days(text):
         return int(match.group(1))
 
     # "x day forecast" // "x-day forecast"
-    match = re.search(r"(\d+)[\s-]day", text)
+    match = re.search(r"(\d+)[\s-]day", text) #d+ = num>1, s = space, - = optional
     if match:
         return int(match.group(1))
 
     return 0
 
-def extract_hour(text):
+def extract_hour(text): #get hour for forecast
 
     if "midnight" in text:
         return 0
@@ -178,7 +172,7 @@ def extract_hour(text):
         return 21
 
     #  3pm,15:00,9 am, 3pm,9am diff ways to word times
-    match = re.search(r"\bat?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", text)
+    match = re.search(r"\bat?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b", text) # b = boundary, only match full word, at? = optional "at", d{1,2} = g1 1 or 2 digit nums e.g. 3 / 12, d{2} =g2 2 digit
     if match:
         hour   = int(match.group(1))
         period = match.group(3)# pm/am
@@ -238,10 +232,7 @@ cache_coords = {
 
 def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None):
 
-    # if connection.closed: #incase connection between db and backend is severed
-    #     print("connection not found, restarting")
-    #     connection = get_connection()
-    # connection = get_connection()
+
     city = city.lower()
 
 
@@ -251,7 +242,7 @@ def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None):
     else:
         coords = get_coordinates(city)
         if coords is None:
-            return {"error": f"City '{city}' not found"}
+            return {"error": f"City '{city}' not found"}#conv coord to cty
         latitude, longitude = coords
         cache_coords[city] = (latitude, longitude)
 
@@ -276,9 +267,7 @@ def execute_weather_function(city: str, days_ahead: int = 0, hour: int = None):
             target_datetime = target_datetime.replace(hour=hour, minute=0, second=0, microsecond=0)
             weather = get_forecast_weather_specific_time(latitude, longitude, target_datetime)
 
-    # handle list responses
-    #if isinstance(weather, list):
-        #weather = weather[0] if len(weather) > 0 else weather
+
 
     return {
         "city": city,
@@ -330,7 +319,7 @@ def execute_news_function(source: str = None, topic: str = None):
     error_msg = ""
 
 
-    if source:
+    if source: #rte not supported
         source = source.lower()
         if source == "rte.ie" or source=="rte":
             source = "independent.ie"
@@ -368,55 +357,3 @@ def getNews(prompt):
         }
 
 
-
-
-
-
-# def handle_prompt(raw_prompt: str,default_city:str, current_time = None) -> dict:
-#
-#     # if connection.closed or connection is None: #incase connection between db and backend is severed
-#     #     print("connection not found, restarting")
-#     #     connection = get_connection()
-#
-#
-#
-#     if (current_time is None):
-#         current_time = datetime.now().strftime("%A, %B %d, %Y at %H:%M")
-#
-#
-#     # add intent extraction
-#
-#     # call funcs
-#     if intent == "weather":
-#
-#         #add parameter extraction
-#
-#
-#
-#
-#     elif intent == "news":
-#
-#         #add parameter extraction
-#
-#
-#         result = execute_news_function(
-#             country=country,
-#             #category=function_args.get("category"),
-#             source=source,
-#             topic=topic
-#         )
-#         print(result)
-#         return {
-#             "intent": "news",
-#             "prompt": raw_prompt + result.get("error_msg", ""),
-#             "result": result["headlines"]
-#         }
-#
-#     # regular chat response (no funcs call)
-#     else:
-#
-#         return {
-#             "intent": "chat",
-#             "prompt": raw_prompt,
-#             "result": response_message.content
-#         }

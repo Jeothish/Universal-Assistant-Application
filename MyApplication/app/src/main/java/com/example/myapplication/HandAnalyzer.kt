@@ -45,7 +45,7 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
             )
             .setNumHands(2)//max hands mp can detect in a frame
             .setMinHandDetectionConfidence(0.7f)
-            .setMinHandPresenceConfidence(0.7f)//min confidence 70%
+            .setMinHandPresenceConfidence(0.7f)//mp confidence
             .setMinTrackingConfidence(0.7f)
             .setRunningMode(RunningMode.LIVE_STREAM)//live stream mode for live video input
             .setResultListener { result, input ->
@@ -69,13 +69,11 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
 
                     val landmarks = result.landmarks()[0]//landmarks
 
-                    //if right hand flip landmarks (front cam flips anyways so it sees left as right)
+                    //get wgich hand is on screen
                     val handedness = result.handedness()[0][0]
                     val detectedHand = handedness.categoryName()
 
-                    Log.d(TAG, "MediaPipe detected: $detectedHand hand (score: ${handedness.score()})")
-
-
+                   // Log.d(TAG, "MediaPipe detected: $detectedHand hand (score: ${handedness.score()})")
 
 
                     val normalizedFeatures = normalizeLandmarks(landmarks)//normalize
@@ -171,14 +169,14 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
                     //call left hand model since mediapipe inverts
                     prediction = classifierL.predict(features)
                     GlobalState.letter.value = prediction.first.lowercase()
-                    Log.d(TAG, "Predicted: $prediction ")
+                    //Log.d(TAG, "Predicted: $prediction ")
                     println(prediction)
 
                 } else if (detHand.lowercase() == "left") {
                     //call roght hand model
                     prediction = classifierR.predict(features)
                     GlobalState.letter.value = prediction.first.lowercase()
-                    Log.d("PRED", "Predicted: $prediction ")
+                    //Log.d("PRED", "Predicted: $prediction ")
                     println(prediction)
                 }
                 val letter = GlobalState.letter.value

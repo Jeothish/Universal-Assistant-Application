@@ -134,7 +134,7 @@ class AlarmActivity : ComponentActivity() {
      * @param time Reminder time
      */
     private fun snoozeAlarm(reminderId: Int, title: String, description: String,date: String,time: String) {
-        val snoozeTime = System.currentTimeMillis() + (15 * 60 * 1000)
+        val snoozeTime = System.currentTimeMillis() + (60 * 60 * 1000)
         val snoozeIntent = Intent(this, AlarmReceiver::class.java).apply {
             putExtra("reminder_id", reminderId)
             putExtra("title", title)
@@ -392,7 +392,7 @@ class AlarmActivity : ComponentActivity() {
                                 modifier = Modifier.size(36.dp)
                             )
                             Text(
-                                text = "Snooze (15mins)",
+                                text = "Snooze (1 hour)",
                                 fontSize = 25.sp,
                                 modifier = Modifier.padding(top = 4.dp)
                             )

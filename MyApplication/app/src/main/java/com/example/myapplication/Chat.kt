@@ -1240,7 +1240,7 @@ fun ASLInputScreen(returnToChat: () -> Unit,navController: NavController){
                 Text(
                     text = "RAM: ${ram}MB",
                     modifier = Modifier.padding(end = 10.dp, start = 250.dp, top = 300.dp),
-                    color = Color.Black
+                    color = Color.White
                 )
             }
             if (GlobalState.aslHandsError.value){

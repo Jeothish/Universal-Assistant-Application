@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -62,7 +63,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.text.style.TextAlign
 
 
-
+// main screen buttons
 @Composable
 fun homeButtons(icon: ImageVector, iconColour:Color = Color.DarkGray, title:String, description:String, onClick:() -> Unit){
         Box(
@@ -107,6 +108,7 @@ fun homeButtons(icon: ImageVector, iconColour:Color = Color.DarkGray, title:Stri
 @Composable
 fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSettings:() -> Unit,onOpenASLInput: () -> Unit) {
 
+            //greeting on main screen
             val hour = LocalTime.now().hour
             var time = ""
             if (hour > 4 && hour < 11) {
@@ -133,7 +135,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                         modifier = Modifier.fillMaxWidth().height(600.dp)
                     ) {
 
-                        item {
+                        item {//chat button
                             homeButtons(
                                 icon = Icons.Default.Chat,
                                 iconColour = Color(0xFF0F8BDE),
@@ -142,7 +144,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                                 onClick = {onOpenChat()})
                         }
 
-                        item {
+                        item {//reminders button
                             homeButtons(
                                 icon = Icons.Default.Doorbell,
                                 iconColour = Color(0xFFDE8B0F),
@@ -151,10 +153,10 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                                 onClick = { onOpenReminders() })
                         }
 
-                        item {
+                        item (span = { GridItemSpan(2) }) {//settings
                             homeButtons(
                                 icon = Icons.Default.Settings,
-                                iconColour = Color(0xFF3E3A37),
+                                iconColour = Color(0xFF9D978E),
                                 title = "Settings",
                                 description = "Customise your app preferences",
                                 onClick = {onOpenSettings()})
