@@ -1,0 +1,113 @@
+import pandas as pd
+import numpy as np
+from keras.src.layers import BatchNormalization
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.metrics import confusion_matrix, classification_report
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pickle
+from sklearn.utils.class_weight import compute_class_weight
+
+
+#used wight class to oversample M and N to reduce confusion since they were under smapled, reduced learning rate to 0.0005, used lr scheduler
+
+# mediapipe landmarks dataset from
+# https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
+
+df = pd.read_csv("../Datasets/asl_mediapipe_keypoints_dataset.csv")
+
+X = df.drop(columns=["label"]).values# import dataset and organize
+y= df["label"].values
+# print(X.shape)
+
+encoder = LabelEncoder() # to orgnize all alphabet labels
+y_encode = encoder.fit_transform(y)
+print(encoder.classes_)
+np.save("../Labels/asl_labels_newBatch3L.npy", encoder.classes_)
+
+#split into testing and training
+X_train, X_temp, y_train, y_temp = train_test_split(X, y_encode, test_size = 0.3, random_state = 42, stratify = y_encode)
+
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size = 0.5, random_state = 42, stratify = y_temp)
+
+class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)#add class weights to oversample M & N since they have the least amount of smaples
+class_weight_dict = dict(enumerate(class_weights))
+
+#train model
+model = Sequential([BatchNormalization(), Dense(128, activation="relu", input_shape=(X.shape[1],)), Dropout(0.1), Dense(64, activation="relu"), Dense(len(np.unique(y_encode)), activation="softmax")])
+
+model.compile(optimizer=tf.keras.optimizers.Adam(0.0005), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+
+early_stop = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
+
+lr_schedule = tf.keras.callbacks.ReduceLROnPlateau(
+    monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5
+)
+
+history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=100, batch_size=32, callbacks=[early_stop,lr_schedule], class_weight=class_weight_dict)
+
+
+#save model
+model.save("../Models/asl_mediapipe_model_newBatch3L.keras")
+
+with open("../Models/training_history_newBatch3L.pkl", "wb") as f:
+    pickle.dump(history.history, f)
+
+#acc vs epoch
+plt.figure()
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend(['Train', 'Validation'])
+plt.title('Accuracy vs Epoch')
+plt.savefig("accuracy_vs_epoch.png")
+plt.show()
+
+#loss vs epoich
+plt.figure()
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend(['Train', 'Validation'])
+plt.title('Loss vs Epoch')
+plt.savefig("loss_vs_epoch.png")
+plt.show()
+
+#test model
+test_loss, test_acc = model.evaluate(X_test, y_test)
+
+
+print("Test accuracy:", test_acc)
+
+#
+# model = load_model("asl_mediapipe_model_graph_trainL.keras")
+#confusion matrix
+y_pred_probs = model.predict(X_test)
+y_pred = np.argmax(y_pred_probs, axis=1)
+
+cm = confusion_matrix(y_test, y_pred)
+
+plt.figure(figsize=(10,8))
+sns.heatmap(cm,
+            annot=True,
+            fmt="d",
+            xticklabels=encoder.classes_,
+            yticklabels=encoder.classes_)
+
+plt.xlabel("Predicted")
+plt.ylabel("True")
+plt.title("Confusion Matrix")
+plt.savefig("confusion_matrix.png")
+plt.show()
+
+#class. report
+print("\nClassification Report:\n")
+print(classification_report(y_test, y_pred, target_names=encoder.classes_))
