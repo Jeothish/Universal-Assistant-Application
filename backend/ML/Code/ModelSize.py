@@ -2,7 +2,7 @@ from tensorflow.keras.models import load_model
 import tensorflow as tf
 
 
-model = load_model("../FinalModels/asl_mediapipe_model_final.keras")
+model = load_model("../FinalModels/asl_mediapipe_model_final_R.keras")
 model.summary()
 total_bytes = 0
 
@@ -53,7 +53,7 @@ def tfliteSize(tflite_path):
 
 
 try:
-    size = tfliteSize("../FinalModels/asl_mediapipe_model_finalL.tflite")
+    size = tfliteSize("../FinalModels/asl_mediapipe_model_finalR.tflite")
 
     print(f"\ntfLite weight (int8 only) size: {w/1024:.2f} KB")
     print(f"Total tfLite model Size: {size:.2f} KB")

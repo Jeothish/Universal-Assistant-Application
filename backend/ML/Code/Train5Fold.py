@@ -16,7 +16,7 @@ from sklearn.utils.class_weight import compute_class_weight
 # mediapipe landmarks dataset from
 # https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
 
-df = pd.read_csv("../Datasets/asl_landmarks_extracted_2.csv.csv")#load data
+df = pd.read_csv("../Datasets/asl_landmarks_extracted_2.csv")#load data
 
 X = df.drop(columns=["label"]).values#prep data
 y = df["label"].values
