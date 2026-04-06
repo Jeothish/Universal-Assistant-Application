@@ -16,7 +16,7 @@ from sklearn.utils.class_weight import compute_class_weight
 # mediapipe landmarks dataset from
 # https://github.com/JaspreetSingh-exe/Sign-Language-Recognition-System
 
-df = pd.read_csv("../Datasets/asl_mediapipe_keypoints_dataset.csv")#load data
+df = pd.read_csv("../Datasets/asl_landmarks_extracted_2.csv.csv")#load data
 
 X = df.drop(columns=["label"]).values#prep data
 y = df["label"].values
@@ -24,7 +24,7 @@ y = df["label"].values
 encoder = LabelEncoder()#encode data (letters to ints)
 y_encode = encoder.fit_transform(y)
 print("Classes:", encoder.classes_)
-np.save("../Labels/asl_labels.npy", encoder.classes_)
+np.save("../Labels/asl_labels_R.npy", encoder.classes_)
 
 #test data
 X_trainval, X_test, y_trainval, y_test = train_test_split(
@@ -145,7 +145,7 @@ history = final_model.fit(
     verbose=0
 )
 
-final_model.save("../FinalModels/asl_mediapipe_model_final.keras")
+final_model.save("../FinalModels/asl_mediapipe_model_final_R.keras")
 
 with open("../Models/training_history_final.pkl", "wb") as f:
     pickle.dump(history.history, f)

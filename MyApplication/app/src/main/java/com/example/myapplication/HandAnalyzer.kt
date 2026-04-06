@@ -31,10 +31,8 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
     private var timer: Long =0 // time between when letter is added to message
     private val lock = Any() //lock to prevent race conditions
 
-    //left hand model
-    private val classifierL = ASLProcessing(context, "asl_mediapipe_model_finalL.tflite", "asl_labels_finalL.txt")
-    //right hand model
-    private val classifierR = ASLProcessing(context, "asl_mediapipe_model_finalR.tflite", "asl_labels_finalR.txt")
+
+    private val classifier = ASLProcessing(context, "asl_mediapipe_model_finalR.tflite", "asl_labels_finalR.txt")
 
     init {
         val options = HandLandmarker.HandLandmarkerOptions.builder() //hand landmarker options
@@ -159,26 +157,22 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
         return scaled.flatMap { it.toList() }.toFloatArray()//21 xyz arrays to 1 floatt array of 63 fp
     }
 
+    private fun flipX(features: FloatArray): FloatArray {
+        return FloatArray(features.size) { i ->
+            if (i % 3 == 0) -features[i] else features[i]  // negate x, keep y and z
+        }
+    }
+
+
     private fun localPredict(features: FloatArray, detHand: String){ //call asl model
         Thread {
             try {
 
-                var prediction: Pair<String, Float>//prediction from model string = letter, float = confidence
+                val inputFeatures = if (detHand.lowercase() == "right") flipX(features) else features //flip xaxis if right hand detetced
 
-                if (detHand.lowercase() == "right") {
-                    //call left hand model since mediapipe inverts
-                    prediction = classifierL.predict(features)
-                    GlobalState.letter.value = prediction.first.lowercase()
-                    //Log.d(TAG, "Predicted: $prediction ")
-                    println(prediction)
-
-                } else if (detHand.lowercase() == "left") {
-                    //call roght hand model
-                    prediction = classifierR.predict(features)
-                    GlobalState.letter.value = prediction.first.lowercase()
-                    //Log.d("PRED", "Predicted: $prediction ")
-                    println(prediction)
-                }
+                val prediction: Pair<String, Float> = classifier.predict(inputFeatures)
+                GlobalState.letter.value = prediction.first.lowercase()
+                println(prediction)
                 val letter = GlobalState.letter.value
                 println(timer)
                 synchronized(lock) { //prevent race cond by only allowing 1 thread at atime

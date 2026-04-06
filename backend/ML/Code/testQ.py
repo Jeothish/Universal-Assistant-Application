@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 #load data
-df = pd.read_csv("../Datasets/asl_mediapipe_keypoints_dataset.csv")
+df = pd.read_csv("../Datasets/asl_landmarks_extracted_2.csv.csv")
 X = df.drop(columns=["label"]).values
 y = df["label"].values
 
@@ -19,8 +19,8 @@ _, X_test, _, y_test = train_test_split(
 )
 
 #load models
-keras_model = tf.keras.models.load_model("../FinalModels/asl_mediapipe_model_final.keras")
-interpreter = tf.lite.Interpreter(model_path="../FinalModels/asl_mediapipe_model_finalL.tflite")
+keras_model = tf.keras.models.load_model("../FinalModels/asl_mediapipe_model_final_R.keras")
+interpreter = tf.lite.Interpreter(model_path="../FinalModels/asl_mediapipe_model_finalR.tflite")
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()
