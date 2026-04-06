@@ -259,7 +259,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
                             courotineScope.launch {
                                 val reminder = reminders.find{it.reminder_id == id}
                                 if(reminder != null){
-                                    repository.deleteReminder(reminder)
+                                    repository.deleteReminder(reminder,context)
                                 }
 
                             }
@@ -268,7 +268,7 @@ fun RemindersScreenDisplay(returnToChat: () -> Unit,openRemindersScreen: (existi
                             courotineScope.launch {
                                 val reminder = reminders.find { it.reminder_id == id }
                                 if (reminder != null) {
-                                    repository.updateReminder(reminder.copy(is_complete = isComplete))
+                                    repository.updateReminder(reminder.copy(is_complete = isComplete),context)
                                 }
                             }
                         }
@@ -411,7 +411,7 @@ fun ReminderCard(repository: ReminderRepository,reminder: Reminder,onEdit: (Remi
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
-                            0xFF0C31EC
+                            0xFF4CAF50
                         ),
                         contentColor = Color(0xFFFFFFFF),
                     )
@@ -1040,7 +1040,7 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
 
         Button(onClick = {
             val currentDate = java.time.LocalDate.now().toString()
-            val currentTime = java.time.LocalTime.now().toString().substring(0, 8)
+            val currentTime =  java.time.LocalTime.now().minusMinutes(1).toString().substring(0, 8)
 
             if(title.isBlank()){
                 Toast.makeText(context,"Enter a title!", Toast.LENGTH_SHORT).show()
@@ -1079,21 +1079,9 @@ fun AddReminderScreen(repository: ReminderRepository, navController: NavControll
                     )
 
                     if (isEditing) {
-                        repository.updateReminder(reminder)
+                        repository.updateReminder(reminder,context)
                     } else {
-                        repository.addReminder(reminder)
-                    }
-
-                    // schedule alarm AFTER DB success
-                    if (date.isNotBlank() && time.isNotBlank()) {
-                        AlarmScheuduler.scheduleAlarm(
-                            context,
-                            reminder.reminder_id,
-                            title,
-                            description,
-                            date,
-                            time
-                        )
+                        repository.addReminder(reminder,context)
                     }
 
                     returnToChat()

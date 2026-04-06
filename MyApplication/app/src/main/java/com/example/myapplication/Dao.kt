@@ -17,7 +17,7 @@ interface ReminderDao {
     suspend fun getReminderById(id: Int): Reminder?
 
     @Insert
-    suspend fun insertReminder(reminder: Reminder)
+    suspend fun insertReminder(reminder: Reminder) : Long
 
     @Update
     suspend fun updateReminder(reminder: Reminder)

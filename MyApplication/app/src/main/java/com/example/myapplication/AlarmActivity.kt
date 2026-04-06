@@ -301,7 +301,7 @@ class AlarmActivity : ComponentActivity() {
                             if(GlobalState.ttsReading.value) ttsManager.speak(title)
                             else ttsManager.stop()
                         },
-                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        modifier = Modifier.height(100.dp).fillMaxWidth().padding(16.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
@@ -348,7 +348,7 @@ class AlarmActivity : ComponentActivity() {
                             GlobalState.aslTokens.value = tokens
                             GlobalState.hideResponse.value = true
                                   },
-                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        modifier = Modifier.height(100.dp).fillMaxWidth().padding(16.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFC30AEC),
@@ -376,10 +376,10 @@ class AlarmActivity : ComponentActivity() {
 
                     Button(
                         onClick = {snoozeAlarm(reminderId,title,description,date,time)},
-                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        modifier = Modifier.height(100.dp).fillMaxWidth().padding(16.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1762E3),
+                            containerColor = Color(0xFF4CAF50),
                             contentColor = Color(0xFFFFFFFF),
                         )
                     )
@@ -404,7 +404,7 @@ class AlarmActivity : ComponentActivity() {
 
                     Button(
                         onClick = {onDismiss()},
-                        modifier = Modifier.height(100.dp).width(500.dp).padding(16.dp),
+                        modifier = Modifier.height(100.dp).fillMaxWidth().padding(16.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFFE80F0F),

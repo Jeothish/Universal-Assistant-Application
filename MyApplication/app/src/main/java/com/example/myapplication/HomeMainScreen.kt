@@ -138,7 +138,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                         item {//chat button
                             homeButtons(
                                 icon = Icons.Default.Chat,
-                                iconColour = Color(0xFF0F8BDE),
+                                iconColour = Color(0xFF4CAF50),
                                 title = "AI Assistant",
                                 description = "Here to help with anything",
                                 onClick = {onOpenChat()})
@@ -147,7 +147,7 @@ fun HomeMainScreen(onOpenReminders: () -> Unit,onOpenChat: () -> Unit,onOpenSett
                         item {//reminders button
                             homeButtons(
                                 icon = Icons.Default.Doorbell,
-                                iconColour = Color(0xFFDE8B0F),
+                                iconColour = Color(0xFFFF5722),
                                 title = "Reminders",
                                 description = "Manage your daily tasks",
                                 onClick = { onOpenReminders() })

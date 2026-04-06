@@ -963,7 +963,7 @@ fun newsBubble(newsList: List<NewsItem>,time:String) {
                     shape = RoundedCornerShape(18.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if(GlobalState.ttsReading.value) Color(0xFFE01212) else Color(
-                            0xFF0C31EC
+                            0xFF4CAF50
                         ),
                         contentColor = Color(0xFFFFFFFF),
                     )

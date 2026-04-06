@@ -65,6 +65,14 @@ object AlarmScheuduler {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        alarmManager.cancel(pendingIntent)
+        if (pendingIntent != null) {
+            Log.d("AlarmCancel", "Cancelling alarm for id: $reminderId")
+            alarmManager.cancel(pendingIntent)
+            Log.d("AlarmCancel", "Done cancelling for id: $reminderId")
+            pendingIntent.cancel()
+        }
+        else{
+            Log.d("AlarmCancel", "No pending intent found for id: $reminderId — nothing to cancel")
+        }
     }
 }
