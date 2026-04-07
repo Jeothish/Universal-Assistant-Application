@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 #load data
-df = pd.read_csv("../Datasets/asl_landmarks_extracted_2.csv.csv")
+df = pd.read_csv("../Datasets/asl_landmarks_extracted_2.csv")
 X = df.drop(columns=["label"]).values
 y = df["label"].values
 

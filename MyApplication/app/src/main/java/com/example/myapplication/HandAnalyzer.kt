@@ -65,10 +65,10 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
                         )
                     }
 
-                    val landmarks = result.landmarks()[0]//landmarks
+                    val landmarks = result.landmarks()[0]//landmarks from hand 1 [0]
 
                     //get wgich hand is on screen
-                    val handedness = result.handedness()[0][0]
+                    val handedness = result.handedness()[0][0]//handedness from hand 1 [0]
                     val detectedHand = handedness.categoryName()
 
                    // Log.d(TAG, "MediaPipe detected: $detectedHand hand (score: ${handedness.score()})")
@@ -159,7 +159,7 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
 
     private fun flipX(features: FloatArray): FloatArray {
         return FloatArray(features.size) { i ->
-            if (i % 3 == 0) -features[i] else features[i]  // negate x, keep y and z
+            if (i % 3 == 0) -features[i] else features[i]  // multiply x by -1 to flip, (i%3) = all x coords at indeces : 0,3,6.... as its 3 dimensional
         }
     }
 
@@ -175,7 +175,7 @@ class HandAnalyzer(context: Context, private val overlayView: OverlayView) : Ima
                 println(prediction)
                 val letter = GlobalState.letter.value
                 println(timer)
-                synchronized(lock) { //prevent race cond by only allowing 1 thread at atime
+                synchronized(lock) { //prevent race cond. by only allowing 1 thread at atime
 
                     // asl senetnce construction using delay
                     if (prevLetter == "") {  //init

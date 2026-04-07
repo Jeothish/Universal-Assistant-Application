@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             } else {
-                // Permission denied add handling
+                //
             }
         }
 

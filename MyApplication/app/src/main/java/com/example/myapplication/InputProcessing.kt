@@ -78,36 +78,7 @@ class InputProcessing(private val context: Context) {
 
     }
 
-//    suspend fun getWeatherData(city: String,prompt:String) : String{
-//
-//        val processedCity = city.lowercase().trim()
-//        val cacheExpiry = 30 * 60 * 1000
-//
-//        val cached = weatherDao.getWeather(processedCity)
-//
-//        if (cached != null && (System.currentTimeMillis() - cached.timestamp) < cacheExpiry) {
-//            Log.d("WEATHER_CACHING", "Using database data for $processedCity ")
-//            return cached.jsonResponse
-//        }
-//
-//        Log.d("WEATHER_CACHING", "Fetching from Python for weather data for  $processedCity")
-//
-//        val coordinates = WeatherApi.getCoordinates(city)
-//        val weatherData = if(coordinates != null){
-//            WeatherApi.getCurrentWeather(coordinates.first,coordinates.second)
-//        }
-//        else{
-//            null
-//        }
-//
-//        val responseMap = mapOf("intent" to "weather", "city" to city, "result" to weatherData)
-//        val jsonString = Gson().toJson(responseMap)
-//        weatherDao.insertWeather(WeatherCache(processedCity, jsonString, System.currentTimeMillis()))
-//
-//        return jsonString
-//
-//
-//    }
+
 
     //send user query to LLM (backend)
     fun sendTextToBackend(prompt: String) {
@@ -138,11 +109,12 @@ class InputProcessing(private val context: Context) {
                 val jsonString: String
                 if (intent == "weather") {
                     Log.d("WEATHER_PERFORMANCE", "Processing Weather Request")
-                    jsonString = weatherRepo.getWeatherData(prompt, GlobalState.userCity.value) //get weather forecast through cache/api
+                    jsonString = withContext(Dispatchers.Main) { weather(prompt, GlobalState.userCity.value)}
+                    //jsonString = weatherRepo.getWeatherData(prompt, GlobalState.userCity.value) //get weather forecast through cache/api
                     Log.d("WEATHER_PERFORMANCE", "Fetched weather data")
                 }
                 else if (intent == "news") {
-                    jsonString = withContext(Dispatchers.Main) { news(prompt) }//get news articles
+                    jsonString = withContext(Dispatchers.IO) { news(prompt) }//get news articles
                     Log.d("LLM_RESPONSE", jsonString)
                 }
                 else { //call llm if chat intent

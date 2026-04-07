@@ -29,10 +29,10 @@ class ASLProcessing(context: Context, modelFile: String, labelsFile: String) {
     }
 
     fun predict(features: FloatArray): Pair<String, Float> { //return letter and conf
-        val inputBuffer = ByteBuffer.allocateDirect(63 * 4).apply {//tf lite doesnt take floatarray, needs bytebuffer
-            order(ByteOrder.nativeOrder())
+        val inputBuffer = ByteBuffer.allocateDirect(63 * 4).apply {//tf lite doesnt take floatarray, needs bytebuffer, each float = 4 bytes
+            order(ByteOrder.nativeOrder())//match cpu Byte order
             features.forEach { putFloat(it) }
-            rewind()
+            rewind()//read pos to start
         }
 
         val outputSize = labels.size
